@@ -1000,7 +1000,9 @@ async function submitTx() {
   txs.push(tx); saveTxs();
   if (settings.sheetsUrl&&settings.autosync) {
     setSyncStatus("syncing");
-    const ok=await postToSheets("add_transaction",{data:{...tx}});
+    const syncPromise = postToSheets("add_transaction",{data:{...tx}});
+    const timeout = new Promise(r => setTimeout(() => r(false), 6000));
+    const ok = await Promise.race([syncPromise, timeout]);
     if (ok){showToast("Added + synced to Sheets ✓");setSyncStatus("ok");}
     else{unsyncedIds.push(tx.id);localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds));showToast("Saved locally — will sync later");setSyncStatus("error");}
   } else { showToast("Transaction added ✓"); }
@@ -1017,7 +1019,7 @@ async function submitGoal() {
   const monthly= parseFloat(document.getElementById("g-monthly").value)||0;
   const dueRaw = document.getElementById("g-due").value;
   // Force Gregorian calendar explicitly to avoid Thai Buddhist Era
-  const due    = dueRaw ? new Date(dueRaw + "T00:00:00").toLocaleDateString("en-US-u-ca-gregory", {month:"short", year:"numeric"}) : "—";
+  const due    = dueRaw ? (()=>{ const [y,m]=dueRaw.split("-").map(Number); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m-1]+" "+y; })() : "—";
   const colorVal = document.getElementById("g-color").value.split(",");
 
   if (!name){showToast("Enter a goal name");return;}
@@ -1195,6 +1197,13 @@ document.querySelectorAll(".period-pill").forEach(p=>p.addEventListener("click",
   document.querySelectorAll(".period-pill").forEach(x=>x.classList.remove("active"));this.classList.add("active");
 }));
 
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2800);
+}
+  
 // ══ INIT ══════════════════════════════════════════════════════
 startup();
 </script>
