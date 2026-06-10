@@ -543,7 +543,7 @@ saveSettings();
 
 function saveTxs()     { localStorage.setItem("ft_txs", JSON.stringify(txs)); }
 function saveSettings(){ localStorage.setItem("ft_settings", JSON.stringify(settings)); }
-function fmt(n)        { return "฿" + Math.round(n).toLocaleString(); }
+function fmt(n) { return "฿" + Number(n).toLocaleString("th-TH", {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
 // ══ STARTUP — auto-fetch if local is empty and URL exists ═════
 async function startup() {
