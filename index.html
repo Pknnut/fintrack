@@ -224,6 +224,7 @@
   .form-field { background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 12px 14px; }
   .form-field label { font-size: 10px; color: var(--slate-400); font-weight: 500; display: block; margin-bottom: 4px; }
   .form-field input, .form-field select { width: 100%; border: none; outline: none; font-size: 13px; font-weight: 500; color: var(--slate-900); background: none; font-family: inherit; appearance: none; }
+  .form-field input[type="date"] { appearance: none; -webkit-appearance: none; color: var(--slate-900); min-height: 24px; cursor: pointer; }
   .submit-btn { margin: 16px 20px 0; width: calc(100% - 40px); padding: 15px; background: var(--slate-900); color: var(--white); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 700; cursor: pointer; }
   .submit-btn:active { opacity: 0.9; }
   .sync-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--slate-400); margin: 8px 20px 0; }
@@ -449,7 +450,7 @@
       <div class="form-field"><label>GOAL NAME</label><input id="g-name" type="text" placeholder="e.g. ✈️ Japan trip"></div>
       <div class="form-field"><label>AMOUNT SAVED SO FAR (฿)</label><input id="g-saved" type="number" min="0" placeholder="0"></div>
       <div class="form-field"><label>MONTHLY CONTRIBUTION (฿)</label><input id="g-monthly" type="number" min="0" placeholder="0"></div>
-      <div class="form-field"><label>TARGET DATE</label><input id="g-due" type="text" placeholder="e.g. Dec 2027"></div>
+      <div class="form-field"><label>TARGET DATE</label><input id="g-due" type="date"></div>
       <div class="form-field">
         <label>COLOR</label>
         <select id="g-color">
@@ -948,7 +949,8 @@ function submitGoal() {
   const target = parseFloat(document.getElementById("g-target").value)||0;
   const saved  = parseFloat(document.getElementById("g-saved").value)||0;
   const monthly= parseFloat(document.getElementById("g-monthly").value)||0;
-  const due    = document.getElementById("g-due").value.trim();
+  const dueRaw = document.getElementById("g-due").value;
+  const due    = dueRaw ? new Date(dueRaw).toLocaleDateString("en-GB", {month:"short", year:"numeric"}) : "—";
   const colorVal = document.getElementById("g-color").value.split(",");
 
   if (!name){showToast("Enter a goal name");return;}
