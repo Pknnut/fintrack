@@ -826,10 +826,10 @@ function txRowHTML(t) {
 // ══ GOALS ═════════════════════════════════════════════════════
 function renderGoals() {
   if (!GOALS.length) {
-    document.getElementById("goals-total-saved").textContent="฿0";
+    document.getElementById("goals-total-saved").textContent="฿0.00";
     document.getElementById("goals-active").textContent="0";
     document.getElementById("goals-avg-pct").textContent="0%";
-    document.getElementById("goals-list").innerHTML='<div class="empty-state">No goals yet — add them in the code</div>';
+    document.getElementById("goals-list").innerHTML='<div class="empty-state">No goals yet — tap + to add one</div>';
     return;
   }
   const total=GOALS.reduce((s,g)=>s+g.saved,0);
@@ -837,10 +837,44 @@ function renderGoals() {
   document.getElementById("goals-total-saved").textContent=fmt(total);
   document.getElementById("goals-active").textContent=GOALS.length;
   document.getElementById("goals-avg-pct").textContent=avg+"%";
-  document.getElementById("goals-list").innerHTML=GOALS.map(g=>{
+  document.getElementById("goals-list").innerHTML=GOALS.map((g,idx)=>{
     const pct=Math.round(g.saved/g.target*100);
-    return `<div class="goal-card"><div class="goal-top"><div style="display:flex;align-items:center;gap:8px"><div class="goal-icon-wrap" style="background:${g.bg}">${g.icon}</div><div><div class="goal-name">${g.name}</div><div class="goal-saved">${fmt(g.saved)} saved of ${fmt(g.target)}</div></div></div><div class="goal-pct" style="color:${g.color}">${pct}%</div></div><div class="goal-track"><div class="goal-fill" style="width:${pct}%;background:${g.color}"></div></div><div class="goal-footer"><span>${fmt(g.target-g.saved)} remaining</span><span>Target: ${g.due}</span></div></div>`;
+    return `<div class="goal-card">
+      <div class="goal-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="goal-icon-wrap" style="background:${g.bg||'#f1f5f9'}">${g.icon||'🎯'}</div>
+          <div>
+            <div class="goal-name">${g.name}</div>
+            <div class="goal-saved">${fmt(g.saved)} saved of ${fmt(g.target)}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="goal-pct" style="color:${g.color}">${pct}%</div>
+          <button onclick="deleteGoal(${idx})" style="background:none;border:none;cursor:pointer;font-size:14px;color:#94a3b8;padding:2px 4px;" title="Delete">🗑️</button>
+        </div>
+      </div>
+      <div class="goal-track"><div class="goal-fill" style="width:${pct}%;background:${g.color}"></div></div>
+      <div class="goal-footer"><span>${fmt(g.target-g.saved)} remaining</span><span>Target: ${g.due}</span></div>
+    </div>`;
   }).join("");
+}
+
+function deleteInst(idx) {
+  if (confirm(`Delete "${INSTALLMENTS[idx].name}"?`)) {
+    INSTALLMENTS.splice(idx, 1);
+    saveInsts();
+    renderInstallments();
+    showToast("Instalment deleted");
+  }
+}
+
+function deleteGoal(idx) {
+  if (confirm(`Delete "${GOALS[idx].name}"?`)) {
+    GOALS.splice(idx, 1);
+    saveGoals();
+    renderGoals();
+    showToast("Goal deleted");
+  }
 }
 
 // ══ ANALYTICS ════════════════════════════════════════════════
@@ -867,10 +901,10 @@ function renderInstallments() {
   document.getElementById("inst-monthly").textContent=fmt(monthly);
   document.getElementById("inst-balance").textContent=fmt(balance);
   document.getElementById("inst-count").textContent=active.length;
-  document.getElementById("inst-list").innerHTML=INSTALLMENTS.map(p=>{
+  document.getElementById("inst-list").innerHTML=INSTALLMENTS.map((p,idx)=>{
     const pct=Math.round(p.paid/p.total_mo*100), rem=p.total_mo-p.paid;
     const bal=Math.max(p.total-p.monthly*p.paid,0), isDone=rem<=0;
-    return `<div class="inst-card"><div class="inst-top"><div><div class="inst-name">${p.icon} ${p.name}</div><div class="inst-cat">${p.cat}</div></div><span class="inst-badge ${isDone?'badge-done':'badge-active'}">${isDone?'Paid off':'Active'}</span></div><div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:4px"><span>${p.paid} of ${p.total_mo} months paid</span><span style="font-weight:600;color:${p.color}">${pct}%</span></div><div class="inst-track"><div class="inst-fill" style="width:${pct}%;background:${p.color}"></div></div><div class="inst-stats"><div><div style="font-size:9px;color:#94a3b8">Monthly</div><div class="inst-stat-val">${fmt(p.monthly)}</div></div><div style="text-align:center"><div style="font-size:9px;color:#94a3b8">Months left</div><div class="inst-stat-val">${rem}</div></div><div style="text-align:right"><div style="font-size:9px;color:#94a3b8">Balance</div><div class="inst-stat-val" style="color:${isDone?'#94a3b8':'#ef4444'}">${fmt(bal)}</div></div></div></div>`;
+    return `<div class="inst-card"><div class="inst-top"><div><div class="inst-name">${p.icon} ${p.name}</div><div class="inst-cat">${p.cat}</div></div><div style="display:flex;align-items:center;gap:6px"><span class="inst-badge ${isDone?'badge-done':'badge-active'}">${isDone?'Paid off':'Active'}</span><button onclick="deleteInst(${idx})" style="background:none;border:none;cursor:pointer;font-size:14px;color:#94a3b8;padding:2px 4px;">🗑️</button></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:4px"><span>${p.paid} of ${p.total_mo} months paid</span><span style="font-weight:600;color:${p.color}">${pct}%</span></div><div class="inst-track"><div class="inst-fill" style="width:${pct}%;background:${p.color}"></div></div><div class="inst-stats"><div><div style="font-size:9px;color:#94a3b8">Monthly</div><div class="inst-stat-val">${fmt(p.monthly)}</div></div><div style="text-align:center"><div style="font-size:9px;color:#94a3b8">Months left</div><div class="inst-stat-val">${rem}</div></div><div style="text-align:right"><div style="font-size:9px;color:#94a3b8">Balance</div><div class="inst-stat-val" style="color:${isDone?'#94a3b8':'#ef4444'}">${fmt(bal)}</div></div></div></div>`;
   }).join("");
 }
 
@@ -966,28 +1000,34 @@ function submitGoal() {
   const saved  = parseFloat(document.getElementById("g-saved").value)||0;
   const monthly= parseFloat(document.getElementById("g-monthly").value)||0;
   const dueRaw = document.getElementById("g-due").value;
-  const due    = dueRaw ? new Date(dueRaw).toLocaleDateString("en-GB", {month:"short", year:"numeric"}) : "—";
+  // Force Gregorian calendar explicitly to avoid Thai Buddhist Era
+  const due    = dueRaw ? new Date(dueRaw + "T00:00:00").toLocaleDateString("en-US", {month:"short", year:"numeric", calendar:"gregory"}) : "—";
   const colorVal = document.getElementById("g-color").value.split(",");
 
   if (!name){showToast("Enter a goal name");return;}
   if (!target||target<=0){showToast("Enter a target amount");return;}
 
   setBtn("btn-add-goal", true, "Add Goal", "#22c55e");
-  GOALS.push({
-    icon: name.match(/^\p{Emoji}/u)?.[0] || "🎯",
-    name: name.replace(/^\p{Emoji}\s*/u,""),
+
+  const newGoal = {
+    id:    Date.now(),
+    icon:  name.match(/^\p{Emoji}/u)?.[0] || "🎯",
+    name:  name.replace(/^\p{Emoji}\s*/u,""),
     saved, target, monthly,
     color: colorVal[0],
     bg:    colorVal[1],
     due:   due||"—"
-  });
+  };
+  GOALS.push(newGoal);
   saveGoals();
-  if (settings.sheetsUrl) {
-    postToSheets("add_goal", { data: { name, target, saved, monthly, due, color: colorVal[0] }});
-  }
-  showToast("Goal added ✓");
+  showToast("Goal saved ✓");
   setBtn("btn-add-goal", false, "Add Goal", "#22c55e");
   goTo("goals");
+  // Sync to Sheets in background — non-blocking
+  if (settings.sheetsUrl) {
+    postToSheets("add_goal", { data: { name, target, saved, monthly, due, color: colorVal[0] }})
+      .then(ok => { if (!ok) console.log("Goal sync to Sheets failed silently"); });
+  }
 }
 
 function submitInst() {
@@ -1016,12 +1056,14 @@ function submitInst() {
     color
   });
   saveInsts();
-  if (settings.sheetsUrl) {
-    postToSheets("add_installment", { data: { name, category: cat, total, monthly, startDate, totalMonths: totalMo, monthsPaid: paid }});
-  }
-  showToast("Instalment added ✓");
+  showToast("Instalment saved ✓");
   setBtn("btn-add-inst", false, "Add Instalment", "#6366f1");
   goTo("installments");
+  // Sync in background
+  if (settings.sheetsUrl) {
+    postToSheets("add_installment", { data: { name, category: cat, total, monthly, startDate, totalMonths: totalMo, monthsPaid: paid }})
+      .then(ok => { if (!ok) console.log("Instalment sync failed silently"); });
+  }
 }
 
 // ══ SYNC ══════════════════════════════════════════════════════
