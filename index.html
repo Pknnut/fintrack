@@ -1026,7 +1026,10 @@ function submitGoal() {
   // Sync to Sheets in background — non-blocking
   if (settings.sheetsUrl) {
     postToSheets("add_goal", { data: { name, target, saved, monthly, due, color: colorVal[0] }})
-      .then(ok => { if (!ok) console.log("Goal sync to Sheets failed silently"); });
+      .then(ok => {
+        if (ok) showToast("Goal synced to Sheets ✓");
+        else showToast("⚠️ Saved locally — Sheets sync failed");
+      });
   }
 }
 
