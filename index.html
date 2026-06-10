@@ -449,7 +449,7 @@
       <div class="form-field"><label>GOAL NAME</label><input id="g-name" type="text" placeholder="e.g. ✈️ Japan trip"></div>
       <div class="form-field"><label>AMOUNT SAVED SO FAR (฿)</label><input id="g-saved" type="number" min="0" placeholder="0"></div>
       <div class="form-field"><label>MONTHLY CONTRIBUTION (฿)</label><input id="g-monthly" type="number" min="0" placeholder="0"></div>
-      <div class="form-field"><label>TARGET DATE</label><input id="g-due" type="date"></div>
+      <div class="form-field"><label>TARGET DATE</label><input id="g-due" type="text" placeholder="e.g. Dec 2027"></div>
       <div class="form-field">
         <label>COLOR</label>
         <select id="g-color">
@@ -873,6 +873,7 @@ function renderInstallments() {
 
 // ══ ADD — ENTRY TYPE ══════════════════════════════════════════
 let currentEntryType = "tx";
+let currentType = "Expense";
 
 function setEntryType(type) {
   currentEntryType = type;
@@ -947,8 +948,7 @@ function submitGoal() {
   const target = parseFloat(document.getElementById("g-target").value)||0;
   const saved  = parseFloat(document.getElementById("g-saved").value)||0;
   const monthly= parseFloat(document.getElementById("g-monthly").value)||0;
-  const dueRaw = document.getElementById("g-due").value;
-  const due    = dueRaw ? new Date(dueRaw).toLocaleDateString("en-GB", {month:"short", year:"numeric"}) : "—";
+  const due    = document.getElementById("g-due").value.trim();
   const colorVal = document.getElementById("g-color").value.split(",");
 
   if (!name){showToast("Enter a goal name");return;}
