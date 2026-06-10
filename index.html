@@ -437,7 +437,7 @@
       <div class="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--slate-300);" id="add-sync-dot"></div>
       <span id="add-sync-label">Will save locally only</span>
     </div>
-    <button class="submit-btn" onclick="submitTx()">Add Transaction</button>
+    <button class="submit-btn" id="btn-add-tx" onclick="submitTx()">Add Transaction</button>
   </div>
 
   <!-- ── GOAL FORM ── -->
@@ -463,7 +463,7 @@
         </select>
       </div>
     </div>
-    <button class="submit-btn" style="background:#22c55e" onclick="submitGoal()">Add Goal</button>
+    <button class="submit-btn" id="btn-add-goal" style="background:#22c55e" onclick="submitGoal()">Add Goal</button>
   </div>
 
   <!-- ── INSTALMENT FORM ── -->
@@ -491,7 +491,7 @@
         </select>
       </div>
     </div>
-    <button class="submit-btn" style="background:#6366f1" onclick="submitInst()">Add Instalment</button>
+    <button class="submit-btn" id="btn-add-inst" style="background:#6366f1" onclick="submitInst()">Add Instalment</button>
   </div>
 
   <div class="spacer"></div>
@@ -560,6 +560,8 @@
     <div class="settings-label">Data</div>
     <div class="settings-card">
       <button class="settings-btn" onclick="exportData()">Export transactions as JSON</button>
+      <button class="settings-btn danger" onclick="confirmClearGoals()">Clear all goals</button>
+      <button class="settings-btn danger" onclick="confirmClearInsts()">Clear all instalments</button>
       <button class="settings-btn danger" onclick="confirmClear()">Clear all local data</button>
     </div>
   </div>
@@ -925,7 +927,18 @@ function setupAdd() {
   document.getElementById("add-sync-label").textContent=hasUrl&&settings.autosync?"Will sync to Google Sheets":"Will save locally only";
 }
 
+// ── Button loading state helper ───────────────────────────────
+function setBtn(id, loading, label, bg) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.style.opacity = loading ? "0.6" : "1";
+  btn.textContent = loading ? "Saving…" : label;
+  if (bg) btn.style.background = bg;
+}
+
 async function submitTx() {
+  if (document.getElementById("btn-add-tx").disabled) return;
   const amount=parseFloat(document.getElementById("f-amount").value);
   const desc=document.getElementById("f-desc").value.trim();
   const date=document.getElementById("f-date").value;
@@ -933,6 +946,7 @@ async function submitTx() {
   const notes=document.getElementById("f-notes").value.trim();
   if (!amount||amount<=0){showToast("Enter a valid amount");return;}
   if (!desc){showToast("Enter a description");return;}
+  setBtn("btn-add-tx", true, "Add Transaction");
   const tx={id:Date.now(),date,type:currentType,category:cat,desc,amount,notes};
   txs.push(tx); saveTxs();
   if (settings.sheetsUrl&&settings.autosync) {
@@ -941,10 +955,12 @@ async function submitTx() {
     if (ok){showToast("Added + synced to Sheets ✓");setSyncStatus("ok");}
     else{unsyncedIds.push(tx.id);localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds));showToast("Saved locally — will sync later");setSyncStatus("error");}
   } else { showToast("Transaction added ✓"); }
+  setBtn("btn-add-tx", false, "Add Transaction");
   goTo("home");
 }
 
 function submitGoal() {
+  if (document.getElementById("btn-add-goal").disabled) return;
   const name   = document.getElementById("g-name").value.trim();
   const target = parseFloat(document.getElementById("g-target").value)||0;
   const saved  = parseFloat(document.getElementById("g-saved").value)||0;
@@ -956,6 +972,7 @@ function submitGoal() {
   if (!name){showToast("Enter a goal name");return;}
   if (!target||target<=0){showToast("Enter a target amount");return;}
 
+  setBtn("btn-add-goal", true, "Add Goal", "#22c55e");
   GOALS.push({
     icon: name.match(/^\p{Emoji}/u)?.[0] || "🎯",
     name: name.replace(/^\p{Emoji}\s*/u,""),
@@ -965,18 +982,16 @@ function submitGoal() {
     due:   due||"—"
   });
   saveGoals();
-  // Sync to Sheets
   if (settings.sheetsUrl) {
-    postToSheets("add_goal", { data: {
-      name, target, saved, monthly, due,
-      color: colorVal[0]
-    }});
+    postToSheets("add_goal", { data: { name, target, saved, monthly, due, color: colorVal[0] }});
   }
   showToast("Goal added ✓");
+  setBtn("btn-add-goal", false, "Add Goal", "#22c55e");
   goTo("goals");
 }
 
 function submitInst() {
+  if (document.getElementById("btn-add-inst").disabled) return;
   const name    = document.getElementById("i-name").value.trim();
   const total   = parseFloat(document.getElementById("i-total").value)||0;
   const monthly = parseFloat(document.getElementById("i-monthly").value)||0;
@@ -990,6 +1005,7 @@ function submitInst() {
   if (!monthly||monthly<=0){showToast("Enter monthly payment");return;}
   if (!totalMo||totalMo<=0){showToast("Enter total months");return;}
 
+  setBtn("btn-add-inst", true, "Add Instalment", "#6366f1");
   const startDate = document.getElementById("i-start").value;
   INSTALLMENTS.push({
     icon:     name.match(/^\p{Emoji}/u)?.[0] || "📦",
@@ -1000,14 +1016,11 @@ function submitInst() {
     color
   });
   saveInsts();
-  // Sync to Sheets
   if (settings.sheetsUrl) {
-    postToSheets("add_installment", { data: {
-      name, category: cat, total, monthly,
-      startDate, totalMonths: totalMo, monthsPaid: paid
-    }});
+    postToSheets("add_installment", { data: { name, category: cat, total, monthly, startDate, totalMonths: totalMo, monthsPaid: paid }});
   }
   showToast("Instalment added ✓");
+  setBtn("btn-add-inst", false, "Add Instalment", "#6366f1");
   goTo("installments");
 }
 
@@ -1078,6 +1091,22 @@ async function requestNotifPermission() {
 function exportData() {
   const blob=new Blob([JSON.stringify({transactions:txs,exportedAt:new Date().toISOString()},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="fintrack_export.json";a.click();
+}
+function confirmClearGoals() {
+  if (confirm("Delete all goals from the app? This does not affect Google Sheets.")) {
+    GOALS.length = 0;
+    localStorage.removeItem("ft_goals");
+    showToast("Goals cleared");
+    goTo("goals");
+  }
+}
+function confirmClearInsts() {
+  if (confirm("Delete all instalments from the app? This does not affect Google Sheets.")) {
+    INSTALLMENTS.length = 0;
+    localStorage.removeItem("ft_insts");
+    showToast("Instalments cleared");
+    goTo("installments");
+  }
 }
 function confirmClear() {
   if (confirm("This will delete ALL local transactions. Google Sheets data is safe. Continue?")) {
