@@ -993,7 +993,7 @@ async function submitTx() {
   goTo("home");
 }
 
-function submitGoal() {
+async function submitGoal() {
   if (document.getElementById("btn-add-goal").disabled) return;
   const name   = document.getElementById("g-name").value.trim();
   const target = parseFloat(document.getElementById("g-target").value)||0;
@@ -1020,20 +1020,23 @@ function submitGoal() {
   };
   GOALS.push(newGoal);
   saveGoals();
-  showToast("Goal saved ✓");
+
+  if (settings.sheetsUrl && settings.autosync) {
+    setSyncStatus("syncing");
+    const ok = await postToSheets("add_goal", {
+      data: { name, target, saved, monthly, due, color: colorVal[0] }
+    });
+    if (ok) { showToast("Goal added + synced to Sheets ✓"); setSyncStatus("ok"); }
+    else    { showToast("Saved locally — Sheets sync failed"); setSyncStatus("error"); }
+  } else {
+    showToast("Goal saved ✓");
+  }
+
   setBtn("btn-add-goal", false, "Add Goal", "#22c55e");
   goTo("goals");
-  // Sync to Sheets in background — non-blocking
-  if (settings.sheetsUrl) {
-    postToSheets("add_goal", { data: { name, target, saved, monthly, due, color: colorVal[0] }})
-      .then(ok => {
-        if (ok) showToast("Goal synced to Sheets ✓");
-        else showToast("⚠️ Saved locally — Sheets sync failed");
-      });
-  }
 }
 
-function submitInst() {
+async function submitInst() {
   if (document.getElementById("btn-add-inst").disabled) return;
   const name    = document.getElementById("i-name").value.trim();
   const total   = parseFloat(document.getElementById("i-total").value)||0;
@@ -1059,14 +1062,20 @@ function submitInst() {
     color
   });
   saveInsts();
-  showToast("Instalment saved ✓");
+
+  if (settings.sheetsUrl && settings.autosync) {
+    setSyncStatus("syncing");
+    const ok = await postToSheets("add_installment", {
+      data: { name, category: cat, total, monthly, startDate, totalMonths: totalMo, monthsPaid: paid }
+    });
+    if (ok) { showToast("Instalment added + synced to Sheets ✓"); setSyncStatus("ok"); }
+    else    { showToast("Saved locally — Sheets sync failed"); setSyncStatus("error"); }
+  } else {
+    showToast("Instalment saved ✓");
+  }
+
   setBtn("btn-add-inst", false, "Add Instalment", "#6366f1");
   goTo("installments");
-  // Sync in background
-  if (settings.sheetsUrl) {
-    postToSheets("add_installment", { data: { name, category: cat, total, monthly, startDate, totalMonths: totalMo, monthsPaid: paid }})
-      .then(ok => { if (!ok) console.log("Instalment sync failed silently"); });
-  }
 }
 
 // ══ SYNC ══════════════════════════════════════════════════════
