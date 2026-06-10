@@ -225,9 +225,8 @@
   .form-field label { font-size: 10px; color: var(--slate-400); font-weight: 500; display: block; margin-bottom: 4px; }
   .form-field input, .form-field select { width: 100%; border: none; outline: none; font-size: 13px; font-weight: 500; color: var(--slate-900); background: none; font-family: inherit; appearance: none; }
   .form-field input[type="date"] { appearance: none; -webkit-appearance: none; color: var(--slate-900); min-height: 24px; cursor: pointer; }
-  .submit-btn { margin: 16px 20px 0; width: calc(100% - 40px); padding: 15px; background: var(--slate-900); color: var(--white); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 700; cursor: pointer; }
+  .submit-btn { margin: 16px 20px 0; width: calc(100% - 40px); padding: 15px; background: var(--slate-900); color: var(--white); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s, background 0.2s; }
   .submit-btn:active { opacity: 0.7; transform: scale(0.98); }
-  .submit-btn { transition: opacity 0.15s, transform 0.1s, background 0.2s; }
   .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .sync-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--slate-400); margin: 8px 20px 0; }
   .meta { font-size: 10px; color: var(--slate-400); }
@@ -403,7 +402,6 @@
 <div class="page" id="page-add">
   <div class="add-header"><div class="meta">New entry</div><div class="page-title" id="add-page-title">Add</div></div>
 
-  <!-- Entry type selector -->
   <div style="display:flex;gap:8px;margin:14px 20px 0;">
     <button class="entry-type-btn active" id="etbtn-tx" onclick="setEntryType('tx')">
       <div style="font-size:18px;margin-bottom:3px">💳</div>
@@ -621,7 +619,6 @@ const CAT_COLORS = ["#6366f1","#0d9488","#f59e0b","#ef4444","#22c55e","#8b5cf6",
 // ══ STATE ═════════════════════════════════════════════════════
 let txs = JSON.parse(localStorage.getItem("ft_txs") || "[]");
 let settings = JSON.parse(localStorage.getItem("ft_settings") || "{}");
-// Load saved goals & installments, merging with any hardcoded ones
 const _savedGoals = JSON.parse(localStorage.getItem("ft_goals") || "null");
 const _savedInsts = JSON.parse(localStorage.getItem("ft_insts") || "null");
 if (_savedGoals) GOALS.push(..._savedGoals);
@@ -630,41 +627,53 @@ let pinBuffer = "", pinMode = "enter", pinSetupFirst = "";
 let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
 
 if (!settings.pin || settings.pin.length !== 6) settings.pin = "123456";
-if (!settings.pinEnabled) settings.pinEnabled = true;
-if (!settings.autosync)   settings.autosync = true;
-if (!settings.notif)      settings.notif = false;
-if (!settings.sheetsUrl)  settings.sheetsUrl = "";
+if (settings.pinEnabled === undefined) settings.pinEnabled = true;
+if (settings.autosync   === undefined) settings.autosync   = true;
+if (!settings.notif)    settings.notif    = false;
+if (!settings.sheetsUrl) settings.sheetsUrl = "";
 saveSettings();
 
-function saveTxs()     { localStorage.setItem("ft_txs", JSON.stringify(txs)); }
-function saveGoals()   { localStorage.setItem("ft_goals", JSON.stringify(GOALS)); }
-function saveInsts()   { localStorage.setItem("ft_insts", JSON.stringify(INSTALLMENTS)); }
-function saveSettings(){ localStorage.setItem("ft_settings", JSON.stringify(settings)); }
-function fmt(n)        { return "฿" + Number(n).toLocaleString("th-TH", {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function saveTxs()      { localStorage.setItem("ft_txs",      JSON.stringify(txs)); }
+function saveGoals()    { localStorage.setItem("ft_goals",    JSON.stringify(GOALS)); }
+function saveInsts()    { localStorage.setItem("ft_insts",    JSON.stringify(INSTALLMENTS)); }
+function saveSettings() { localStorage.setItem("ft_settings", JSON.stringify(settings)); }
+function fmt(n)         { return "฿" + Number(n).toLocaleString("th-TH", {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
-// ══ STARTUP — auto-fetch if local is empty and URL exists ═════
+// ── Safe Gregorian date string from YYYY-MM-DD ────────────────
+// Avoids iOS Safari Buddhist Era (BE) bug — never uses Date locale APIs
+function safeDate(raw) {
+  if (!raw) return "—";
+  const parts = raw.split("-");
+  if (parts.length !== 3) return "—";
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(y) || isNaN(m) || m < 1 || m > 12) return "—";
+  return MO[m - 1] + " " + y;
+}
+
+// ══ TOAST ═════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2800);
+}
+
+// ══ STARTUP ═══════════════════════════════════════════════════
 async function startup() {
   setLoading("Starting up…", 10);
-
   if (txs.length === 0 && settings.sheetsUrl) {
     setLoading("Fetching your transactions from Google Sheets…", 30);
     const ok = await fetchFromSheets(true);
-    if (ok) {
-      setLoading("Transactions loaded ✓", 90);
-      await delay(600);
-    } else {
-      setLoading("Couldn't reach Sheets — working offline", 90);
-      await delay(800);
-    }
+    if (ok) { setLoading("Transactions loaded ✓", 90); await delay(600); }
+    else    { setLoading("Couldn't reach Sheets — working offline", 90); await delay(800); }
   } else {
     setLoading("Loading…", 80);
     await delay(300);
   }
-
   setLoading("Ready", 100);
   await delay(300);
   document.getElementById("loading-screen").classList.add("hidden");
-
   if (settings.pinEnabled) {
     document.getElementById("pin-screen").classList.remove("hidden");
     pinMode = "enter";
@@ -674,14 +683,13 @@ async function startup() {
     unlockApp();
   }
 }
-
 function setLoading(msg, pct) {
   document.getElementById("loading-msg").textContent = msg;
   document.getElementById("loading-bar").style.width = pct + "%";
 }
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ══ FETCH FROM SHEETS (pull direction) ════════════════════════
+// ══ FETCH FROM SHEETS ═════════════════════════════════════════
 async function fetchFromSheets(silent = false) {
   if (!settings.sheetsUrl) {
     if (!silent) { showToast("Add Sheets URL in Settings first"); goTo("settings"); }
@@ -692,19 +700,11 @@ async function fetchFromSheets(silent = false) {
     const res  = await fetch(settings.sheetsUrl + "?action=get_transactions");
     const data = await res.json();
     if (data.transactions && Array.isArray(data.transactions)) {
-      // Merge: keep local-only entries, replace rest with Sheets data
-      const sheetsIds = new Set(data.transactions.map(t => String(t.rowId)));
       const localOnly = txs.filter(t => !t.rowId && unsyncedIds.includes(t.id));
       txs = [
         ...data.transactions.map(t => ({
-          id:       t.rowId,
-          rowId:    t.rowId,
-          date:     t.date,
-          type:     t.type,
-          category: t.category,
-          desc:     t.description,
-          amount:   t.amount,
-          notes:    t.notes || ""
+          id: t.rowId, rowId: t.rowId, date: t.date, type: t.type,
+          category: t.category, desc: t.description, amount: t.amount, notes: t.notes || ""
         })),
         ...localOnly
       ];
@@ -715,8 +715,7 @@ async function fetchFromSheets(silent = false) {
         setSyncStatus("ok");
         showToast(`${data.transactions.length} transactions pulled ✓`);
         renderHome(); renderAnalytics();
-        document.getElementById("last-pull-label").textContent =
-          "Last pulled: just now";
+        document.getElementById("last-pull-label").textContent = "Last pulled: just now";
       }
       return true;
     }
@@ -852,7 +851,7 @@ function renderGoals() {
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="goal-pct" style="color:${g.color}">${pct}%</div>
-          <button onclick="deleteGoal(${idx})" style="background:none;border:none;cursor:pointer;font-size:14px;color:#94a3b8;padding:2px 4px;" title="Delete">🗑️</button>
+          <button onclick="deleteGoal(${idx})" style="background:none;border:none;cursor:pointer;font-size:14px;color:#94a3b8;padding:2px 4px;">🗑️</button>
         </div>
       </div>
       <div class="goal-track"><div class="goal-fill" style="width:${pct}%;background:${g.color}"></div></div>
@@ -860,22 +859,9 @@ function renderGoals() {
     </div>`;
   }).join("");
 }
-
-function deleteInst(idx) {
-  if (confirm(`Delete "${INSTALLMENTS[idx].name}"?`)) {
-    INSTALLMENTS.splice(idx, 1);
-    saveInsts();
-    renderInstallments();
-    showToast("Instalment deleted");
-  }
-}
-
 function deleteGoal(idx) {
   if (confirm(`Delete "${GOALS[idx].name}"?`)) {
-    GOALS.splice(idx, 1);
-    saveGoals();
-    renderGoals();
-    showToast("Goal deleted");
+    GOALS.splice(idx, 1); saveGoals(); renderGoals(); showToast("Goal deleted");
   }
 }
 
@@ -908,6 +894,11 @@ function renderInstallments() {
     const bal=Math.max(p.total-p.monthly*p.paid,0), isDone=rem<=0;
     return `<div class="inst-card"><div class="inst-top"><div><div class="inst-name">${p.icon} ${p.name}</div><div class="inst-cat">${p.cat}</div></div><div style="display:flex;align-items:center;gap:6px"><span class="inst-badge ${isDone?'badge-done':'badge-active'}">${isDone?'Paid off':'Active'}</span><button onclick="deleteInst(${idx})" style="background:none;border:none;cursor:pointer;font-size:14px;color:#94a3b8;padding:2px 4px;">🗑️</button></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:4px"><span>${p.paid} of ${p.total_mo} months paid</span><span style="font-weight:600;color:${p.color}">${pct}%</span></div><div class="inst-track"><div class="inst-fill" style="width:${pct}%;background:${p.color}"></div></div><div class="inst-stats"><div><div style="font-size:9px;color:#94a3b8">Monthly</div><div class="inst-stat-val">${fmt(p.monthly)}</div></div><div style="text-align:center"><div style="font-size:9px;color:#94a3b8">Months left</div><div class="inst-stat-val">${rem}</div></div><div style="text-align:right"><div style="font-size:9px;color:#94a3b8">Balance</div><div class="inst-stat-val" style="color:${isDone?'#94a3b8':'#ef4444'}">${fmt(bal)}</div></div></div></div>`;
   }).join("");
+}
+function deleteInst(idx) {
+  if (confirm(`Delete "${INSTALLMENTS[idx].name}"?`)) {
+    INSTALLMENTS.splice(idx, 1); saveInsts(); renderInstallments(); showToast("Instalment deleted");
+  }
 }
 
 // ══ ADD — ENTRY TYPE ══════════════════════════════════════════
@@ -963,7 +954,7 @@ function setupAdd() {
   document.getElementById("add-sync-label").textContent=hasUrl&&settings.autosync?"Will sync to Google Sheets":"Will save locally only";
 }
 
-// ── Button loading state helper ───────────────────────────────
+// ── Button helpers ────────────────────────────────────────────
 function setBtn(id, loading, label, bg) {
   const btn = document.getElementById(id);
   if (!btn) return;
@@ -972,7 +963,6 @@ function setBtn(id, loading, label, bg) {
   btn.textContent = loading ? "Saving…" : label;
   if (bg) btn.style.background = bg;
 }
-
 function flashBtn(id, label, bg) {
   const btn = document.getElementById(id);
   if (!btn) return;
@@ -980,61 +970,69 @@ function flashBtn(id, label, bg) {
   btn.style.opacity = "1";
   btn.textContent = "✓ Saved!";
   btn.style.background = "#22c55e";
-  setTimeout(() => {
-    btn.textContent = label;
-    btn.style.background = bg || "";
-  }, 1200);
+  setTimeout(() => { btn.textContent = label; btn.style.background = bg || ""; }, 1400);
 }
 
+// ══ SUBMIT: TRANSACTION ═══════════════════════════════════════
 async function submitTx() {
   if (document.getElementById("btn-add-tx").disabled) return;
-  const amount=parseFloat(document.getElementById("f-amount").value);
-  const desc=document.getElementById("f-desc").value.trim();
-  const date=document.getElementById("f-date").value;
-  const cat=document.getElementById("f-category").value;
-  const notes=document.getElementById("f-notes").value.trim();
-  if (!amount||amount<=0){showToast("Enter a valid amount");return;}
-  if (!desc){showToast("Enter a description");return;}
+  const amount = parseFloat(document.getElementById("f-amount").value);
+  const desc   = document.getElementById("f-desc").value.trim();
+  const date   = document.getElementById("f-date").value;
+  const cat    = document.getElementById("f-category").value;
+  const notes  = document.getElementById("f-notes").value.trim();
+  if (!amount||amount<=0) { showToast("Enter a valid amount"); return; }
+  if (!desc)              { showToast("Enter a description"); return; }
+
   setBtn("btn-add-tx", true, "Add Transaction");
-  const tx={id:Date.now(),date,type:currentType,category:cat,desc,amount,notes};
+  const tx = {id:Date.now(), date, type:currentType, category:cat, desc, amount, notes};
   txs.push(tx); saveTxs();
-  if (settings.sheetsUrl&&settings.autosync) {
+
+  if (settings.sheetsUrl && settings.autosync) {
     setSyncStatus("syncing");
-    const syncPromise = postToSheets("add_transaction",{data:{...tx}});
-    const timeout = new Promise(r => setTimeout(() => r(false), 6000));
-    const ok = await Promise.race([syncPromise, timeout]);
-    if (ok){showToast("Added + synced to Sheets ✓");setSyncStatus("ok");}
-    else{unsyncedIds.push(tx.id);localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds));showToast("Saved locally — will sync later");setSyncStatus("error");}
-  } else { showToast("Transaction added ✓"); }
+    const syncPromise = postToSheets("add_transaction", {data:{...tx}});
+    const timeout     = new Promise(r => setTimeout(() => r(false), 6000));
+    const ok          = await Promise.race([syncPromise, timeout]);
+    if (ok) { showToast("Added + synced to Sheets ✓"); setSyncStatus("ok"); }
+    else    {
+      unsyncedIds.push(tx.id);
+      localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
+      showToast("Saved locally — will sync later");
+      setSyncStatus("error");
+    }
+  } else {
+    showToast("Transaction added ✓");
+  }
+
   flashBtn("btn-add-tx", "Add Transaction", "#0f172a");
   await delay(900);
   goTo("home");
 }
 
+// ══ SUBMIT: GOAL ══════════════════════════════════════════════
 async function submitGoal() {
   if (document.getElementById("btn-add-goal").disabled) return;
-  const name   = document.getElementById("g-name").value.trim();
-  const target = parseFloat(document.getElementById("g-target").value)||0;
-  const saved  = parseFloat(document.getElementById("g-saved").value)||0;
-  const monthly= parseFloat(document.getElementById("g-monthly").value)||0;
-  const dueRaw = document.getElementById("g-due").value;
-  // Force Gregorian calendar explicitly to avoid Thai Buddhist Era
-  const due    = dueRaw ? (()=>{ const [y,m]=dueRaw.split("-").map(Number); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m-1]+" "+y; })() : "—";
+  const name     = document.getElementById("g-name").value.trim();
+  const target   = parseFloat(document.getElementById("g-target").value)||0;
+  const saved    = parseFloat(document.getElementById("g-saved").value)||0;
+  const monthly  = parseFloat(document.getElementById("g-monthly").value)||0;
+  const dueRaw   = document.getElementById("g-due").value;
+  const due      = safeDate(dueRaw); // ← iOS-safe, no Buddhist Era
   const colorVal = document.getElementById("g-color").value.split(",");
 
-  if (!name){showToast("Enter a goal name");return;}
-  if (!target||target<=0){showToast("Enter a target amount");return;}
+  if (!name)             { showToast("Enter a goal name"); return; }
+  if (!target||target<=0){ showToast("Enter a target amount"); return; }
 
   setBtn("btn-add-goal", true, "Add Goal", "#22c55e");
 
   const newGoal = {
     id:    Date.now(),
     icon:  name.match(/^\p{Emoji}/u)?.[0] || "🎯",
-    name:  name.replace(/^\p{Emoji}\s*/u,""),
+    name:  name.replace(/^\p{Emoji}\s*/u, ""),
     saved, target, monthly,
     color: colorVal[0],
-    bg:    colorVal[1],
-    due:   due||"—"
+    bg:    colorVal[1] || "#f1f5f9",
+    due:   due
   };
   GOALS.push(newGoal);
   saveGoals();
@@ -1044,10 +1042,10 @@ async function submitGoal() {
     const syncPromise = postToSheets("add_goal", {
       data: { name, target, saved, monthly, due, color: colorVal[0] }
     });
-    const timeout = new Promise(r => setTimeout(() => r(false), 8000));
-    const ok = await Promise.race([syncPromise, timeout]);
+    const timeout = new Promise(r => setTimeout(() => r(false), 6000));
+    const ok      = await Promise.race([syncPromise, timeout]);
     if (ok) { showToast("Goal added + synced to Sheets ✓"); setSyncStatus("ok"); }
-    else    { showToast("Saved locally — sync failed or timed out"); setSyncStatus("error"); }
+    else    { showToast("Saved locally — sync timed out"); setSyncStatus("error"); }
   } else {
     showToast("Goal saved ✓");
   }
@@ -1057,6 +1055,7 @@ async function submitGoal() {
   goTo("goals");
 }
 
+// ══ SUBMIT: INSTALMENT ════════════════════════════════════════
 async function submitInst() {
   if (document.getElementById("btn-add-inst").disabled) return;
   const name    = document.getElementById("i-name").value.trim();
@@ -1067,16 +1066,16 @@ async function submitInst() {
   const cat     = document.getElementById("i-category").value;
   const color   = document.getElementById("i-color").value;
 
-  if (!name){showToast("Enter an item name");return;}
-  if (!total||total<=0){showToast("Enter a total amount");return;}
-  if (!monthly||monthly<=0){showToast("Enter monthly payment");return;}
-  if (!totalMo||totalMo<=0){showToast("Enter total months");return;}
+  if (!name)              { showToast("Enter an item name"); return; }
+  if (!total||total<=0)   { showToast("Enter a total amount"); return; }
+  if (!monthly||monthly<=0){ showToast("Enter monthly payment"); return; }
+  if (!totalMo||totalMo<=0){ showToast("Enter total months"); return; }
 
   setBtn("btn-add-inst", true, "Add Instalment", "#6366f1");
   const startDate = document.getElementById("i-start").value;
   INSTALLMENTS.push({
     icon:     name.match(/^\p{Emoji}/u)?.[0] || "📦",
-    name:     name.replace(/^\p{Emoji}\s*/u,""),
+    name:     name.replace(/^\p{Emoji}\s*/u, ""),
     cat, total, monthly,
     paid:     Math.min(paid, totalMo),
     total_mo: totalMo,
@@ -1089,10 +1088,10 @@ async function submitInst() {
     const syncPromise = postToSheets("add_installment", {
       data: { name, category: cat, total, monthly, startDate, totalMonths: totalMo, monthsPaid: paid }
     });
-    const timeout = new Promise(r => setTimeout(() => r(false), 8000));
-    const ok = await Promise.race([syncPromise, timeout]);
+    const timeout = new Promise(r => setTimeout(() => r(false), 6000));
+    const ok      = await Promise.race([syncPromise, timeout]);
     if (ok) { showToast("Instalment added + synced to Sheets ✓"); setSyncStatus("ok"); }
-    else    { showToast("Saved locally — sync failed or timed out"); setSyncStatus("error"); }
+    else    { showToast("Saved locally — sync timed out"); setSyncStatus("error"); }
   } else {
     showToast("Instalment saved ✓");
   }
@@ -1106,104 +1105,104 @@ async function submitInst() {
 async function postToSheets(action, payload) {
   if (!settings.sheetsUrl) return false;
   try {
-    const res=await fetch(settings.sheetsUrl,{method:"POST",body:JSON.stringify({action,...payload}),headers:{"Content-Type":"application/json"}});
-    const data=await res.json(); return !data.error;
+    const res  = await fetch(settings.sheetsUrl, {
+      method: "POST",
+      body: JSON.stringify({action, ...payload}),
+      headers: {"Content-Type":"application/json"}
+    });
+    const data = await res.json();
+    return !data.error;
   } catch { return false; }
 }
 async function manualSync() {
-  if (!settings.sheetsUrl){showToast("Add Sheets URL in Settings first");goTo("settings");return;}
-  const pending=txs.filter(t=>unsyncedIds.includes(t.id));
-  if (!pending.length){showToast("Everything is already synced ✓");return;}
+  if (!settings.sheetsUrl) { showToast("Add Sheets URL in Settings first"); goTo("settings"); return; }
+  const pending = txs.filter(t => unsyncedIds.includes(t.id));
+  if (!pending.length) { showToast("Everything is already synced ✓"); return; }
   setSyncStatus("syncing"); showToast(`Syncing ${pending.length} transactions…`);
-  const ok=await postToSheets("add_transactions_bulk",{data:pending});
-  if (ok){
-    unsyncedIds=[];localStorage.setItem("ft_unsynced",JSON.stringify([]));
-    settings.lastSync=new Date().toISOString();saveSettings();setSyncStatus("ok");
+  const ok = await postToSheets("add_transactions_bulk", {data: pending});
+  if (ok) {
+    unsyncedIds = []; localStorage.setItem("ft_unsynced", JSON.stringify([]));
+    settings.lastSync = new Date().toISOString(); saveSettings(); setSyncStatus("ok");
     showToast(`${pending.length} transactions synced ✓`);
-    document.getElementById("last-sync-label").textContent="Last pushed: just now";
-  } else {setSyncStatus("error");showToast("Sync failed — check your URL");}
+    document.getElementById("last-sync-label").textContent = "Last pushed: just now";
+  } else { setSyncStatus("error"); showToast("Sync failed — check your URL"); }
 }
 async function testConnection() {
-  const url=document.getElementById("sheets-url").value.trim();
-  if (!url){document.getElementById("conn-status").textContent="Enter a URL first";return;}
-  settings.sheetsUrl=url;saveSettings();
-  document.getElementById("conn-status").textContent="Testing…";
+  const url = document.getElementById("sheets-url").value.trim();
+  if (!url) { document.getElementById("conn-status").textContent = "Enter a URL first"; return; }
+  settings.sheetsUrl = url; saveSettings();
+  document.getElementById("conn-status").textContent = "Testing…";
   try {
-    const res=await fetch(url+"?action=ping");
-    const data=await res.json();
-    if (data.status==="ok"){document.getElementById("conn-status").textContent="✓ Connected — "+data.timestamp;setSyncStatus("ok");}
-    else{document.getElementById("conn-status").textContent="✗ Unexpected response";}
-  } catch {document.getElementById("conn-status").textContent="✗ Connection failed — check URL";}
+    const res  = await fetch(url + "?action=ping");
+    const data = await res.json();
+    if (data.status === "ok") {
+      document.getElementById("conn-status").textContent = "✓ Connected — " + data.timestamp;
+      setSyncStatus("ok");
+    } else {
+      document.getElementById("conn-status").textContent = "✗ Unexpected response";
+    }
+  } catch { document.getElementById("conn-status").textContent = "✗ Connection failed — check URL"; }
 }
 function setSyncStatus(status) {
-  const bar=document.getElementById("sync-bar"),dot=document.getElementById("sync-dot"),msg=document.getElementById("sync-msg");
-  if (!settings.sheetsUrl){bar.classList.add("hidden");return;}
-  bar.classList.remove("hidden","error");dot.classList.remove("pulse","red");
-  if (status==="ok"){msg.textContent="Synced with Google Sheets";}
-  else if (status==="syncing"){dot.classList.add("pulse");msg.textContent="Syncing…";}
-  else if (status==="error"){bar.classList.add("error");dot.classList.add("red");msg.textContent="Sync failed — tap to retry";}
+  const bar=document.getElementById("sync-bar"), dot=document.getElementById("sync-dot"), msg=document.getElementById("sync-msg");
+  if (!settings.sheetsUrl) { bar.classList.add("hidden"); return; }
+  bar.classList.remove("hidden","error"); dot.classList.remove("pulse","red");
+  if (status==="ok")      { msg.textContent = "Synced with Google Sheets"; }
+  else if (status==="syncing") { dot.classList.add("pulse"); msg.textContent = "Syncing…"; }
+  else if (status==="error")   { bar.classList.add("error"); dot.classList.add("red"); msg.textContent = "Sync failed — tap to retry"; }
 }
-function updateSyncBar(){setSyncStatus(unsyncedIds.length?"error":"ok");}
+function updateSyncBar() { setSyncStatus(unsyncedIds.length ? "error" : "ok"); }
 
 // ══ SETTINGS ══════════════════════════════════════════════════
 function renderSettings() {
-  document.getElementById("sheets-url").value=settings.sheetsUrl||"";
-  document.getElementById("toggle-autosync").className="toggle"+(settings.autosync?" on":"");
-  document.getElementById("toggle-pin").className="toggle"+(settings.pinEnabled?" on":"");
-  document.getElementById("toggle-notif").className="toggle"+(settings.notif?" on":"");
-  if (settings.lastSync) document.getElementById("last-sync-label").textContent="Last pushed: "+new Date(settings.lastSync).toLocaleString();
-  if (settings.lastPull) document.getElementById("last-pull-label").textContent="Last pulled: "+new Date(settings.lastPull).toLocaleString();
-  if (Notification.permission==="granted") document.getElementById("notif-status").textContent="✓ Notifications enabled";
+  document.getElementById("sheets-url").value = settings.sheetsUrl || "";
+  document.getElementById("toggle-autosync").className = "toggle" + (settings.autosync  ? " on" : "");
+  document.getElementById("toggle-pin").className      = "toggle" + (settings.pinEnabled ? " on" : "");
+  document.getElementById("toggle-notif").className    = "toggle" + (settings.notif      ? " on" : "");
+  if (settings.lastSync) document.getElementById("last-sync-label").textContent = "Last pushed: " + new Date(settings.lastSync).toLocaleString();
+  if (settings.lastPull) document.getElementById("last-pull-label").textContent = "Last pulled: " + new Date(settings.lastPull).toLocaleString();
+  if (Notification.permission === "granted") document.getElementById("notif-status").textContent = "✓ Notifications enabled";
 }
 function toggleSetting(key) {
-  if (key==="autosync") settings.autosync=!settings.autosync;
-  if (key==="pin")      settings.pinEnabled=!settings.pinEnabled;
-  if (key==="notif")    {settings.notif=!settings.notif;if(settings.notif)requestNotifPermission();}
-  saveSettings();renderSettings();
+  if (key==="autosync") settings.autosync   = !settings.autosync;
+  if (key==="pin")      settings.pinEnabled = !settings.pinEnabled;
+  if (key==="notif")    { settings.notif = !settings.notif; if (settings.notif) requestNotifPermission(); }
+  saveSettings(); renderSettings();
 }
 async function requestNotifPermission() {
-  if (!("Notification" in window)){document.getElementById("notif-status").textContent="Not supported";return;}
-  const perm=await Notification.requestPermission();
-  document.getElementById("notif-status").textContent=perm==="granted"?"✓ Notifications enabled":"✗ Permission denied";
+  if (!("Notification" in window)) { document.getElementById("notif-status").textContent = "Not supported"; return; }
+  const perm = await Notification.requestPermission();
+  document.getElementById("notif-status").textContent = perm === "granted" ? "✓ Notifications enabled" : "✗ Permission denied";
 }
 function exportData() {
-  const blob=new Blob([JSON.stringify({transactions:txs,exportedAt:new Date().toISOString()},null,2)],{type:"application/json"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="fintrack_export.json";a.click();
+  const blob = new Blob([JSON.stringify({transactions:txs, exportedAt:new Date().toISOString()},null,2)], {type:"application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "fintrack_export.json"; a.click();
 }
 function confirmClearGoals() {
   if (confirm("Delete all goals from the app? This does not affect Google Sheets.")) {
-    GOALS.length = 0;
-    localStorage.removeItem("ft_goals");
-    showToast("Goals cleared");
-    goTo("goals");
+    GOALS.length = 0; localStorage.removeItem("ft_goals"); showToast("Goals cleared"); goTo("goals");
   }
 }
 function confirmClearInsts() {
   if (confirm("Delete all instalments from the app? This does not affect Google Sheets.")) {
-    INSTALLMENTS.length = 0;
-    localStorage.removeItem("ft_insts");
-    showToast("Instalments cleared");
-    goTo("installments");
+    INSTALLMENTS.length = 0; localStorage.removeItem("ft_insts"); showToast("Instalments cleared"); goTo("installments");
   }
 }
 function confirmClear() {
   if (confirm("This will delete ALL local transactions. Google Sheets data is safe. Continue?")) {
-    localStorage.removeItem("ft_txs");localStorage.removeItem("ft_unsynced");
-    txs=[];unsyncedIds=[];saveTxs();showToast("Local data cleared");goTo("home");
+    localStorage.removeItem("ft_txs"); localStorage.removeItem("ft_unsynced");
+    txs = []; unsyncedIds = []; saveTxs(); showToast("Local data cleared"); goTo("home");
   }
 }
-document.getElementById("sheets-url").addEventListener("blur",function(){settings.sheetsUrl=this.value.trim();saveSettings();updateSyncBar();});
-document.querySelectorAll(".period-pill").forEach(p=>p.addEventListener("click",function(){
-  document.querySelectorAll(".period-pill").forEach(x=>x.classList.remove("active"));this.classList.add("active");
+
+document.getElementById("sheets-url").addEventListener("blur", function(){
+  settings.sheetsUrl = this.value.trim(); saveSettings(); updateSyncBar();
+});
+document.querySelectorAll(".period-pill").forEach(p => p.addEventListener("click", function(){
+  document.querySelectorAll(".period-pill").forEach(x => x.classList.remove("active"));
+  this.classList.add("active");
 }));
 
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2800);
-}
-  
 // ══ INIT ══════════════════════════════════════════════════════
 startup();
 </script>
