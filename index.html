@@ -451,7 +451,7 @@
         <button class="toggle on" id="toggle-pin" onclick="toggleSetting('pin')"></button>
       </div>
       <div class="settings-row" onclick="changePin()">
-        <div><div class="settings-row-label">Change PIN</div><div class="settings-row-sub">Update your 4-digit PIN</div></div>
+        <div><div class="settings-row-label">Change PIN</div><div class="settings-row-sub">Update your 6-digit PIN</div></div>
         <div class="settings-row-right">→</div>
       </div>
     </div>
@@ -534,7 +534,7 @@ let currentType = "Expense";
 let pinBuffer = "", pinMode = "enter", pinSetupFirst = "";
 let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
 
-if (!settings.pin)        settings.pin = "1234";
+if (!settings.pin || settings.pin.length !== 6) settings.pin = "123456";
 if (!settings.pinEnabled) settings.pinEnabled = true;
 if (!settings.autosync)   settings.autosync = true;
 if (!settings.notif)      settings.notif = false;
@@ -674,7 +674,7 @@ function changePin() {
   document.getElementById("pin-screen").classList.remove("hidden");
   pinBuffer = ""; pinMode = "setup"; pinSetupFirst = "";
   document.getElementById("pin-sub").textContent = "Set a new PIN";
-  document.getElementById("pin-setup-hint").textContent = "Choose a 4-digit PIN";
+  document.getElementById("pin-setup-hint").textContent = "Choose a 6-digit PIN";
   document.getElementById("pin-error").textContent = ""; updatePinDots();
 }
 
