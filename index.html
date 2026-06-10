@@ -226,7 +226,9 @@
   .form-field input, .form-field select { width: 100%; border: none; outline: none; font-size: 13px; font-weight: 500; color: var(--slate-900); background: none; font-family: inherit; appearance: none; }
   .form-field input[type="date"] { appearance: none; -webkit-appearance: none; color: var(--slate-900); min-height: 24px; cursor: pointer; }
   .submit-btn { margin: 16px 20px 0; width: calc(100% - 40px); padding: 15px; background: var(--slate-900); color: var(--white); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 700; cursor: pointer; }
-  .submit-btn:active { opacity: 0.9; }
+  .submit-btn:active { opacity: 0.7; transform: scale(0.98); }
+  .submit-btn { transition: opacity 0.15s, transform 0.1s, background 0.2s; }
+  .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .sync-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--slate-400); margin: 8px 20px 0; }
   .meta { font-size: 10px; color: var(--slate-400); }
   .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--slate-900); }
@@ -971,6 +973,19 @@ function setBtn(id, loading, label, bg) {
   if (bg) btn.style.background = bg;
 }
 
+function flashBtn(id, label, bg) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = false;
+  btn.style.opacity = "1";
+  btn.textContent = "✓ Saved!";
+  btn.style.background = "#22c55e";
+  setTimeout(() => {
+    btn.textContent = label;
+    btn.style.background = bg || "";
+  }, 1200);
+}
+
 async function submitTx() {
   if (document.getElementById("btn-add-tx").disabled) return;
   const amount=parseFloat(document.getElementById("f-amount").value);
@@ -989,7 +1004,8 @@ async function submitTx() {
     if (ok){showToast("Added + synced to Sheets ✓");setSyncStatus("ok");}
     else{unsyncedIds.push(tx.id);localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds));showToast("Saved locally — will sync later");setSyncStatus("error");}
   } else { showToast("Transaction added ✓"); }
-  setBtn("btn-add-tx", false, "Add Transaction");
+  flashBtn("btn-add-tx", "Add Transaction", "#0f172a");
+  await delay(900);
   goTo("home");
 }
 
@@ -1001,7 +1017,7 @@ async function submitGoal() {
   const monthly= parseFloat(document.getElementById("g-monthly").value)||0;
   const dueRaw = document.getElementById("g-due").value;
   // Force Gregorian calendar explicitly to avoid Thai Buddhist Era
-  const due    = dueRaw ? new Date(dueRaw + "T00:00:00").toLocaleDateString("en-US", {month:"short", year:"numeric", calendar:"gregory"}) : "—";
+  const due    = dueRaw ? new Date(dueRaw + "T00:00:00").toLocaleDateString("en-US-u-ca-gregory", {month:"short", year:"numeric"}) : "—";
   const colorVal = document.getElementById("g-color").value.split(",");
 
   if (!name){showToast("Enter a goal name");return;}
@@ -1023,16 +1039,19 @@ async function submitGoal() {
 
   if (settings.sheetsUrl && settings.autosync) {
     setSyncStatus("syncing");
-    const ok = await postToSheets("add_goal", {
+    const syncPromise = postToSheets("add_goal", {
       data: { name, target, saved, monthly, due, color: colorVal[0] }
     });
+    const timeout = new Promise(r => setTimeout(() => r(false), 8000));
+    const ok = await Promise.race([syncPromise, timeout]);
     if (ok) { showToast("Goal added + synced to Sheets ✓"); setSyncStatus("ok"); }
-    else    { showToast("Saved locally — Sheets sync failed"); setSyncStatus("error"); }
+    else    { showToast("Saved locally — sync failed or timed out"); setSyncStatus("error"); }
   } else {
     showToast("Goal saved ✓");
   }
 
-  setBtn("btn-add-goal", false, "Add Goal", "#22c55e");
+  flashBtn("btn-add-goal", "Add Goal", "#22c55e");
+  await delay(900);
   goTo("goals");
 }
 
@@ -1065,16 +1084,19 @@ async function submitInst() {
 
   if (settings.sheetsUrl && settings.autosync) {
     setSyncStatus("syncing");
-    const ok = await postToSheets("add_installment", {
+    const syncPromise = postToSheets("add_installment", {
       data: { name, category: cat, total, monthly, startDate, totalMonths: totalMo, monthsPaid: paid }
     });
+    const timeout = new Promise(r => setTimeout(() => r(false), 8000));
+    const ok = await Promise.race([syncPromise, timeout]);
     if (ok) { showToast("Instalment added + synced to Sheets ✓"); setSyncStatus("ok"); }
-    else    { showToast("Saved locally — Sheets sync failed"); setSyncStatus("error"); }
+    else    { showToast("Saved locally — sync failed or timed out"); setSyncStatus("error"); }
   } else {
     showToast("Instalment saved ✓");
   }
 
-  setBtn("btn-add-inst", false, "Add Instalment", "#6366f1");
+  flashBtn("btn-add-inst", "Add Instalment", "#6366f1");
+  await delay(900);
   goTo("installments");
 }
 
