@@ -632,16 +632,16 @@ async function fetchFromSheets(silent = false) {
 
 // ══ PIN ═══════════════════════════════════════════════════════
 function pinPress(digit) {
-  if (pinBuffer.length >= 4) return;
+  if (pinBuffer.length >= 6) return;
   pinBuffer += digit; updatePinDots();
-  if (pinBuffer.length === 4) setTimeout(() => checkPin(), 120);
+  if (pinBuffer.length === 6) setTimeout(() => checkPin(), 120);
 }
 function pinDel() {
   pinBuffer = pinBuffer.slice(0,-1); updatePinDots();
   document.getElementById("pin-error").textContent = "";
 }
 function updatePinDots() {
-  for (let i=0;i<4;i++) document.getElementById(`d${i}`).classList.toggle("filled", i<pinBuffer.length);
+  for (let i=0;i<6;i++) document.getElementById(`d${i}`).classList.toggle("filled", i<pinBuffer.length);
 }
 function checkPin() {
   if (pinMode === "enter") {
