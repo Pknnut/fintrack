@@ -199,6 +199,17 @@
   .settings-btn { padding: 12px 16px; background: none; border: none; color: var(--teal); font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; width: 100%; }
   .settings-btn.danger { color: var(--red); }
 
+  /* ── ENTRY TYPE SELECTOR ── */
+  .entry-type-btn {
+    flex: 1; padding: 12px 6px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--slate-200); background: var(--white);
+    color: var(--slate-400); cursor: pointer; text-align: center;
+    transition: all 0.15s;
+  }
+  .entry-type-btn.active {
+    border-color: var(--slate-900); background: var(--slate-900); color: var(--white);
+  }
+
   /* ── ADD ── */
   .add-header { padding: 24px 20px 0; }
   .type-toggle { margin: 14px 20px 0; display: flex; background: var(--slate-100); border-radius: 12px; padding: 4px; }
@@ -387,26 +398,101 @@
 
 <!-- ══ ADD ════════════════════════════════════════════════════ -->
 <div class="page" id="page-add">
-  <div class="add-header"><div class="meta">Add transaction</div><div class="page-title">New Entry</div></div>
-  <div class="type-toggle">
-    <button class="type-btn active-exp" id="btn-expense" onclick="setType('Expense')">Expense</button>
-    <button class="type-btn" id="btn-income" onclick="setType('Income')">Income</button>
+  <div class="add-header"><div class="meta">New entry</div><div class="page-title" id="add-page-title">Add</div></div>
+
+  <!-- Entry type selector -->
+  <div style="display:flex;gap:8px;margin:14px 20px 0;">
+    <button class="entry-type-btn active" id="etbtn-tx" onclick="setEntryType('tx')">
+      <div style="font-size:18px;margin-bottom:3px">💳</div>
+      <div style="font-size:10px;font-weight:600">Transaction</div>
+    </button>
+    <button class="entry-type-btn" id="etbtn-goal" onclick="setEntryType('goal')">
+      <div style="font-size:18px;margin-bottom:3px">🎯</div>
+      <div style="font-size:10px;font-weight:600">Goal</div>
+    </button>
+    <button class="entry-type-btn" id="etbtn-inst" onclick="setEntryType('inst')">
+      <div style="font-size:18px;margin-bottom:3px">📅</div>
+      <div style="font-size:10px;font-weight:600">Instalment</div>
+    </button>
   </div>
-  <div class="amount-input-wrap">
-    <div class="amount-label">AMOUNT (THB)</div>
-    <input class="amount-input" id="f-amount" type="number" min="0" placeholder="0">
+
+  <!-- ── TRANSACTION FORM ── -->
+  <div id="form-tx">
+    <div class="type-toggle">
+      <button class="type-btn active-exp" id="btn-expense" onclick="setType('Expense')">Expense</button>
+      <button class="type-btn" id="btn-income" onclick="setType('Income')">Income</button>
+    </div>
+    <div class="amount-input-wrap">
+      <div class="amount-label">AMOUNT (THB)</div>
+      <input class="amount-input" id="f-amount" type="number" min="0" placeholder="0">
+    </div>
+    <div class="form-section">
+      <div class="form-field"><label>CATEGORY</label><select id="f-category"></select></div>
+      <div class="form-field"><label>DESCRIPTION</label><input id="f-desc" type="text" placeholder="e.g. Grab delivery"></div>
+      <div class="form-field"><label>DATE</label><input id="f-date" type="date"></div>
+      <div class="form-field"><label>NOTES (optional)</label><input id="f-notes" type="text" placeholder="Optional note"></div>
+    </div>
+    <div class="sync-indicator">
+      <div class="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--slate-300);" id="add-sync-dot"></div>
+      <span id="add-sync-label">Will save locally only</span>
+    </div>
+    <button class="submit-btn" onclick="submitTx()">Add Transaction</button>
   </div>
-  <div class="form-section">
-    <div class="form-field"><label>CATEGORY</label><select id="f-category"></select></div>
-    <div class="form-field"><label>DESCRIPTION</label><input id="f-desc" type="text" placeholder="e.g. Grab delivery"></div>
-    <div class="form-field"><label>DATE</label><input id="f-date" type="date"></div>
-    <div class="form-field"><label>NOTES (optional)</label><input id="f-notes" type="text" placeholder="Optional note"></div>
+
+  <!-- ── GOAL FORM ── -->
+  <div id="form-goal" style="display:none">
+    <div class="amount-input-wrap">
+      <div class="amount-label">TARGET AMOUNT (THB)</div>
+      <input class="amount-input" id="g-target" type="number" min="0" placeholder="0">
+    </div>
+    <div class="form-section">
+      <div class="form-field"><label>GOAL NAME</label><input id="g-name" type="text" placeholder="e.g. ✈️ Japan trip"></div>
+      <div class="form-field"><label>AMOUNT SAVED SO FAR (฿)</label><input id="g-saved" type="number" min="0" placeholder="0"></div>
+      <div class="form-field"><label>MONTHLY CONTRIBUTION (฿)</label><input id="g-monthly" type="number" min="0" placeholder="0"></div>
+      <div class="form-field"><label>TARGET DATE</label><input id="g-due" type="text" placeholder="e.g. Dec 2027"></div>
+      <div class="form-field">
+        <label>COLOR</label>
+        <select id="g-color">
+          <option value="#22c55e,#ecfdf5">🟢 Green</option>
+          <option value="#6366f1,#eef2ff">🟣 Indigo</option>
+          <option value="#f59e0b,#fffbeb">🟡 Amber</option>
+          <option value="#0d9488,#ccfbf1">🩵 Teal</option>
+          <option value="#ef4444,#fef2f2">🔴 Red</option>
+          <option value="#8b5cf6,#f5f3ff">💜 Purple</option>
+        </select>
+      </div>
+    </div>
+    <button class="submit-btn" style="background:#22c55e" onclick="submitGoal()">Add Goal</button>
   </div>
-  <div class="sync-indicator">
-    <div class="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--slate-300);" id="add-sync-dot"></div>
-    <span id="add-sync-label">Will save locally only</span>
+
+  <!-- ── INSTALMENT FORM ── -->
+  <div id="form-inst" style="display:none">
+    <div class="amount-input-wrap">
+      <div class="amount-label">TOTAL AMOUNT (THB)</div>
+      <input class="amount-input" id="i-total" type="number" min="0" placeholder="0">
+    </div>
+    <div class="form-section">
+      <div class="form-field"><label>ITEM NAME</label><input id="i-name" type="text" placeholder="e.g. 📱 iPhone 16"></div>
+      <div class="form-field"><label>CATEGORY</label><select id="i-category"></select></div>
+      <div class="form-field"><label>MONTHLY PAYMENT (฿)</label><input id="i-monthly" type="number" min="0" placeholder="0"></div>
+      <div class="form-field"><label>START DATE</label><input id="i-start" type="date"></div>
+      <div class="form-field"><label>TOTAL MONTHS</label><input id="i-total-mo" type="number" min="1" placeholder="e.g. 12"></div>
+      <div class="form-field"><label>MONTHS ALREADY PAID</label><input id="i-paid" type="number" min="0" placeholder="0 if new"></div>
+      <div class="form-field">
+        <label>COLOR</label>
+        <select id="i-color">
+          <option value="#6366f1">🟣 Indigo</option>
+          <option value="#0d9488">🩵 Teal</option>
+          <option value="#f59e0b">🟡 Amber</option>
+          <option value="#22c55e">🟢 Green</option>
+          <option value="#8b5cf6">💜 Purple</option>
+          <option value="#ef4444">🔴 Red</option>
+        </select>
+      </div>
+    </div>
+    <button class="submit-btn" style="background:#6366f1" onclick="submitInst()">Add Instalment</button>
   </div>
-  <button class="submit-btn" onclick="submitTx()">Add Transaction</button>
+
   <div class="spacer"></div>
 </div>
 
@@ -516,8 +602,8 @@ const EXPENSE_CATS = [
   {e:"🏦",n:"Loan Repayment"},{e:"💊",n:"Pharmacy"},{e:"🛡️",n:"Insurance"},
   {e:"📦",n:"Other Expense"}
 ];
-const GOALS = [];
-const INSTALLMENTS = [
+let GOALS = [];
+let INSTALLMENTS = [
   {icon:"📚",name:"Jeducations",cat:"💳 Credit Card",total:7711.50,monthly:771.15,paid:9,total_mo:10,color:"#6366f1"},
   {icon:"🏍️",name:"Bike (1)",cat:"💳 Credit Card",total:3218.80,monthly:321.88,paid:4,total_mo:10,color:"#0d9488"},
   {icon:"🏍️",name:"Bike (2)",cat:"💳 Credit Card",total:9556.50,monthly:955.65,paid:4,total_mo:10,color:"#f59e0b"},
@@ -530,7 +616,11 @@ const CAT_COLORS = ["#6366f1","#0d9488","#f59e0b","#ef4444","#22c55e","#8b5cf6",
 // ══ STATE ═════════════════════════════════════════════════════
 let txs = JSON.parse(localStorage.getItem("ft_txs") || "[]");
 let settings = JSON.parse(localStorage.getItem("ft_settings") || "{}");
-let currentType = "Expense";
+// Load saved goals & installments, merging with any hardcoded ones
+const _savedGoals = JSON.parse(localStorage.getItem("ft_goals") || "null");
+const _savedInsts = JSON.parse(localStorage.getItem("ft_insts") || "null");
+if (_savedGoals) GOALS.push(..._savedGoals);
+if (_savedInsts) INSTALLMENTS.push(..._savedInsts);
 let pinBuffer = "", pinMode = "enter", pinSetupFirst = "";
 let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
 
@@ -542,8 +632,10 @@ if (!settings.sheetsUrl)  settings.sheetsUrl = "";
 saveSettings();
 
 function saveTxs()     { localStorage.setItem("ft_txs", JSON.stringify(txs)); }
+function saveGoals()   { localStorage.setItem("ft_goals", JSON.stringify(GOALS)); }
+function saveInsts()   { localStorage.setItem("ft_insts", JSON.stringify(INSTALLMENTS)); }
 function saveSettings(){ localStorage.setItem("ft_settings", JSON.stringify(settings)); }
-function fmt(n) { return "฿" + Number(n).toLocaleString("th-TH", {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+function fmt(n)        { return "฿" + Number(n).toLocaleString("th-TH", {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
 // ══ STARTUP — auto-fetch if local is empty and URL exists ═════
 async function startup() {
@@ -779,6 +871,19 @@ function renderInstallments() {
   }).join("");
 }
 
+// ══ ADD — ENTRY TYPE ══════════════════════════════════════════
+let currentEntryType = "tx";
+
+function setEntryType(type) {
+  currentEntryType = type;
+  ["tx","goal","inst"].forEach(t => {
+    document.getElementById(`etbtn-${t}`).classList.toggle("active", t===type);
+    document.getElementById(`form-${t}`).style.display = t===type ? "block" : "none";
+  });
+  const titles = {tx:"New Transaction", goal:"New Goal", inst:"New Instalment"};
+  document.getElementById("add-page-title").textContent = titles[type];
+}
+
 // ══ ADD ═══════════════════════════════════════════════════════
 function setType(type) {
   currentType=type;
@@ -790,16 +895,34 @@ function updateCats() {
   const cats=currentType==="Income"?INCOME_CATS:EXPENSE_CATS;
   document.getElementById("f-category").innerHTML=cats.map(c=>`<option value="${c.e} ${c.n}">${c.e} ${c.n}</option>`).join("");
 }
+function updateInstCats() {
+  document.getElementById("i-category").innerHTML=EXPENSE_CATS.map(c=>`<option value="${c.e} ${c.n}">${c.e} ${c.n}</option>`).join("");
+}
 function setupAdd() {
+  currentEntryType = "tx";
+  setEntryType("tx");
   document.getElementById("f-date").value=new Date().toISOString().split("T")[0];
   document.getElementById("f-amount").value="";
   document.getElementById("f-desc").value="";
   document.getElementById("f-notes").value="";
+  document.getElementById("g-name").value="";
+  document.getElementById("g-target").value="";
+  document.getElementById("g-saved").value="";
+  document.getElementById("g-monthly").value="";
+  document.getElementById("g-due").value="";
+  document.getElementById("i-name").value="";
+  document.getElementById("i-total").value="";
+  document.getElementById("i-monthly").value="";
+  document.getElementById("i-total-mo").value="";
+  document.getElementById("i-paid").value="0";
+  document.getElementById("i-start").value=new Date().toISOString().split("T")[0];
   updateCats();
+  updateInstCats();
   const hasUrl=!!settings.sheetsUrl;
   document.getElementById("add-sync-dot").style.background=hasUrl?"#22c55e":"#cbd5e1";
   document.getElementById("add-sync-label").textContent=hasUrl&&settings.autosync?"Will sync to Google Sheets":"Will save locally only";
 }
+
 async function submitTx() {
   const amount=parseFloat(document.getElementById("f-amount").value);
   const desc=document.getElementById("f-desc").value.trim();
@@ -817,6 +940,72 @@ async function submitTx() {
     else{unsyncedIds.push(tx.id);localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds));showToast("Saved locally — will sync later");setSyncStatus("error");}
   } else { showToast("Transaction added ✓"); }
   goTo("home");
+}
+
+function submitGoal() {
+  const name   = document.getElementById("g-name").value.trim();
+  const target = parseFloat(document.getElementById("g-target").value)||0;
+  const saved  = parseFloat(document.getElementById("g-saved").value)||0;
+  const monthly= parseFloat(document.getElementById("g-monthly").value)||0;
+  const due    = document.getElementById("g-due").value.trim();
+  const colorVal = document.getElementById("g-color").value.split(",");
+
+  if (!name){showToast("Enter a goal name");return;}
+  if (!target||target<=0){showToast("Enter a target amount");return;}
+
+  GOALS.push({
+    icon: name.match(/^\p{Emoji}/u)?.[0] || "🎯",
+    name: name.replace(/^\p{Emoji}\s*/u,""),
+    saved, target, monthly,
+    color: colorVal[0],
+    bg:    colorVal[1],
+    due:   due||"—"
+  });
+  saveGoals();
+  // Sync to Sheets
+  if (settings.sheetsUrl) {
+    postToSheets("add_goal", { data: {
+      name, target, saved, monthly, due,
+      color: colorVal[0]
+    }});
+  }
+  showToast("Goal added ✓");
+  goTo("goals");
+}
+
+function submitInst() {
+  const name    = document.getElementById("i-name").value.trim();
+  const total   = parseFloat(document.getElementById("i-total").value)||0;
+  const monthly = parseFloat(document.getElementById("i-monthly").value)||0;
+  const totalMo = parseInt(document.getElementById("i-total-mo").value)||0;
+  const paid    = parseInt(document.getElementById("i-paid").value)||0;
+  const cat     = document.getElementById("i-category").value;
+  const color   = document.getElementById("i-color").value;
+
+  if (!name){showToast("Enter an item name");return;}
+  if (!total||total<=0){showToast("Enter a total amount");return;}
+  if (!monthly||monthly<=0){showToast("Enter monthly payment");return;}
+  if (!totalMo||totalMo<=0){showToast("Enter total months");return;}
+
+  const startDate = document.getElementById("i-start").value;
+  INSTALLMENTS.push({
+    icon:     name.match(/^\p{Emoji}/u)?.[0] || "📦",
+    name:     name.replace(/^\p{Emoji}\s*/u,""),
+    cat, total, monthly,
+    paid:     Math.min(paid, totalMo),
+    total_mo: totalMo,
+    color
+  });
+  saveInsts();
+  // Sync to Sheets
+  if (settings.sheetsUrl) {
+    postToSheets("add_installment", { data: {
+      name, category: cat, total, monthly,
+      startDate, totalMonths: totalMo, monthsPaid: paid
+    }});
+  }
+  showToast("Instalment added ✓");
+  goTo("installments");
 }
 
 // ══ SYNC ══════════════════════════════════════════════════════
