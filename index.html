@@ -1105,10 +1105,11 @@ async function submitInst() {
 async function postToSheets(action, payload) {
   if (!settings.sheetsUrl) return false;
   try {
+    const body = JSON.stringify({action, ...payload});
     const res  = await fetch(settings.sheetsUrl, {
       method: "POST",
-      body: JSON.stringify({action, ...payload}),
-      headers: {"Content-Type":"application/json"}
+      body,
+      headers: {"Content-Type": "text/plain"}
     });
     const data = await res.json();
     return !data.error;
