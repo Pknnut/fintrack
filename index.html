@@ -81,18 +81,24 @@
   .fab svg { width: 22px; height: 22px; color: var(--white); }
 
   .card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--slate-200); padding: 16px; }
-  .balance-card { margin: 14px 20px 0; background: var(--slate-900); border-radius: 20px; padding: 20px; }
-  .balance-label { font-size: 10px; color: #475569; margin-bottom: 4px; letter-spacing: 0.3px; }
-  .balance-amount { font-size: 34px; font-weight: 700; color: var(--white); letter-spacing: -1.5px; margin-bottom: 14px; line-height: 1; }
+  .balance-card { margin: 14px 20px 0; background: var(--white); border-radius: 20px; padding: 18px; border: 1.5px solid var(--slate-200); }
+  .balance-label { font-size: 10px; color: var(--slate-400); margin-bottom: 4px; letter-spacing: 0.3px; }
+  .balance-amount { font-size: 34px; font-weight: 800; color: var(--slate-900); letter-spacing: -1.5px; margin-bottom: 0; line-height: 1; }
+  .balance-ie { display: flex; align-items: center; gap: 12px; margin: 10px 0 14px; padding-top: 10px; border-top: 1px solid var(--slate-100); }
+  .bie-item { display: flex; align-items: center; gap: 6px; }
+  .bie-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .bie-lbl { font-size: 9px; color: var(--slate-400); }
+  .bie-val { font-size: 12px; font-weight: 700; color: var(--slate-900); }
+  .bie-divider { width: 1px; height: 28px; background: var(--slate-200); }
   .balance-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .bal-action { border: none; border-radius: 14px; padding: 10px 4px 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: opacity 0.15s; }
   .bal-action:active { opacity: 0.75; }
   .bal-action-icon { font-size: 20px; display: flex; align-items: center; justify-content: center; }
   .bal-action-label { font-size: 10px; font-weight: 600; }
-  .bal-action.c-add  { background: #1e3a5f; } .bal-action.c-add  .bal-action-icon { color: #60a5fa; } .bal-action.c-add  .bal-action-label { color: #93c5fd; }
-  .bal-action.c-goal { background: #1a3a2a; } .bal-action.c-goal .bal-action-icon { color: #34d399; } .bal-action.c-goal .bal-action-label { color: #6ee7b7; }
-  .bal-action.c-debt { background: #3a1a2a; } .bal-action.c-debt .bal-action-icon { color: #f472b6; } .bal-action.c-debt .bal-action-label { color: #f9a8d4; }
-  .bal-action.c-anlt { background: #3a2a10; } .bal-action.c-anlt .bal-action-icon { color: #fbbf24; } .bal-action.c-anlt .bal-action-label { color: #fde68a; }
+  .bal-action.c-add  { background: #dbeafe; } .bal-action.c-add  .bal-action-icon { color: #1d4ed8; } .bal-action.c-add  .bal-action-label { color: #1d4ed8; }
+  .bal-action.c-goal { background: #dcfce7; } .bal-action.c-goal .bal-action-icon { color: #16a34a; } .bal-action.c-goal .bal-action-label { color: #16a34a; }
+  .bal-action.c-debt { background: #fce7f3; } .bal-action.c-debt .bal-action-icon { color: #be185d; } .bal-action.c-debt .bal-action-label { color: #be185d; }
+  .bal-action.c-anlt { background: #fef9c3; } .bal-action.c-anlt .bal-action-icon { color: #a16207; } .bal-action.c-anlt .bal-action-label { color: #a16207; }
 
   .home-header { padding: 20px 20px 0; display: flex; justify-content: space-between; align-items: center; }
   .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--indigo-light);
@@ -348,6 +354,17 @@
   <div class="balance-card">
     <div class="balance-label">CURRENT BALANCE</div>
     <div class="balance-amount" id="home-balance">฿0</div>
+    <div class="balance-ie">
+      <div class="bie-item">
+        <div class="bie-dot" style="background:#22c55e"></div>
+        <div><div class="bie-lbl">Income</div><div class="bie-val" id="home-inc">฿0</div></div>
+      </div>
+      <div class="bie-divider"></div>
+      <div class="bie-item">
+        <div class="bie-dot" style="background:#ef4444"></div>
+        <div><div class="bie-lbl">Expenses</div><div class="bie-val" id="home-exp">฿0</div></div>
+      </div>
+    </div>
     <div class="balance-actions">
       <button class="bal-action c-add" onclick="goTo('add')"><div class="bal-action-icon"><i class="ti ti-plus" aria-hidden="true"></i></div><div class="bal-action-label">Add</div></button>
       <button class="bal-action c-goal" onclick="goTo('goals')"><div class="bal-action-icon"><i class="ti ti-target" aria-hidden="true"></i></div><div class="bal-action-label">Goals</div></button>
@@ -379,10 +396,6 @@
         <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
       </div>
     </div>
-  </div>
-  <div class="ie-row">
-    <div class="ie-pill"><div class="ie-dot" style="background:var(--green)"></div><div><div class="ie-lbl">Income</div><div class="ie-val" id="home-inc">฿0</div></div></div>
-    <div class="ie-pill"><div class="ie-dot" style="background:var(--red)"></div><div><div class="ie-lbl">Expenses</div><div class="ie-val" id="home-exp">฿0</div></div></div>
   </div>
   <div class="tx-section">
     <div class="sec-hd"><span class="section-label">Recent</span><button class="see-all" onclick="goTo('history')">See all</button></div>
