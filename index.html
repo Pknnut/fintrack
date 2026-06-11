@@ -165,6 +165,8 @@
   .an-stat { flex: 1; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 11px; }
   .an-stat-val { font-size: 16px; font-weight: 700; color: var(--slate-900); }
   .an-stat-lbl { font-size: 9px; color: var(--slate-400); margin-top: 2px; }
+  .an-year-pill { flex-shrink: 0; padding: 5px 10px; border-radius: 8px; font-size: 10px; font-weight: 600; border: 1px solid var(--slate-200); background: var(--white); color: var(--slate-500); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+  .an-year-pill.active { background: var(--slate-900); color: var(--white); border-color: var(--slate-900); }
   .cat-section { margin: 14px 20px 0; }
   .cat-item { margin-bottom: 11px; }
   .cat-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--slate-700); margin-bottom: 5px; font-weight: 500; }
@@ -517,7 +519,7 @@
   <div class="home-header">
     <div style="display:flex;align-items:center;gap:10px">
       <div class="avatar">N</div>
-      <div><div class="greeting">How are your finances looking today,</div>
+      <div><div class="greeting">Good morning,</div>
         <div style="font-size:15px;font-weight:700;color:var(--slate-900)">Nut 👋</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
@@ -596,25 +598,31 @@
 
 <!-- ANALYTICS -->
 <div class="page" id="page-analytics">
-  <div class="analytics-header"><div class="meta">2026</div><div class="page-title">Analytics</div></div>
-  <div class="revenue-card">
+  <div class="analytics-header"><div class="meta">Monthly view</div><div class="page-title">Analytics</div></div>
+  <!-- Month navigator (same style as Budget page) -->
+  <div class="budget-month" style="margin-top:10px">
+    <button class="budget-month-btn" onclick="analyticsPrevMonth()">‹</button>
+    <div class="budget-month-label" id="analytics-month-label">Jun 2026</div>
+    <button class="budget-month-btn" onclick="analyticsNextMonth()">›</button>
+  </div>
+  <div class="revenue-card" style="margin-top:12px">
     <div class="rev-label">TOTAL INCOME</div>
     <div class="rev-amount" id="rev-amount">฿0</div>
     <div class="rev-change" id="rev-change">— this month</div>
-    <div class="bar-chart" id="weekly-bars">
-      <div class="bar-col"><div class="bar-inner" style="height:38%;background:rgba(255,255,255,0.25)"></div><div class="bar-xlabel">Mon</div></div>
-      <div class="bar-col"><div class="bar-inner" style="height:55%;background:rgba(255,255,255,0.25)"></div><div class="bar-xlabel">Tue</div></div>
-      <div class="bar-col"><div class="bar-inner" style="height:45%;background:rgba(255,255,255,0.25)"></div><div class="bar-xlabel">Wed</div></div>
-      <div class="bar-col"><div class="bar-inner" style="height:80%;background:rgba(255,255,255,0.9)"></div><div class="bar-xlabel">Thu</div></div>
-      <div class="bar-col"><div class="bar-inner" style="height:65%;background:rgba(255,255,255,0.25)"></div><div class="bar-xlabel">Fri</div></div>
-      <div class="bar-col"><div class="bar-inner" style="height:100%;background:rgba(255,255,255,0.25)"></div><div class="bar-xlabel">Sat</div></div>
-      <div class="bar-col"><div class="bar-inner" style="height:70%;background:rgba(255,255,255,0.25)"></div><div class="bar-xlabel">Sun</div></div>
-    </div>
+    <!-- Dynamic daily spend bars for selected month -->
+    <div class="bar-chart" id="analytics-bars" style="height:56px"></div>
+    <div style="display:flex;justify-content:space-between;font-size:8px;color:rgba(255,255,255,0.45);margin-top:4px" id="analytics-bar-labels"></div>
   </div>
   <div class="an-stats">
     <div class="an-stat"><div class="an-stat-val" id="an-exp">฿0</div><div class="an-stat-lbl">Expenses</div></div>
     <div class="an-stat"><div class="an-stat-val" id="an-net">฿0</div><div class="an-stat-lbl">Net savings</div></div>
     <div class="an-stat"><div class="an-stat-val" id="an-rate">0%</div><div class="an-stat-lbl">Savings rate</div></div>
+    <div class="an-stat"><div class="an-stat-val" id="an-txcount">0</div><div class="an-stat-lbl">Transactions</div></div>
+  </div>
+  <!-- Year summary strip -->
+  <div style="margin:12px 20px 0">
+    <div class="sec-hd"><span class="section-label" id="an-year-label">2026 overview</span></div>
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px" id="an-year-strip"></div>
   </div>
   <div class="cat-section">
     <div class="sec-hd"><span class="section-label">Expenses by category</span></div>
@@ -800,6 +808,7 @@
     <div class="settings-label">Data</div>
     <div class="settings-card">
       <button class="settings-btn" onclick="exportData()">Export transactions as JSON</button>
+      <button class="settings-btn" onclick="rebuildAnalyticsSheet()">Rebuild Analytics sheet in Google Sheets</button>
       <button class="settings-btn danger" onclick="confirmClearGoals()">Clear all goals</button>
       <button class="settings-btn danger" onclick="confirmClearInsts()">Clear all instalments</button>
       <button class="settings-btn danger" onclick="confirmClear()">Clear all local data</button>
@@ -1051,6 +1060,19 @@ async function confirmMarkPaid() {
 }
 
 // ══ STARTUP ═══════════════════════════════════════════════════
+async function rebuildAnalyticsSheet() {
+  if (!settings.sheetsUrl) { showToast("Add Sheets URL in Settings first"); return; }
+  const yr = analyticsYear || new Date().getFullYear();
+  showToast("Rebuilding " + yr + " Analytics sheet…");
+  setSyncStatus("syncing");
+  try {
+    const res  = await fetch(settings.sheetsUrl + "?action=rebuild_analytics&year=" + yr);
+    const data = await res.json();
+    if (data.success) { setSyncStatus("ok"); showToast(yr + " Analytics sheet rebuilt ✓"); }
+    else { setSyncStatus("error"); showToast("Rebuild failed: " + (data.error || "unknown")); }
+  } catch(e) { setSyncStatus("error"); showToast("Rebuild failed — check connection"); }
+}
+
 async function startup() {
   setLoading("Starting up…", 10);
   if (settings.sheetsUrl) {
@@ -1483,9 +1505,14 @@ function normalizeDate(raw) {
   if (!isNaN(d)) return d.toISOString().split("T")[0];
   return raw;
 }
-function monthTxs() {
+function monthTxs(mo, yr) {
   const d = new Date();
-  return txs.filter(t=>{ const td=new Date(t.date); return td.getMonth()===d.getMonth()&&td.getFullYear()===d.getFullYear(); });
+  const m = (mo !== undefined) ? mo : d.getMonth();
+  const y = (yr !== undefined) ? yr : d.getFullYear();
+  return txs.filter(t=>{ const td=new Date(t.date); return td.getMonth()===m&&td.getFullYear()===y; });
+}
+function yearTxs(yr) {
+  return txs.filter(t=>{ const td=new Date(t.date); return td.getFullYear()===yr; });
 }
 function calcSummary(arr) {
   const inc=arr.filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0);
@@ -1567,19 +1594,84 @@ async function deleteGoal(idx) {
   } else { showToast("Goal deleted"); }
 }
 
+let analyticsMonth = new Date().getMonth();
+let analyticsYear  = new Date().getFullYear();
+
+function analyticsPrevMonth() {
+  analyticsMonth--;
+  if (analyticsMonth < 0) { analyticsMonth = 11; analyticsYear--; }
+  renderAnalytics();
+}
+function analyticsNextMonth() {
+  analyticsMonth++;
+  if (analyticsMonth > 11) { analyticsMonth = 0; analyticsYear++; }
+  renderAnalytics();
+}
+
 function renderAnalytics() {
-  const arr=monthTxs(), {inc,exp,net,rate}=calcSummary(arr);
-  document.getElementById("rev-amount").textContent=fmt(inc);
-  document.getElementById("rev-change").textContent=fmt(net)+" net · "+Math.round(rate*100)+"% savings rate";
-  document.getElementById("an-exp").textContent=fmt(exp);
-  document.getElementById("an-net").textContent=fmt(net);
-  document.getElementById("an-rate").textContent=Math.round(rate*100)+"%";
-  const expTxs=arr.filter(t=>t.type==="Expense"), catMap={};
-  expTxs.forEach(t=>{catMap[t.category]=(catMap[t.category]||0)+t.amount;});
-  const sorted=Object.entries(catMap).sort((a,b)=>b[1]-a[1]), maxV=sorted[0]?.[1]||1;
-  document.getElementById("cat-breakdown").innerHTML=sorted.length
-    ? sorted.map(([cat,amt],i)=>'<div class="cat-item"><div class="cat-row"><span>'+cat+'</span><span class="cat-val">'+fmt(amt)+'</span></div><div class="cat-track"><div class="cat-fill" style="width:'+Math.round(amt/maxV*100)+'%;background:'+CAT_COLORS[i%CAT_COLORS.length]+'"></div></div></div>').join("")
-    :'<div class="empty-state">No expense data this month</div>';
+  const mo = analyticsMonth, yr = analyticsYear;
+  const arr = monthTxs(mo, yr);
+  const {inc, exp, net, rate} = calcSummary(arr);
+
+  // Header label
+  document.getElementById("analytics-month-label").textContent = MO[mo] + " " + yr;
+  document.getElementById("an-year-label").textContent = yr + " overview";
+
+  // Income card
+  document.getElementById("rev-amount").textContent = fmt(inc);
+  document.getElementById("rev-change").textContent = fmt(net) + " net · " + Math.round(rate * 100) + "% savings rate";
+
+  // Stats
+  document.getElementById("an-exp").textContent     = fmt(exp);
+  document.getElementById("an-net").textContent     = fmt(net);
+  document.getElementById("an-rate").textContent    = Math.round(rate * 100) + "%";
+  document.getElementById("an-txcount").textContent = arr.length;
+
+  // Daily spend bars for selected month
+  const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+  const dailyExp    = Array(daysInMonth).fill(0);
+  arr.filter(t => t.type === "Expense").forEach(t => {
+    const d = new Date(t.date).getDate();
+    if (d >= 1 && d <= daysInMonth) dailyExp[d - 1] += t.amount;
+  });
+  const maxDay = Math.max(...dailyExp, 1);
+  // Show every ~5th day label to avoid crowding
+  const step = daysInMonth <= 15 ? 1 : daysInMonth <= 20 ? 2 : 5;
+  const barsEl   = document.getElementById("analytics-bars");
+  const labelsEl = document.getElementById("analytics-bar-labels");
+  barsEl.innerHTML = dailyExp.map((v, i) => {
+    const h = Math.max(Math.round((v / maxDay) * 100), v > 0 ? 4 : 0);
+    const isToday = (yr === new Date().getFullYear() && mo === new Date().getMonth() && (i + 1) === new Date().getDate());
+    return '<div class="bar-col"><div class="bar-inner" style="height:' + h + '%;background:' + (isToday ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.3)') + '"></div></div>';
+  }).join("");
+  labelsEl.innerHTML = dailyExp.map((_, i) =>
+    ((i + 1) % step === 1 || i === 0) ? '<span>' + (i + 1) + '</span>' : '<span></span>'
+  ).join("");
+
+  // Year strip — one pill per month of the selected year
+  const yearArr = yearTxs(yr);
+  const stripEl = document.getElementById("an-year-strip");
+  stripEl.innerHTML = MO.map((m, i) => {
+    const mArr   = yearArr.filter(t => new Date(t.date).getMonth() === i);
+    const mExp   = mArr.filter(t => t.type === "Expense").reduce((s, t) => s + t.amount, 0);
+    const mInc   = mArr.filter(t => t.type === "Income").reduce((s, t) => s + t.amount, 0);
+    const isAct  = i === mo;
+    const hasTx  = mArr.length > 0;
+    const dot    = !hasTx ? "" : (mInc >= mExp ? ' <span style="color:#22c55e;font-size:8px">▲</span>' : ' <span style="color:#ef4444;font-size:8px">▼</span>');
+    return '<button class="an-year-pill' + (isAct ? ' active' : '') + '" onclick="analyticsMonth=' + i + ';renderAnalytics()">' + m + dot + '</button>';
+  }).join("");
+
+  // Category breakdown
+  const catMap = {};
+  arr.filter(t => t.type === "Expense").forEach(t => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
+  const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+  const maxV   = sorted[0]?.[1] || 1;
+  document.getElementById("cat-breakdown").innerHTML = sorted.length
+    ? sorted.map(([cat, amt], i) =>
+        '<div class="cat-item"><div class="cat-row"><span>' + cat + '</span><span class="cat-val">' + fmt(amt) + '</span></div>' +
+        '<div class="cat-track"><div class="cat-fill" style="width:' + Math.round(amt / maxV * 100) + '%;background:' + CAT_COLORS[i % CAT_COLORS.length] + '"></div></div></div>'
+      ).join("")
+    : '<div class="empty-state">No expense data for ' + MO[mo] + ' ' + yr + '</div>';
 }
 
 function renderInstallments() {
