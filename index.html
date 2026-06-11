@@ -1079,10 +1079,19 @@ function renderGoals() {
     '</div>';
   }).join("");
 }
-function deleteGoal(idx) {
-  if (confirm('Delete "'+GOALS[idx].name+'"?')) {
-    GOALS.splice(idx, 1); saveGoals(); renderGoals(); showToast("Goal deleted");
-  }
+async function deleteGoal(idx) {
+  if (!confirm('Delete "'+GOALS[idx].name+'"?')) return;
+  const goal = GOALS[idx];
+  GOALS.splice(idx, 1); saveGoals(); renderGoals();
+  if (goal && settings.sheetsUrl) {
+    setSyncStatus("syncing");
+    const ok = await Promise.race([
+      postToSheets("delete_goal", { name: goal.name }),
+      new Promise(r => setTimeout(() => r(false), 6000))
+    ]);
+    if (ok) { setSyncStatus("ok"); showToast("Goal deleted + synced ✓"); }
+    else    { setSyncStatus("error"); showToast("Deleted locally — Sheets sync failed"); }
+  } else { showToast("Goal deleted"); }
 }
 
 function renderAnalytics() {
@@ -1132,10 +1141,19 @@ function renderInstallments() {
     '</div>';
   }).join("");
 }
-function deleteInst(idx) {
-  if (confirm('Delete "'+INSTALLMENTS[idx].name+'"?')) {
-    INSTALLMENTS.splice(idx, 1); saveInsts(); renderInstallments(); showToast("Instalment deleted");
-  }
+async function deleteInst(idx) {
+  if (!confirm('Delete "'+INSTALLMENTS[idx].name+'"?')) return;
+  const inst = INSTALLMENTS[idx];
+  INSTALLMENTS.splice(idx, 1); saveInsts(); renderInstallments();
+  if (inst && settings.sheetsUrl) {
+    setSyncStatus("syncing");
+    const ok = await Promise.race([
+      postToSheets("delete_installment", { name: inst.name }),
+      new Promise(r => setTimeout(() => r(false), 6000))
+    ]);
+    if (ok) { setSyncStatus("ok"); showToast("Instalment deleted + synced ✓"); }
+    else    { setSyncStatus("error"); showToast("Deleted locally — Sheets sync failed"); }
+  } else { showToast("Instalment deleted"); }
 }
 
 let currentEntryType = "tx", currentType = "Expense";
