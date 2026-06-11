@@ -905,7 +905,7 @@ async function startup() {
   if (settings.sheetsUrl) {
     setLoading("Fetching data from Google Sheets…", 25);
     const [txOk, budgetOk] = await Promise.all([
-      txs.length === 0 ? fetchFromSheets(true) : Promise.resolve(false),
+      fetchFromSheets(true),
       fetchBudgetsFromSheets(true)
     ]);
     if (txOk || budgetOk) { setLoading("Data loaded ✓", 90); await delay(600); }
@@ -938,7 +938,7 @@ async function fetchFromSheets(silent = false) {
       const localOnly = txs.filter(t => !t.rowId && unsyncedIds.includes(t.id));
       txs = [
         ...data.transactions.map(t => ({
-          id: t.rowId, rowId: t.rowId, date: t.date, type: t.type,
+          id: t.rowId, rowId: t.rowId, date: normalizeDate(t.date), type: t.type,
           category: t.category, desc: t.description, amount: t.amount, notes: t.notes || ""
         })),
         ...localOnly
@@ -947,9 +947,9 @@ async function fetchFromSheets(silent = false) {
       if (!silent) {
         setSyncStatus("ok");
         showToast(data.transactions.length + " transactions pulled ✓");
-        renderHome(); renderAnalytics();
         document.getElementById("last-pull-label").textContent = "Last pulled: just now";
       }
+      renderHome(); renderAnalytics();
       return true;
     }
     return false;
@@ -1071,13 +1071,15 @@ async function refreshApp() {
   const icon = document.querySelector("#refresh-btn i");
   if (icon) icon.classList.add("spin");
   showToast("Refreshing…");
-  const results = await Promise.all([
+  // Force pull even if we already have local data
+  const [txOk, budgetOk] = await Promise.all([
     fetchFromSheets(true),
     fetchBudgetsFromSheets(true)
   ]);
   if (icon) icon.classList.remove("spin");
-  renderHome(); renderAnalytics();
-  if (results[0] || results[1]) showToast("Refreshed ✓");
+  renderHome();
+  renderAnalytics();
+  if (txOk || budgetOk) showToast("Refreshed ✓");
   else showToast("Up to date ✓");
 }
 
@@ -1106,6 +1108,15 @@ async function deleteTx(id) {
   }
 }
 
+function normalizeDate(raw) {
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return m[3] + "-" + m[2].padStart(2,"0") + "-" + m[1].padStart(2,"0");
+  const d = new Date(raw);
+  if (!isNaN(d)) return d.toISOString().split("T")[0];
+  return raw;
+}
 function monthTxs() {
   const d = new Date();
   return txs.filter(t=>{ const td=new Date(t.date); return td.getMonth()===d.getMonth()&&td.getFullYear()===d.getFullYear(); });
