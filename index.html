@@ -236,6 +236,13 @@
   .toast.show { opacity: 1; }
   .empty-state { text-align: center; padding: 32px 16px; color: var(--slate-400); font-size: 13px; }
 
+  .hist-filter { font-size: 11px; font-weight: 600; padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--slate-200); background: var(--white); color: var(--slate-500); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .hist-filter.active { background: var(--slate-900); color: var(--white); border-color: var(--slate-900); }
+
+  .hist-tx-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--white); border-radius: var(--radius-sm); border: 1px solid var(--slate-200); margin-bottom: 7px; }
+  .hist-tx-del { width: 30px; height: 30px; border-radius: 8px; background: #fef2f2; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+  .hist-tx-del:active { background: #fee2e2; }
+
   /* MODAL */
   .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 300;
     display: flex; align-items: flex-end; justify-content: center; }
@@ -378,7 +385,7 @@
     <div class="ie-pill"><div class="ie-dot" style="background:var(--red)"></div><div><div class="ie-lbl">Expenses</div><div class="ie-val" id="home-exp">฿0</div></div></div>
   </div>
   <div class="tx-section">
-    <div class="sec-hd"><span class="section-label">Recent</span><button class="see-all" onclick="goTo('analytics')">See all</button></div>
+    <div class="sec-hd"><span class="section-label">Recent</span><button class="see-all" onclick="goTo('history')">See all</button></div>
     <div class="card" style="padding:6px 14px" id="home-tx-list"></div>
   </div>
   <div class="spacer"></div>
@@ -607,6 +614,39 @@
       <button class="settings-btn danger" onclick="confirmClear()">Clear all local data</button>
     </div>
   </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="page" id="page-history">
+  <div style="padding:24px 20px 0;display:flex;align-items:center;gap:12px">
+    <button onclick="goTo('home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div><div class="meta">All transactions</div><div class="page-title">History</div></div>
+  </div>
+  <div style="margin:12px 20px 0;display:flex;gap:8px">
+    <button class="hist-filter active" id="hf-all"      onclick="setHistFilter('all')">All</button>
+    <button class="hist-filter"        id="hf-expense"  onclick="setHistFilter('Expense')">Expense</button>
+    <button class="hist-filter"        id="hf-income"   onclick="setHistFilter('Income')">Income</button>
+  </div>
+  <div style="margin:10px 20px 0;position:relative">
+    <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--slate-400)"></i>
+    <input id="hist-search" type="text" placeholder="Search transactions…"
+      style="width:100%;border:1px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px 12px 10px 34px;font-size:13px;font-family:inherit;outline:none;background:var(--white);color:var(--slate-900)"
+      oninput="renderHistory()">
+  </div>
+  <div style="margin:4px 20px 0;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:11px;color:var(--slate-400)" id="hist-count">0 transactions</span>
+    <select id="hist-sort" onchange="renderHistory()"
+      style="font-size:11px;color:var(--slate-500);border:none;background:none;font-family:inherit;outline:none;cursor:pointer">
+      <option value="newest">Newest first</option>
+      <option value="oldest">Oldest first</option>
+      <option value="highest">Highest amount</option>
+      <option value="lowest">Lowest amount</option>
+    </select>
+  </div>
+  <div id="hist-list" style="margin:6px 20px 0"></div>
   <div class="spacer"></div>
 </div>
 
@@ -882,6 +922,65 @@ function goTo(page) {
   if (page==="installments") renderInstallments();
   if (page==="add")          setupAdd();
   if (page==="settings")     renderSettings();
+  if (page==="history")      { histFilter="all"; document.getElementById("hist-search").value=""; renderHistory(); }
+}
+
+let histFilter = "all";
+function setHistFilter(f) {
+  histFilter = f;
+  ["all","expense","income"].forEach(x => {
+    const el = document.getElementById("hf-"+x);
+    if (el) el.classList.toggle("active", x === f.toLowerCase());
+  });
+  renderHistory();
+}
+
+function renderHistory() {
+  const search = (document.getElementById("hist-search")?.value || "").toLowerCase();
+  const sort   = document.getElementById("hist-sort")?.value || "newest";
+  let list = txs.filter(t => {
+    if (histFilter !== "all" && t.type !== histFilter) return false;
+    if (search) {
+      const desc = (t.desc || t.description || "").toLowerCase();
+      const cat  = (t.category || "").toLowerCase();
+      if (!desc.includes(search) && !cat.includes(search)) return false;
+    }
+    return true;
+  });
+  if (sort === "newest")  list.sort((a,b) => new Date(b.date) - new Date(a.date));
+  if (sort === "oldest")  list.sort((a,b) => new Date(a.date) - new Date(b.date));
+  if (sort === "highest") list.sort((a,b) => b.amount - a.amount);
+  if (sort === "lowest")  list.sort((a,b) => a.amount - b.amount);
+  const countEl = document.getElementById("hist-count");
+  if (countEl) countEl.textContent = list.length + " transaction" + (list.length !== 1 ? "s" : "");
+  const el = document.getElementById("hist-list");
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="empty-state">No transactions found</div>'; return; }
+  el.innerHTML = list.map(t => {
+    const isInc = t.type === "Income";
+    const d = new Date(t.date);
+    const desc = t.desc || t.description || "";
+    return '<div class="hist-tx-row">' +
+      '<div class="tx-icon">'+(t.category||"").split(" ")[0]+'</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="tx-name">'+desc+'</div>' +
+        '<div class="tx-sub">'+(t.category||"").replace(/^\S+\s/,"")+" · "+d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear()+'</div>' +
+      '</div>' +
+      '<span class="tx-amt '+(isInc?'pos':'neg')+'" style="margin-right:8px">'+(isInc?"+":"-")+fmt(t.amount)+'</span>' +
+      '<button class="hist-tx-del" onclick="deleteTx('+t.id+')" aria-label="Delete transaction">' +
+        '<i class="ti ti-trash" style="font-size:15px;color:#ef4444"></i>' +
+      '</button>' +
+    '</div>';
+  }).join("");
+}
+
+function deleteTx(id) {
+  if (!confirm("Delete this transaction?")) return;
+  txs = txs.filter(t => t.id !== id);
+  saveTxs();
+  renderHistory();
+  renderHome();
+  showToast("Transaction deleted");
 }
 
 function monthTxs() {
