@@ -167,6 +167,29 @@
   .an-stat-lbl { font-size: 9px; color: var(--slate-400); margin-top: 2px; }
   .an-year-pill { flex-shrink: 0; padding: 5px 10px; border-radius: 8px; font-size: 10px; font-weight: 600; border: 1px solid var(--slate-200); background: var(--white); color: var(--slate-500); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
   .an-year-pill.active { background: var(--slate-900); color: var(--white); border-color: var(--slate-900); }
+  .an-filter-chip { display:flex; align-items:center; gap:6px; background:#1e293b; border-radius:20px; padding:6px 12px; cursor:pointer; border:1px solid #334155; }
+  .an-filter-chip span { font-size:12px; font-weight:600; color:var(--white); }
+  .an-filter-chip i { font-size:12px; color:var(--slate-400); transition:transform 0.2s; }
+  .an-filter-chip.open i.ti-chevron-down { transform:rotate(180deg); }
+  .an-filter-row { display:flex; align-items:center; justify-content:space-between; padding:8px 20px 4px; }
+  .an-filter-viewing { font-size:10px; color:var(--slate-400); font-weight:500; }
+  .an-dropdown { margin:0 20px 10px; background:var(--white); border:1px solid var(--slate-200); border-radius:var(--radius); overflow:hidden; }
+  .an-dropdown.hidden { display:none; }
+  .an-dropdown-hd { padding:10px 14px 8px; font-size:10px; font-weight:600; color:var(--slate-400); border-bottom:1px solid var(--slate-100); letter-spacing:.04em; }
+  .an-dropdown-sec { padding:8px 14px 4px; }
+  .an-dropdown-sec-lbl { font-size:9px; font-weight:700; color:var(--slate-400); letter-spacing:.05em; margin-bottom:6px; }
+  .an-yr-btns { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .an-yr-btn { flex:1; min-width:52px; padding:7px 4px; background:var(--slate-50); border:1px solid var(--slate-200); border-radius:8px; text-align:center; font-size:11px; font-weight:600; color:var(--slate-500); cursor:pointer; font-family:inherit; transition:all 0.15s; }
+  .an-yr-btn.active { background:var(--slate-900); color:var(--white); border-color:var(--slate-900); }
+  .an-dropdown-sep { height:1px; background:var(--slate-100); margin:0 14px; }
+  .an-mo-list { max-height:180px; overflow-y:auto; }
+  .an-mo-item { display:flex; align-items:center; justify-content:space-between; padding:9px 14px; font-size:12px; font-weight:500; color:var(--slate-900); cursor:pointer; border-bottom:1px solid var(--slate-100); transition:background 0.1s; }
+  .an-mo-item:last-child { border-bottom:none; }
+  .an-mo-item:active { background:var(--slate-50); }
+  .an-mo-item.active { color:var(--teal); font-weight:700; }
+  .an-mo-check { width:18px; height:18px; border-radius:50%; background:var(--teal); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .an-mo-empty { width:18px; height:18px; border-radius:50%; border:1.5px solid var(--slate-200); flex-shrink:0; }
+  .an-mo-dot { font-size:9px; margin-left:4px; }
   .cat-section { margin: 14px 20px 0; }
   .cat-item { margin-bottom: 11px; }
   .cat-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--slate-700); margin-bottom: 5px; font-weight: 500; }
@@ -519,7 +542,7 @@
   <div class="home-header">
     <div style="display:flex;align-items:center;gap:10px">
       <div class="avatar">N</div>
-      <div><div class="greeting">Good morning,</div>
+      <div><div class="greeting">How are your finances looking today,,</div>
         <div style="font-size:15px;font-weight:700;color:var(--slate-900)">Nut 👋</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
@@ -599,17 +622,33 @@
 <!-- ANALYTICS -->
 <div class="page" id="page-analytics">
   <div class="analytics-header"><div class="meta">Monthly view</div><div class="page-title">Analytics</div></div>
-  <!-- Month navigator (same style as Budget page) -->
-  <div class="budget-month" style="margin-top:10px">
-    <button class="budget-month-btn" onclick="analyticsPrevMonth()">‹</button>
-    <div class="budget-month-label" id="analytics-month-label">Jun 2026</div>
-    <button class="budget-month-btn" onclick="analyticsNextMonth()">›</button>
+  <!-- Filter row: "Viewing" label + dropdown chip -->
+  <div class="an-filter-row">
+    <span class="an-filter-viewing">Viewing</span>
+    <button class="an-filter-chip" id="an-filter-chip" onclick="toggleAnalyticsDropdown()" aria-label="Select period">
+      <i class="ti ti-calendar" aria-hidden="true"></i>
+      <span id="an-filter-label">Jun 2026</span>
+      <i class="ti ti-chevron-down"></i>
+    </button>
   </div>
-  <div class="revenue-card" style="margin-top:12px">
-    <div class="rev-label">TOTAL INCOME</div>
+  <!-- Dropdown (hidden by default) -->
+  <div class="an-dropdown hidden" id="an-dropdown">
+    <div class="an-dropdown-hd">SELECT PERIOD</div>
+    <div class="an-dropdown-sec">
+      <div class="an-dropdown-sec-lbl">YEAR</div>
+      <div class="an-yr-btns" id="an-yr-btns"></div>
+    </div>
+    <div class="an-dropdown-sep"></div>
+    <div class="an-dropdown-sec" style="padding-bottom:0">
+      <div class="an-dropdown-sec-lbl">MONTH</div>
+    </div>
+    <div class="an-mo-list" id="an-mo-list"></div>
+  </div>
+  <!-- Income card -->
+  <div class="revenue-card" style="margin:0 20px">
+    <div class="rev-label" id="an-rev-label">TOTAL INCOME · JUN 2026</div>
     <div class="rev-amount" id="rev-amount">฿0</div>
     <div class="rev-change" id="rev-change">— this month</div>
-    <!-- Dynamic daily spend bars for selected month -->
     <div class="bar-chart" id="analytics-bars" style="height:56px"></div>
     <div style="display:flex;justify-content:space-between;font-size:8px;color:rgba(255,255,255,0.45);margin-top:4px" id="analytics-bar-labels"></div>
   </div>
@@ -619,7 +658,7 @@
     <div class="an-stat"><div class="an-stat-val" id="an-rate">0%</div><div class="an-stat-lbl">Savings rate</div></div>
     <div class="an-stat"><div class="an-stat-val" id="an-txcount">0</div><div class="an-stat-lbl">Transactions</div></div>
   </div>
-  <!-- Year summary strip -->
+  <!-- Year overview strip -->
   <div style="margin:12px 20px 0">
     <div class="sec-hd"><span class="section-label" id="an-year-label">2026 overview</span></div>
     <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px" id="an-year-strip"></div>
@@ -1183,7 +1222,7 @@ function goTo(page) {
   const nb = document.getElementById("nav-"+page); if(nb) nb.classList.add("active");
   if (page==="home")         renderHome();
   if (page==="goals")        renderGoals();
-  if (page==="analytics")    renderAnalytics();
+  if (page==="analytics")    { closeAnalyticsDropdown(); renderAnalytics(); }
   if (page==="installments") renderInstallments();
   if (page==="add")          setupAdd();
   if (page==="settings")     renderSettings();
@@ -1594,18 +1633,53 @@ async function deleteGoal(idx) {
   } else { showToast("Goal deleted"); }
 }
 
-let analyticsMonth = new Date().getMonth();
-let analyticsYear  = new Date().getFullYear();
+let analyticsMonth = 5;
+let analyticsYear  = 2026;
+let analyticsDropdownOpen = false;
 
-function analyticsPrevMonth() {
-  analyticsMonth--;
-  if (analyticsMonth < 0) { analyticsMonth = 11; analyticsYear--; }
-  renderAnalytics();
+function toggleAnalyticsDropdown() {
+  analyticsDropdownOpen = !analyticsDropdownOpen;
+  const dropdown = document.getElementById("an-dropdown");
+  const chip     = document.getElementById("an-filter-chip");
+  dropdown.classList.toggle("hidden", !analyticsDropdownOpen);
+  chip.classList.toggle("open", analyticsDropdownOpen);
+  if (analyticsDropdownOpen) buildAnalyticsDropdown();
 }
-function analyticsNextMonth() {
-  analyticsMonth++;
-  if (analyticsMonth > 11) { analyticsMonth = 0; analyticsYear++; }
-  renderAnalytics();
+
+function closeAnalyticsDropdown() {
+  analyticsDropdownOpen = false;
+  document.getElementById("an-dropdown").classList.add("hidden");
+  document.getElementById("an-filter-chip").classList.remove("open");
+}
+
+function buildAnalyticsDropdown() {
+  const mo = analyticsMonth, yr = analyticsYear;
+  // Year buttons — all years with data + current year
+  const allYears = [...new Set(txs.map(t => new Date(t.date).getFullYear()))];
+  const nowYr = new Date().getFullYear();
+  if (!allYears.includes(nowYr)) allYears.push(nowYr);
+  if (!allYears.includes(yr))    allYears.push(yr);
+  allYears.sort();
+  document.getElementById("an-yr-btns").innerHTML = allYears.map(y =>
+    '<button class="an-yr-btn' + (y === yr ? ' active' : '') + '" onclick="analyticsYear=' + y + ';buildAnalyticsDropdown();renderAnalytics()">' + y + '</button>'
+  ).join("");
+  // Month list — all 12 months, dimmed if no data
+  const yearArr = yearTxs(yr);
+  document.getElementById("an-mo-list").innerHTML = MO.map((m, i) => {
+    const hasTx = yearArr.some(t => new Date(t.date).getMonth() === i);
+    const isAct = i === mo;
+    const mArr  = yearArr.filter(t => new Date(t.date).getMonth() === i);
+    const mInc  = mArr.filter(t => t.type === "Income").reduce((s, t)  => s + t.amount, 0);
+    const mExp  = mArr.filter(t => t.type === "Expense").reduce((s, t) => s + t.amount, 0);
+    const dot   = !hasTx ? "" : (mInc >= mExp
+      ? '<span class="an-mo-dot" style="color:#22c55e">▲</span>'
+      : '<span class="an-mo-dot" style="color:#ef4444">▼</span>');
+    const dimStyle = hasTx ? "" : "opacity:0.4;";
+    return '<div class="an-mo-item' + (isAct ? ' active' : '') + '" style="' + dimStyle + '" onclick="analyticsMonth=' + i + ';closeAnalyticsDropdown();renderAnalytics()">' +
+      '<span>' + m + ' ' + yr + dot + '</span>' +
+      (isAct ? '<div class="an-mo-check"><i class="ti ti-check" style="font-size:10px;color:#fff"></i></div>' : '<div class="an-mo-empty"></div>') +
+    '</div>';
+  }).join("");
 }
 
 function renderAnalytics() {
@@ -1613,9 +1687,10 @@ function renderAnalytics() {
   const arr = monthTxs(mo, yr);
   const {inc, exp, net, rate} = calcSummary(arr);
 
-  // Header label
-  document.getElementById("analytics-month-label").textContent = MO[mo] + " " + yr;
-  document.getElementById("an-year-label").textContent = yr + " overview";
+  // Update filter chip label
+  document.getElementById("an-filter-label").textContent = MO[mo] + " " + yr;
+  document.getElementById("an-year-label").textContent   = yr + " overview";
+  document.getElementById("an-rev-label").textContent    = "TOTAL INCOME · " + MO[mo].toUpperCase() + " " + yr;
 
   // Income card
   document.getElementById("rev-amount").textContent = fmt(inc);
@@ -1635,8 +1710,7 @@ function renderAnalytics() {
     if (d >= 1 && d <= daysInMonth) dailyExp[d - 1] += t.amount;
   });
   const maxDay = Math.max(...dailyExp, 1);
-  // Show every ~5th day label to avoid crowding
-  const step = daysInMonth <= 15 ? 1 : daysInMonth <= 20 ? 2 : 5;
+  const step   = daysInMonth <= 15 ? 1 : daysInMonth <= 20 ? 2 : 5;
   const barsEl   = document.getElementById("analytics-bars");
   const labelsEl = document.getElementById("analytics-bar-labels");
   barsEl.innerHTML = dailyExp.map((v, i) => {
@@ -1648,17 +1722,20 @@ function renderAnalytics() {
     ((i + 1) % step === 1 || i === 0) ? '<span>' + (i + 1) + '</span>' : '<span></span>'
   ).join("");
 
-  // Year strip — one pill per month of the selected year
+  // Year strip — one pill per month of selected year
   const yearArr = yearTxs(yr);
   const stripEl = document.getElementById("an-year-strip");
   stripEl.innerHTML = MO.map((m, i) => {
-    const mArr   = yearArr.filter(t => new Date(t.date).getMonth() === i);
-    const mExp   = mArr.filter(t => t.type === "Expense").reduce((s, t) => s + t.amount, 0);
-    const mInc   = mArr.filter(t => t.type === "Income").reduce((s, t) => s + t.amount, 0);
-    const isAct  = i === mo;
-    const hasTx  = mArr.length > 0;
-    const dot    = !hasTx ? "" : (mInc >= mExp ? ' <span style="color:#22c55e;font-size:8px">▲</span>' : ' <span style="color:#ef4444;font-size:8px">▼</span>');
-    return '<button class="an-year-pill' + (isAct ? ' active' : '') + '" onclick="analyticsMonth=' + i + ';renderAnalytics()">' + m + dot + '</button>';
+    const mArr  = yearArr.filter(t => new Date(t.date).getMonth() === i);
+    const mExp  = mArr.filter(t => t.type === "Expense").reduce((s, t) => s + t.amount, 0);
+    const mInc  = mArr.filter(t => t.type === "Income").reduce((s, t)  => s + t.amount, 0);
+    const isAct = i === mo;
+    const hasTx = mArr.length > 0;
+    const dot   = !hasTx ? "" : (mInc >= mExp
+      ? ' <span style="color:#22c55e;font-size:8px">▲</span>'
+      : ' <span style="color:#ef4444;font-size:8px">▼</span>');
+    const dimmed = !hasTx ? ";opacity:0.45" : "";
+    return '<button class="an-year-pill' + (isAct ? ' active' : '') + '" onclick="analyticsMonth=' + i + ';closeAnalyticsDropdown();renderAnalytics()" style="' + dimmed + '">' + m + dot + '</button>';
   }).join("");
 
   // Category breakdown
