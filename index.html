@@ -1062,23 +1062,12 @@ function setupAdd() {
   document.getElementById("add-sync-dot").style.background=hasUrl?"#22c55e":"#cbd5e1";
   document.getElementById("add-sync-label").textContent=hasUrl&&settings.autosync?"Will sync to Google Sheets":"Will save locally only";
 }
+function updateCats() {
   const cats=currentType==="Income"?INCOME_CATS:EXPENSE_CATS;
   document.getElementById("f-category").innerHTML=cats.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
 }
 function updateInstCats() {
   document.getElementById("i-category").innerHTML=EXPENSE_CATS.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
-}
-function setupAdd() {
-  currentEntryType = "tx"; setEntryType("tx");
-  document.getElementById("f-date").value=new Date().toISOString().split("T")[0];
-  ["f-amount","f-desc","f-notes","g-name","g-target","g-saved","g-monthly","g-due",
-   "i-name","i-total","i-monthly","i-total-mo"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("i-paid").value="0";
-  document.getElementById("i-start").value=new Date().toISOString().split("T")[0];
-  updateCats(); updateInstCats();
-  const hasUrl=!!settings.sheetsUrl;
-  document.getElementById("add-sync-dot").style.background=hasUrl?"#22c55e":"#cbd5e1";
-  document.getElementById("add-sync-label").textContent=hasUrl&&settings.autosync?"Will sync to Google Sheets":"Will save locally only";
 }
 
 function setBtn(id, loading, label, bg) {
