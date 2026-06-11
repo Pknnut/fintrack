@@ -1080,6 +1080,8 @@ async function refreshApp() {
   if (results[0] || results[1]) showToast("Refreshed ✓");
   else showToast("Up to date ✓");
 }
+
+async function deleteTx(id) {
   if (!confirm("Delete this transaction?")) return;
   const tx = txs.find(t => t.id === id);
   txs = txs.filter(t => t.id !== id);
