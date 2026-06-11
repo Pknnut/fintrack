@@ -641,7 +641,8 @@ let settings = JSON.parse(localStorage.getItem("ft_settings") || "{}");
 const _savedGoals = JSON.parse(localStorage.getItem("ft_goals") || "null");
 const _savedInsts = JSON.parse(localStorage.getItem("ft_insts") || "null");
 if (_savedGoals) GOALS.push(..._savedGoals);
-if (_savedInsts) INSTALLMENTS.push(..._savedInsts);
+// Replace hardcoded defaults entirely if localStorage has saved data
+if (_savedInsts) { INSTALLMENTS.length = 0; INSTALLMENTS.push(..._savedInsts); }
 let pinBuffer = "", pinMode = "enter", pinSetupFirst = "";
 let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
 
