@@ -457,7 +457,11 @@
     <div class="form-section">
       <div class="form-field"><label>CATEGORY</label><select id="f-category"></select></div>
       <div class="form-field"><label>DESCRIPTION</label><input id="f-desc" type="text" placeholder="e.g. Grab delivery"></div>
-      <div class="form-field"><label>DATE</label><input id="f-date" type="date"></div>
+      <div class="form-field"><label>DATE</label><div style="display:flex;gap:8px">
+        <select id="f-date-d" style="flex:1;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+        <select id="f-date-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+        <select id="f-date-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+      </div></div>
       <div class="form-field"><label>NOTES (optional)</label><input id="f-notes" type="text" placeholder="Optional note"></div>
     </div>
     <div class="sync-indicator">
@@ -475,7 +479,10 @@
       <div class="form-field"><label>GOAL NAME</label><input id="g-name" type="text" placeholder="e.g. ✈️ Japan trip"></div>
       <div class="form-field"><label>AMOUNT SAVED SO FAR (฿)</label><input id="g-saved" type="number" min="0" placeholder="0"></div>
       <div class="form-field"><label>MONTHLY CONTRIBUTION (฿)</label><input id="g-monthly" type="number" min="0" placeholder="0"></div>
-      <div class="form-field"><label>TARGET DATE</label><input id="g-due" type="date"></div>
+      <div class="form-field"><label>TARGET DATE</label><div style="display:flex;gap:8px">
+        <select id="g-due-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+        <select id="g-due-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+      </div></div>
       <div class="form-field">
         <label>COLOR</label>
         <select id="g-color">
@@ -499,7 +506,11 @@
       <div class="form-field"><label>ITEM NAME</label><input id="i-name" type="text" placeholder="e.g. 📱 iPhone 16"></div>
       <div class="form-field"><label>CATEGORY</label><select id="i-category"></select></div>
       <div class="form-field"><label>MONTHLY PAYMENT (฿)</label><input id="i-monthly" type="number" min="0" placeholder="0"></div>
-      <div class="form-field"><label>START DATE</label><input id="i-start" type="date"></div>
+      <div class="form-field"><label>START DATE</label><div style="display:flex;gap:8px">
+        <select id="i-start-d" style="flex:1;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+        <select id="i-start-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+        <select id="i-start-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+      </div></div>
       <div class="form-field"><label>TOTAL MONTHS</label><input id="i-total-mo" type="number" min="1" placeholder="e.g. 12"></div>
       <div class="form-field"><label>MONTHS ALREADY PAID</label><input id="i-paid" type="number" min="0" placeholder="0 if new"></div>
       <div class="form-field">
@@ -1007,7 +1018,50 @@ function setType(type) {
   document.getElementById("btn-income").className="type-btn"+(type==="Income"?" active-inc":"");
   updateCats();
 }
-function updateCats() {
+// ── DATE DROPDOWN HELPERS (iOS Buddhist Era fix) ──────────────
+function buildDaySelect(id, day) {
+  const el = document.getElementById(id); if (!el) return;
+  el.innerHTML = Array.from({length:31},(_,i)=>`<option value="${i+1}"${i+1===day?' selected':''}>${i+1}</option>`).join("");
+}
+function buildMonthSelect(id, month) {
+  const el = document.getElementById(id); if (!el) return;
+  el.innerHTML = MO.map((m,i)=>`<option value="${i+1}"${i+1===month?' selected':''}>${m}</option>`).join("");
+}
+function buildYearSelect(id, year, back, fwd) {
+  const el = document.getElementById(id); if (!el) return;
+  const cur = new Date().getFullYear();
+  let html = "";
+  for (let y = cur-(back||0); y <= cur+(fwd||3); y++)
+    html += `<option value="${y}"${y===year?' selected':''}>${y}</option>`;
+  el.innerHTML = html;
+}
+function getDateVal(dId, mId, yId) {
+  const d = document.getElementById(dId)?.value||"1";
+  const m = document.getElementById(mId)?.value;
+  const y = document.getElementById(yId)?.value;
+  if (!m||!y) return "";
+  return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+}
+function getMonthVal(mId, yId) {
+  const m = document.getElementById(mId)?.value;
+  const y = document.getElementById(yId)?.value;
+  if (!m||!y) return "";
+  return y+"-"+String(m).padStart(2,"0")+"-01";
+}
+function setupAdd() {
+  currentEntryType = "tx"; setEntryType("tx");
+  const now = new Date(), d = now.getDate(), mo = now.getMonth()+1, y = now.getFullYear();
+  buildDaySelect("f-date-d", d); buildMonthSelect("f-date-m", mo); buildYearSelect("f-date-y", y, 1, 0);
+  buildMonthSelect("g-due-m", mo); buildYearSelect("g-due-y", y, 0, 5);
+  buildDaySelect("i-start-d", d); buildMonthSelect("i-start-m", mo); buildYearSelect("i-start-y", y, 1, 0);
+  ["f-amount","f-desc","f-notes","g-name","g-target","g-saved","g-monthly",
+   "i-name","i-total","i-monthly","i-total-mo"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+  document.getElementById("i-paid").value="0";
+  updateCats(); updateInstCats();
+  const hasUrl=!!settings.sheetsUrl;
+  document.getElementById("add-sync-dot").style.background=hasUrl?"#22c55e":"#cbd5e1";
+  document.getElementById("add-sync-label").textContent=hasUrl&&settings.autosync?"Will sync to Google Sheets":"Will save locally only";
+}
   const cats=currentType==="Income"?INCOME_CATS:EXPENSE_CATS;
   document.getElementById("f-category").innerHTML=cats.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
 }
@@ -1044,7 +1098,7 @@ async function submitTx() {
   if (document.getElementById("btn-add-tx").disabled) return;
   const amount = parseFloat(document.getElementById("f-amount").value);
   const desc   = document.getElementById("f-desc").value.trim();
-  const date   = document.getElementById("f-date").value;
+  const date   = getDateVal("f-date-d","f-date-m","f-date-y");
   const cat    = document.getElementById("f-category").value;
   const notes  = document.getElementById("f-notes").value.trim();
   if (!amount||amount<=0) { showToast("Enter a valid amount"); return; }
@@ -1071,7 +1125,7 @@ async function submitGoal() {
   const target   = parseFloat(document.getElementById("g-target").value)||0;
   const saved    = parseFloat(document.getElementById("g-saved").value)||0;
   const monthly  = parseFloat(document.getElementById("g-monthly").value)||0;
-  const due      = safeDate(document.getElementById("g-due").value);
+  const due      = safeDate(getMonthVal("g-due-m","g-due-y"));
   const colorVal = document.getElementById("g-color").value.split(",");
   if (!name)              { showToast("Enter a goal name"); return; }
   if (!target||target<=0) { showToast("Enter a target amount"); return; }
@@ -1109,7 +1163,7 @@ async function submitInst() {
   if (!monthly||monthly<=0){ showToast("Enter monthly payment"); return; }
   if (!totalMo||totalMo<=0){ showToast("Enter total months"); return; }
   setBtn("btn-add-inst", true, "Add Instalment", "#6366f1");
-  const startDate = document.getElementById("i-start").value;
+  const startDate = getDateVal("i-start-d","i-start-m","i-start-y");
   INSTALLMENTS.push({
     icon: name.match(/^\p{Emoji}/u)?.[0] || "📦",
     name: name.replace(/^\p{Emoji}\s*/u, ""),
