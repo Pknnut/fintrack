@@ -991,17 +991,18 @@ async function deleteTx(id) {
   if (!confirm("Delete this transaction?")) return;
   const tx = txs.find(t => t.id === id);
   txs = txs.filter(t => t.id !== id);
-  // also remove from unsynced list if it was never pushed
   unsyncedIds = unsyncedIds.filter(uid => uid !== id);
   localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
   saveTxs();
   renderHistory();
   renderHome();
-  // sync delete to Sheets if it has a rowId
-  if (tx && tx.rowId && settings.sheetsUrl) {
+  if (tx && settings.sheetsUrl) {
     setSyncStatus("syncing");
     const ok = await Promise.race([
-      postToSheets("delete_transaction", { rowId: tx.rowId }),
+      postToSheets("delete_transaction", {
+        rowId: tx.rowId,
+        data: { desc: tx.desc || tx.description || "", amount: tx.amount }
+      }),
       new Promise(r => setTimeout(() => r(false), 6000))
     ]);
     if (ok) { setSyncStatus("ok"); showToast("Transaction deleted + synced ✓"); }
