@@ -334,7 +334,7 @@
   <div class="modal-sheet">
     <div class="modal-title" id="modal-goal-title">Add savings</div>
     <div class="modal-sub" id="modal-goal-sub">How much did you save?</div>
-    <input class="modal-input" id="modal-goal-amount" type="number" min="0" placeholder="0">
+    <input class="modal-input" id="modal-goal-amount" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0">
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeModal('goal')">Cancel</button>
       <button class="modal-confirm" style="background:#22c55e" onclick="confirmAddSavings()">Add savings</button>
@@ -510,7 +510,7 @@
     </div>
     <div class="amount-input-wrap">
       <div class="amount-label">AMOUNT (THB)</div>
-      <input class="amount-input" id="f-amount" type="number" min="0" placeholder="0">
+      <input class="amount-input" id="f-amount" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0">
     </div>
     <div class="form-section">
       <div class="form-field"><label>CATEGORY</label><select id="f-category"></select></div>
@@ -531,12 +531,12 @@
   <div id="form-goal" style="display:none">
     <div class="amount-input-wrap">
       <div class="amount-label">TARGET AMOUNT (THB)</div>
-      <input class="amount-input" id="g-target" type="number" min="0" placeholder="0">
+      <input class="amount-input" id="g-target" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0">
     </div>
     <div class="form-section">
       <div class="form-field"><label>GOAL NAME</label><input id="g-name" type="text" placeholder="e.g. ✈️ Japan trip"></div>
-      <div class="form-field"><label>AMOUNT SAVED SO FAR (฿)</label><input id="g-saved" type="number" min="0" placeholder="0"></div>
-      <div class="form-field"><label>MONTHLY CONTRIBUTION (฿)</label><input id="g-monthly" type="number" min="0" placeholder="0"></div>
+      <div class="form-field"><label>AMOUNT SAVED SO FAR (฿)</label><input id="g-saved" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"></div>
+      <div class="form-field"><label>MONTHLY CONTRIBUTION (฿)</label><input id="g-monthly" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"></div>
       <div class="form-field"><label>TARGET DATE</label><div style="display:flex;gap:8px">
         <select id="g-due-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
         <select id="g-due-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
@@ -558,19 +558,19 @@
   <div id="form-inst" style="display:none">
     <div class="amount-input-wrap">
       <div class="amount-label">TOTAL AMOUNT (THB)</div>
-      <input class="amount-input" id="i-total" type="number" min="0" placeholder="0">
+      <input class="amount-input" id="i-total" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0">
     </div>
     <div class="form-section">
       <div class="form-field"><label>ITEM NAME</label><input id="i-name" type="text" placeholder="e.g. 📱 iPhone 16"></div>
       <div class="form-field"><label>CATEGORY</label><select id="i-category"></select></div>
-      <div class="form-field"><label>MONTHLY PAYMENT (฿)</label><input id="i-monthly" type="number" min="0" placeholder="0"></div>
+      <div class="form-field"><label>MONTHLY PAYMENT (฿)</label><input id="i-monthly" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"></div>
       <div class="form-field"><label>START DATE</label><div style="display:flex;gap:8px">
         <select id="i-start-d" style="flex:1;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
         <select id="i-start-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
         <select id="i-start-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
       </div></div>
-      <div class="form-field"><label>TOTAL MONTHS</label><input id="i-total-mo" type="number" min="1" placeholder="e.g. 12"></div>
-      <div class="form-field"><label>MONTHS ALREADY PAID</label><input id="i-paid" type="number" min="0" placeholder="0 if new"></div>
+      <div class="form-field"><label>TOTAL MONTHS</label><input id="i-total-mo" type="number" inputmode="numeric" pattern="[0-9]*" min="1" placeholder="e.g. 12"></div>
+      <div class="form-field"><label>MONTHS ALREADY PAID</label><input id="i-paid" type="number" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="0 if new"></div>
       <div class="form-field">
         <label>COLOR</label>
         <select id="i-color">
@@ -697,7 +697,7 @@
   <div class="modal-sheet">
     <div class="modal-title" id="modal-budget-title">Set budget</div>
     <div class="modal-sub" id="modal-budget-sub">Monthly limit for this category</div>
-    <input class="modal-input" id="modal-budget-amount" type="number" min="0" placeholder="0">
+    <input class="modal-input" id="modal-budget-amount" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0">
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeModal('budget')">Cancel</button>
       <button class="modal-confirm" style="background:#0d9488" onclick="confirmSetBudget()">Save budget</button>
@@ -714,7 +714,7 @@
       <label>CATEGORY</label>
       <select id="modal-budget-cat" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none"></select>
     </div>
-    <input class="modal-input" id="modal-budget-new-amount" type="number" min="0" placeholder="Monthly limit (฿)">
+    <input class="modal-input" id="modal-budget-new-amount" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="Monthly limit (฿)">
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeModal('budget-add')">Cancel</button>
       <button class="modal-confirm" style="background:#0d9488" onclick="confirmAddBudget()">Add budget</button>
@@ -789,7 +789,6 @@ let settings = JSON.parse(localStorage.getItem("ft_settings") || "{}");
 const _savedGoals = JSON.parse(localStorage.getItem("ft_goals") || "null");
 const _savedInsts = JSON.parse(localStorage.getItem("ft_insts") || "null");
 if (_savedGoals) GOALS.push(..._savedGoals);
-// Replace hardcoded defaults entirely if localStorage has saved data
 if (_savedInsts) { INSTALLMENTS.length = 0; INSTALLMENTS.push(..._savedInsts); }
 let pinBuffer = "", pinMode = "enter", pinSetupFirst = "";
 let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
@@ -1071,7 +1070,6 @@ async function refreshApp() {
   const icon = document.querySelector("#refresh-btn i");
   if (icon) icon.classList.add("spin");
   showToast("Refreshing…");
-  // Force pull even if we already have local data
   const [txOk, budgetOk] = await Promise.all([
     fetchFromSheets(true),
     fetchBudgetsFromSheets(true)
@@ -1278,7 +1276,6 @@ function setType(type) {
   document.getElementById("btn-income").className="type-btn"+(type==="Income"?" active-inc":"");
   updateCats();
 }
-// ── DATE DROPDOWN HELPERS (iOS Buddhist Era fix) ──────────────
 function buildDaySelect(id, day) {
   const el = document.getElementById(id); if (!el) return;
   el.innerHTML = Array.from({length:31},(_,i)=>`<option value="${i+1}"${i+1===day?' selected':''}>${i+1}</option>`).join("");
