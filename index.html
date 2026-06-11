@@ -95,10 +95,10 @@
   .bal-action:active { opacity: 0.75; }
   .bal-action-icon { font-size: 20px; display: flex; align-items: center; justify-content: center; }
   .bal-action-label { font-size: 10px; font-weight: 600; }
-  .bal-action.c-cal  { background: #faf5ff; } .bal-action.c-cal  .bal-action-icon { color: #7c3aed; } .bal-action.c-cal  .bal-action-label { color: #7c3aed; }
-  .bal-action.c-hist { background: #fef9c3; } .bal-action.c-hist .bal-action-icon { color: #a16207; } .bal-action.c-hist .bal-action-label { color: #a16207; }
-  .bal-action.c-rep  { background: #fff7ed; } .bal-action.c-rep  .bal-action-icon { color: #c2410c; } .bal-action.c-rep  .bal-action-label { color: #c2410c; }
-  .bal-action.c-sync { background: #e0f2fe; } .bal-action.c-sync .bal-action-icon { color: #0369a1; } .bal-action.c-sync .bal-action-label { color: #0369a1; }
+  .bal-action.c-hist   { background: #fef9c3; } .bal-action.c-hist   .bal-action-icon { color: #a16207; } .bal-action.c-hist   .bal-action-label { color: #a16207; }
+  .bal-action.c-budget { background: #f0fdf4; } .bal-action.c-budget .bal-action-icon { color: #16a34a; } .bal-action.c-budget .bal-action-label { color: #16a34a; }
+  .bal-action.c-export { background: #fff7ed; } .bal-action.c-export .bal-action-icon { color: #c2410c; } .bal-action.c-export .bal-action-label { color: #c2410c; }
+  .bal-action.c-sync   { background: #e0f2fe; } .bal-action.c-sync   .bal-action-icon { color: #0369a1; } .bal-action.c-sync   .bal-action-label { color: #0369a1; }
 
   .home-header { padding: 20px 20px 0; display: flex; justify-content: space-between; align-items: center; }
   .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--indigo-light);
@@ -249,6 +249,29 @@
   .hist-tx-del { width: 30px; height: 30px; border-radius: 8px; background: #fef2f2; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
   .hist-tx-del:active { background: #fee2e2; }
 
+  .budget-header { padding: 24px 20px 0; }
+  .budget-month { margin: 10px 20px 0; display: flex; align-items: center; justify-content: space-between; }
+  .budget-month-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--slate-100); border: none; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .budget-month-label { font-size: 14px; font-weight: 700; color: var(--slate-900); }
+  .budget-overview { margin: 12px 20px 0; background: var(--white); border-radius: var(--radius); border: 1px solid var(--slate-200); padding: 14px; }
+  .budget-ov-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .budget-ov-lbl { font-size: 11px; color: var(--slate-400); }
+  .budget-ov-val { font-size: 15px; font-weight: 700; color: var(--slate-900); }
+  .budget-total-bar { height: 8px; background: var(--slate-100); border-radius: 4px; overflow: hidden; }
+  .budget-total-fill { height: 100%; border-radius: 4px; transition: width 0.6s; }
+  .budget-grid { margin: 14px 20px 0; display: flex; flex-direction: column; gap: 10px; }
+  .budget-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--slate-200); padding: 14px; }
+  .budget-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .budget-cat { font-size: 13px; font-weight: 600; color: var(--slate-900); display: flex; align-items: center; gap: 6px; }
+  .budget-pct { font-size: 11px; font-weight: 700; }
+  .budget-bar { height: 6px; background: var(--slate-100); border-radius: 3px; margin-bottom: 8px; }
+  .budget-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s; }
+  .budget-amounts { display: flex; justify-content: space-between; font-size: 10px; color: var(--slate-400); }
+  .budget-spent { font-weight: 600; color: var(--slate-700); }
+  .budget-edit-btn { font-size: 10px; font-weight: 600; color: var(--teal); background: var(--teal-light); border: none; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+  .budget-add-btn { margin: 12px 20px 0; width: calc(100% - 40px); padding: 13px; background: var(--white); border: 1.5px dashed var(--slate-200); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--slate-400); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
+  .budget-add-btn:active { background: var(--slate-50); }
+
   /* MODAL */
   .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 300;
     display: flex; align-items: flex-end; justify-content: center; }
@@ -366,9 +389,9 @@
       </div>
     </div>
     <div class="balance-actions">
-      <button class="bal-action c-cal" onclick="goTo('history')"><div class="bal-action-icon"><i class="ti ti-calendar-event" aria-hidden="true"></i></div><div class="bal-action-label">Calendar</div></button>
       <button class="bal-action c-hist" onclick="goTo('history')"><div class="bal-action-icon"><i class="ti ti-history" aria-hidden="true"></i></div><div class="bal-action-label">History</div></button>
-      <button class="bal-action c-rep" onclick="goTo('analytics')"><div class="bal-action-icon"><i class="ti ti-report" aria-hidden="true"></i></div><div class="bal-action-label">Report</div></button>
+      <button class="bal-action c-budget" onclick="goTo('budget')"><div class="bal-action-icon"><i class="ti ti-wallet" aria-hidden="true"></i></div><div class="bal-action-label">Budget</div></button>
+      <button class="bal-action c-export" onclick="exportData()"><div class="bal-action-icon"><i class="ti ti-file-export" aria-hidden="true"></i></div><div class="bal-action-label">Export</div></button>
       <button class="bal-action c-sync" onclick="manualSync()"><div class="bal-action-icon"><i class="ti ti-refresh" aria-hidden="true"></i></div><div class="bal-action-label">Sync</div></button>
     </div>
   </div>
@@ -663,6 +686,52 @@
   <div class="spacer"></div>
 </div>
 
+<!-- MODAL: Set budget for category -->
+<div class="modal-overlay hidden" id="modal-budget">
+  <div class="modal-sheet">
+    <div class="modal-title" id="modal-budget-title">Set budget</div>
+    <div class="modal-sub" id="modal-budget-sub">Monthly limit for this category</div>
+    <input class="modal-input" id="modal-budget-amount" type="number" min="0" placeholder="0">
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeModal('budget')">Cancel</button>
+      <button class="modal-confirm" style="background:#0d9488" onclick="confirmSetBudget()">Save budget</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add new budget category -->
+<div class="modal-overlay hidden" id="modal-budget-add">
+  <div class="modal-sheet">
+    <div class="modal-title">Add budget category</div>
+    <div class="modal-sub">Choose a category and set a monthly limit</div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>CATEGORY</label>
+      <select id="modal-budget-cat" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none"></select>
+    </div>
+    <input class="modal-input" id="modal-budget-new-amount" type="number" min="0" placeholder="Monthly limit (฿)">
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeModal('budget-add')">Cancel</button>
+      <button class="modal-confirm" style="background:#0d9488" onclick="confirmAddBudget()">Add budget</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUDGET PAGE -->
+<div class="page" id="page-budget">
+  <div class="budget-header"><div class="meta">Monthly limits</div><div class="page-title">Budget</div></div>
+  <div class="budget-month">
+    <button class="budget-month-btn" onclick="budgetPrevMonth()">‹</button>
+    <div class="budget-month-label" id="budget-month-label">Jun 2026</div>
+    <button class="budget-month-btn" onclick="budgetNextMonth()">›</button>
+  </div>
+  <div class="budget-overview" id="budget-overview"></div>
+  <div class="budget-grid" id="budget-grid"></div>
+  <button class="budget-add-btn" onclick="openBudgetAddModal()">
+    <i class="ti ti-plus" style="font-size:16px"></i> Add category budget
+  </button>
+  <div class="spacer"></div>
+</div>
+
 <nav class="nav">
   <button class="nav-btn active" id="nav-home" onclick="goTo('home')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
@@ -776,8 +845,9 @@ function openInstModal(idx) {
 
 function closeModal(type) {
   document.getElementById("modal-" + type).classList.add("hidden");
-  if (type === "goal") modalGoalIdx = -1;
-  if (type === "inst") modalInstIdx = -1;
+  if (type === "goal")       modalGoalIdx = -1;
+  if (type === "inst")       modalInstIdx = -1;
+  if (type === "budget")     editBudgetIdx = -1;
 }
 
 async function confirmAddSavings() {
@@ -826,11 +896,14 @@ async function confirmMarkPaid() {
 // ══ STARTUP ═══════════════════════════════════════════════════
 async function startup() {
   setLoading("Starting up…", 10);
-  if (txs.length === 0 && settings.sheetsUrl) {
-    setLoading("Fetching transactions from Google Sheets…", 30);
-    const ok = await fetchFromSheets(true);
-    if (ok) { setLoading("Transactions loaded ✓", 90); await delay(600); }
-    else    { setLoading("Couldn't reach Sheets — working offline", 90); await delay(800); }
+  if (settings.sheetsUrl) {
+    setLoading("Fetching data from Google Sheets…", 25);
+    const [txOk, budgetOk] = await Promise.all([
+      txs.length === 0 ? fetchFromSheets(true) : Promise.resolve(false),
+      fetchBudgetsFromSheets(true)
+    ]);
+    if (txOk || budgetOk) { setLoading("Data loaded ✓", 90); await delay(600); }
+    else { setLoading("Working offline", 90); await delay(600); }
   } else { setLoading("Loading…", 80); await delay(300); }
   setLoading("Ready", 100); await delay(300);
   document.getElementById("loading-screen").classList.add("hidden");
@@ -936,6 +1009,7 @@ function goTo(page) {
   if (page==="add")          setupAdd();
   if (page==="settings")     renderSettings();
   if (page==="history")      { histFilter="all"; document.getElementById("hist-search").value=""; renderHistory(); }
+  if (page==="budget")       renderBudget();
 }
 
 let histFilter = "all";
@@ -1420,6 +1494,139 @@ document.querySelectorAll(".period-pill").forEach(p => p.addEventListener("click
   document.querySelectorAll(".period-pill").forEach(x => x.classList.remove("active"));
   this.classList.add("active");
 }));
+// ══ BUDGET ════════════════════════════════════════════════════
+let BUDGETS = JSON.parse(localStorage.getItem("ft_budgets") || "[]");
+if (!BUDGETS.length) BUDGETS = [
+  { cat: "🍜 Food & Dining",    limit: 5000 },
+  { cat: "🚗 Grab / Transport", limit: 2000 },
+  { cat: "🛒 Groceries",        limit: 3000 },
+];
+function saveBudgets() { localStorage.setItem("ft_budgets", JSON.stringify(BUDGETS)); }
+
+async function fetchBudgetsFromSheets(silent = false) {
+  if (!settings.sheetsUrl) return false;
+  try {
+    const res  = await fetch(settings.sheetsUrl + "?action=get_budgets");
+    const data = await res.json();
+    if (data.budgets && Array.isArray(data.budgets) && data.budgets.length) {
+      BUDGETS = data.budgets;
+      saveBudgets();
+      return true;
+    }
+    return false;
+  } catch { return false; }
+}
+
+async function syncBudgetsToSheets() {
+  if (!settings.sheetsUrl) return;
+  await Promise.race([
+    postToSheets("save_budgets", { budgets: BUDGETS }),
+    new Promise(r => setTimeout(() => r(false), 6000))
+  ]);
+}
+
+let budgetYear  = new Date().getFullYear();
+let budgetMonth = new Date().getMonth();
+let editBudgetIdx = -1;
+
+function budgetPrevMonth() {
+  budgetMonth--; if (budgetMonth < 0) { budgetMonth = 11; budgetYear--; }
+  renderBudget();
+}
+function budgetNextMonth() {
+  budgetMonth++; if (budgetMonth > 11) { budgetMonth = 0; budgetYear++; }
+  renderBudget();
+}
+
+function renderBudget() {
+  document.getElementById("budget-month-label").textContent = MO[budgetMonth] + " " + budgetYear;
+  const monthTxArr = txs.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === budgetMonth && d.getFullYear() === budgetYear && t.type === "Expense";
+  });
+  const totalSpent  = monthTxArr.reduce((s, t) => s + t.amount, 0);
+  const totalBudget = BUDGETS.reduce((s, b) => s + b.limit, 0);
+  const totalPct    = totalBudget > 0 ? Math.min(Math.round(totalSpent / totalBudget * 100), 100) : 0;
+  const ovColor     = totalPct >= 100 ? "#ef4444" : totalPct >= 80 ? "#f59e0b" : "#0d9488";
+  document.getElementById("budget-overview").innerHTML =
+    '<div class="budget-ov-row"><span class="budget-ov-lbl">Total spent</span><span class="budget-ov-val">' + fmt(totalSpent) + '</span></div>' +
+    '<div class="budget-ov-row"><span class="budget-ov-lbl">Total budget</span><span class="budget-ov-val">' + fmt(totalBudget) + '</span></div>' +
+    '<div class="budget-total-bar"><div class="budget-total-fill" style="width:' + totalPct + '%;background:' + ovColor + '"></div></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--slate-400);margin-top:5px"><span>' + totalPct + '% used</span><span>' + fmt(Math.max(totalBudget - totalSpent, 0)) + ' remaining</span></div>';
+  if (!BUDGETS.length) {
+    document.getElementById("budget-grid").innerHTML = '<div class="empty-state">No budgets set — tap below to add one</div>';
+    return;
+  }
+  document.getElementById("budget-grid").innerHTML = BUDGETS.map((b, idx) => {
+    const spent = monthTxArr.filter(t => (t.category || "").includes(b.cat.replace(/^\S+\s/, ""))).reduce((s, t) => s + t.amount, 0);
+    const pct   = b.limit > 0 ? Math.min(Math.round(spent / b.limit * 100), 100) : 0;
+    const color = pct >= 100 ? "#ef4444" : pct >= 80 ? "#f59e0b" : "#0d9488";
+    const emoji = b.cat.split(" ")[0];
+    return '<div class="budget-card">' +
+      '<div class="budget-card-top">' +
+        '<div class="budget-cat">' + emoji + ' ' + b.cat.replace(/^\S+\s/, "") + '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span class="budget-pct" style="color:' + color + '">' + pct + '%</span>' +
+          '<button class="budget-edit-btn" onclick="openBudgetEditModal(' + idx + ')">Edit</button>' +
+          '<button style="background:#fef2f2;border:none;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;color:#ef4444;cursor:pointer" onclick="deleteBudget(' + idx + ')">✕</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="budget-bar"><div class="budget-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+      '<div class="budget-amounts"><span class="budget-spent">' + fmt(spent) + ' spent</span><span>limit: ' + fmt(b.limit) + '</span></div>' +
+      (pct >= 80 ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:' + color + ';background:' + (pct>=100?'#fef2f2':'#fffbeb') + ';padding:5px 8px;border-radius:6px">' + (pct>=100?'⚠️ Over budget!':'⚠️ Approaching limit') + '</div>' : '') +
+    '</div>';
+  }).join("");
+}
+
+function openBudgetEditModal(idx) {
+  editBudgetIdx = idx;
+  const b = BUDGETS[idx];
+  document.getElementById("modal-budget-title").textContent = "Edit budget — " + b.cat.replace(/^\S+\s/, "");
+  document.getElementById("modal-budget-sub").textContent = "Current limit: " + fmt(b.limit);
+  document.getElementById("modal-budget-amount").value = b.limit;
+  document.getElementById("modal-budget").classList.remove("hidden");
+  setTimeout(() => document.getElementById("modal-budget-amount").focus(), 150);
+}
+
+async function confirmSetBudget() {
+  if (editBudgetIdx < 0) return;
+  const val = parseFloat(document.getElementById("modal-budget-amount").value) || 0;
+  if (val <= 0) { showToast("Enter a valid amount"); return; }
+  BUDGETS[editBudgetIdx].limit = val;
+  saveBudgets(); closeModal("budget"); renderBudget();
+  await syncBudgetsToSheets();
+  showToast("Budget updated + synced ✓");
+}
+
+function openBudgetAddModal() {
+  const existing  = BUDGETS.map(b => b.cat);
+  const available = EXPENSE_CATS.filter(c => !existing.includes(c.e + " " + c.n));
+  if (!available.length) { showToast("All categories already have a budget"); return; }
+  document.getElementById("modal-budget-cat").innerHTML =
+    available.map(c => '<option value="' + c.e + ' ' + c.n + '">' + c.e + ' ' + c.n + '</option>').join("");
+  document.getElementById("modal-budget-new-amount").value = "";
+  document.getElementById("modal-budget-add").classList.remove("hidden");
+  setTimeout(() => document.getElementById("modal-budget-new-amount").focus(), 150);
+}
+
+async function confirmAddBudget() {
+  const cat = document.getElementById("modal-budget-cat").value;
+  const val = parseFloat(document.getElementById("modal-budget-new-amount").value) || 0;
+  if (val <= 0) { showToast("Enter a valid amount"); return; }
+  BUDGETS.push({ cat, limit: val });
+  saveBudgets(); closeModal("budget-add"); renderBudget();
+  await syncBudgetsToSheets();
+  showToast("Budget added + synced ✓");
+}
+
+async function deleteBudget(idx) {
+  if (confirm('Remove budget for "' + BUDGETS[idx].cat.replace(/^\S+\s/, "") + '"?')) {
+    BUDGETS.splice(idx, 1); saveBudgets(); renderBudget();
+    await syncBudgetsToSheets();
+    showToast("Budget removed + synced ✓");
+  }
+}
+
 startup();
 </script>
 </body>
