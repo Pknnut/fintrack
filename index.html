@@ -150,6 +150,7 @@
   .goal-action-btn:active { opacity: 0.75; }
   .goal-save-btn { background: #ecfdf5; color: #16a34a; }
   .goal-delete-btn { background: var(--slate-100); color: var(--slate-500); flex: 0 0 44px; }
+  .goal-edit-btn { background: #eff6ff; color: #2563eb; flex: 0 0 44px; }
 
   .analytics-header { padding: 24px 20px 0; }
   .revenue-card { margin: 14px 20px 0; background: var(--teal); border-radius: 20px; padding: 18px; }
@@ -191,6 +192,7 @@
   .inst-pay-btn { background: #eff6ff; color: #2563eb; }
   .inst-pay-btn:disabled { background: var(--slate-100); color: var(--slate-400); cursor: not-allowed; }
   .inst-delete-btn { background: var(--slate-100); color: var(--slate-500); flex: 0 0 44px; }
+  .inst-edit-btn { background: #eff6ff; color: #2563eb; flex: 0 0 44px; }
 
   .settings-header { padding: 24px 20px 0; }
   .settings-section { margin: 16px 20px 0; }
@@ -248,6 +250,8 @@
   .hist-tx-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--white); border-radius: var(--radius-sm); border: 1px solid var(--slate-200); margin-bottom: 7px; }
   .hist-tx-del { width: 30px; height: 30px; border-radius: 8px; background: #fef2f2; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
   .hist-tx-del:active { background: #fee2e2; }
+  .hist-tx-edit { width: 30px; height: 30px; border-radius: 8px; background: #eff6ff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+  .hist-tx-edit:active { background: #dbeafe; }
 
   .budget-header { padding: 24px 20px 0; }
   .budget-month { margin: 10px 20px 0; display: flex; align-items: center; justify-content: space-between; }
@@ -327,6 +331,151 @@
   </div>
   <div class="pin-error" id="pin-error"></div>
   <div class="pin-setup-hint" id="pin-setup-hint"></div>
+</div>
+
+<!-- MODAL: Edit goal -->
+<div class="modal-overlay hidden" id="modal-edit-goal">
+  <div class="modal-sheet" style="padding-bottom:48px">
+    <div class="modal-title">Edit goal</div>
+    <div class="modal-sub">Update your goal details</div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>GOAL NAME</label>
+      <input id="eg-name" type="text" placeholder="e.g. ✈️ Japan trip"
+        style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>TARGET AMOUNT (฿)</label>
+      <input id="eg-target" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"
+        style="width:100%;border:none;outline:none;font-size:18px;font-weight:700;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>AMOUNT SAVED SO FAR (฿)</label>
+      <input id="eg-saved" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"
+        style="width:100%;border:none;outline:none;font-size:18px;font-weight:700;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>MONTHLY CONTRIBUTION (฿)</label>
+      <input id="eg-monthly" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"
+        style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>TARGET DATE</label>
+      <div style="display:flex;gap:8px">
+        <select id="eg-due-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+        <select id="eg-due-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+      </div>
+    </div>
+    <div class="form-field" style="margin-bottom:14px">
+      <label>COLOR</label>
+      <select id="eg-color" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none">
+        <option value="#22c55e,#ecfdf5">🟢 Green</option>
+        <option value="#6366f1,#eef2ff">🟣 Indigo</option>
+        <option value="#f59e0b,#fffbeb">🟡 Amber</option>
+        <option value="#0d9488,#ccfbf1">🩵 Teal</option>
+        <option value="#ef4444,#fef2f2">🔴 Red</option>
+        <option value="#8b5cf6,#f5f3ff">💜 Purple</option>
+      </select>
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeModal('edit-goal')">Cancel</button>
+      <button class="modal-confirm" style="background:#22c55e" onclick="confirmEditGoal()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit instalment -->
+<div class="modal-overlay hidden" id="modal-edit-inst">
+  <div class="modal-sheet" style="padding-bottom:48px">
+    <div class="modal-title">Edit instalment</div>
+    <div class="modal-sub">Update your instalment plan</div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>ITEM NAME</label>
+      <input id="ei-name" type="text" placeholder="e.g. 📱 iPhone 16"
+        style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>CATEGORY</label>
+      <select id="ei-category" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none"></select>
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>TOTAL AMOUNT (฿)</label>
+      <input id="ei-total" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"
+        style="width:100%;border:none;outline:none;font-size:18px;font-weight:700;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>MONTHLY PAYMENT (฿)</label>
+      <input id="ei-monthly" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"
+        style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>TOTAL MONTHS</label>
+      <input id="ei-total-mo" type="number" inputmode="numeric" pattern="[0-9]*" min="1" placeholder="e.g. 12"
+        style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>MONTHS ALREADY PAID</label>
+      <input id="ei-paid" type="number" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="0"
+        style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:14px">
+      <label>COLOR</label>
+      <select id="ei-color" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none">
+        <option value="#6366f1">🟣 Indigo</option>
+        <option value="#0d9488">🩵 Teal</option>
+        <option value="#f59e0b">🟡 Amber</option>
+        <option value="#22c55e">🟢 Green</option>
+        <option value="#8b5cf6">💜 Purple</option>
+        <option value="#ef4444">🔴 Red</option>
+      </select>
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeModal('edit-inst')">Cancel</button>
+      <button class="modal-confirm" style="background:#6366f1" onclick="confirmEditInst()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit transaction -->
+<div class="modal-overlay hidden" id="modal-edit-tx">
+  <div class="modal-sheet" style="padding-bottom:48px">
+    <div class="modal-title">Edit transaction</div>
+    <div class="modal-sub">Update and re-sync to Google Sheets</div>
+    <div style="display:flex;background:var(--slate-100);border-radius:12px;padding:4px;margin-bottom:14px">
+      <button id="edit-btn-expense" onclick="setEditType('Expense')" style="flex:1;padding:9px;text-align:center;border-radius:9px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:none;color:var(--slate-400);transition:all 0.2s">Expense</button>
+      <button id="edit-btn-income"  onclick="setEditType('Income')"  style="flex:1;padding:9px;text-align:center;border-radius:9px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:none;color:var(--slate-400);transition:all 0.2s">Income</button>
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>AMOUNT (THB)</label>
+      <input id="edit-amount" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"
+        style="width:100%;border:none;outline:none;font-size:22px;font-weight:700;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>CATEGORY</label>
+      <select id="edit-category" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none"></select>
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>DESCRIPTION</label>
+      <input id="edit-desc" type="text" placeholder="e.g. Grab delivery"
+        style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="form-field" style="margin-bottom:10px">
+      <label>DATE</label>
+      <div style="display:flex;gap:8px">
+        <select id="edit-date-d" style="flex:1;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+        <select id="edit-date-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+        <select id="edit-date-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select>
+      </div>
+    </div>
+    <div class="form-field" style="margin-bottom:14px">
+      <label>NOTES (optional)</label>
+      <input id="edit-notes" type="text" placeholder="Optional note"
+        style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit">
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeModal('edit-tx')">Cancel</button>
+      <button class="modal-confirm" style="background:var(--slate-900)" onclick="confirmEditTx()">Save changes</button>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL: Add savings to goal -->
@@ -853,6 +1002,9 @@ function closeModal(type) {
   if (type === "goal")       modalGoalIdx = -1;
   if (type === "inst")       modalInstIdx = -1;
   if (type === "budget")     editBudgetIdx = -1;
+  if (type === "edit-tx")    editTxId = null;
+  if (type === "edit-goal")  editGoalIdx = -1;
+  if (type === "edit-inst")  editInstIdx = -1;
 }
 
 async function confirmAddSavings() {
@@ -1059,6 +1211,9 @@ function renderHistory() {
         '<div class="tx-sub">'+(t.category||"").replace(/^\S+\s/,"")+" · "+d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear()+'</div>' +
       '</div>' +
       '<span class="tx-amt '+(isInc?'pos':'neg')+'" style="margin-right:8px">'+(isInc?"+":"-")+fmt(t.amount)+'</span>' +
+      '<button class="hist-tx-edit" onclick="openEditTxModal('+t.id+')" aria-label="Edit transaction">' +
+        '<i class="ti ti-pencil" style="font-size:15px;color:#2563eb"></i>' +
+      '</button>' +
       '<button class="hist-tx-del" onclick="deleteTx('+t.id+')" aria-label="Delete transaction">' +
         '<i class="ti ti-trash" style="font-size:15px;color:#ef4444"></i>' +
       '</button>' +
@@ -1079,6 +1234,219 @@ async function refreshApp() {
   renderAnalytics();
   if (txOk || budgetOk) showToast("Refreshed ✓");
   else showToast("Up to date ✓");
+}
+
+let editGoalIdx = -1;
+
+function openEditGoalModal(idx) {
+  editGoalIdx = idx;
+  const g = GOALS[idx];
+  document.getElementById("eg-name").value = (g.icon && g.icon !== "🎯" ? g.icon + " " : "") + g.name;
+  document.getElementById("eg-target").value = g.target || "";
+  document.getElementById("eg-saved").value = g.saved || "";
+  document.getElementById("eg-monthly").value = g.monthly || "";
+  // Build month/year selects
+  const now = new Date(), cy = now.getFullYear();
+  buildMonthSelect("eg-due-m", 1);
+  buildYearSelect("eg-due-y", cy, 0, 5);
+  // Try to match due date (format: "Jan 2027")
+  if (g.due && g.due !== "—") {
+    const parts = g.due.split(" ");
+    if (parts.length === 2) {
+      const mIdx = MO.indexOf(parts[0]) + 1;
+      const y    = parseInt(parts[1]);
+      const mSel = document.getElementById("eg-due-m");
+      const ySel = document.getElementById("eg-due-y");
+      for (let i=0;i<mSel.options.length;i++) if(parseInt(mSel.options[i].value)===mIdx){mSel.selectedIndex=i;break;}
+      for (let i=0;i<ySel.options.length;i++) if(parseInt(ySel.options[i].value)===y){ySel.selectedIndex=i;break;}
+    }
+  }
+  // Set color
+  const colorVal = g.color + "," + (g.bg || "#f1f5f9");
+  const cSel = document.getElementById("eg-color");
+  for (let i=0;i<cSel.options.length;i++) if(cSel.options[i].value===colorVal){cSel.selectedIndex=i;break;}
+  document.getElementById("modal-edit-goal").classList.remove("hidden");
+  setTimeout(() => document.getElementById("eg-name").focus(), 150);
+}
+
+async function confirmEditGoal() {
+  if (editGoalIdx < 0) return;
+  const name    = document.getElementById("eg-name").value.trim();
+  const target  = parseFloat(document.getElementById("eg-target").value) || 0;
+  const saved   = parseFloat(document.getElementById("eg-saved").value) || 0;
+  const monthly = parseFloat(document.getElementById("eg-monthly").value) || 0;
+  const due     = safeDate(getMonthVal("eg-due-m","eg-due-y"));
+  const colorVal = document.getElementById("eg-color").value.split(",");
+  if (!name)               { showToast("Enter a goal name"); return; }
+  if (!target || target<=0){ showToast("Enter a target amount"); return; }
+  const oldGoal = { ...GOALS[editGoalIdx] };
+  const icon = name.match(/^\p{Emoji}/u)?.[0] || oldGoal.icon || "🎯";
+  const cleanName = name.replace(/^\p{Emoji}\s*/u, "");
+  GOALS[editGoalIdx] = { ...oldGoal, icon, name: cleanName, target, saved, monthly, due, color: colorVal[0], bg: colorVal[1] || "#f1f5f9" };
+  saveGoals();
+  closeModal("edit-goal");
+  renderGoals();
+  showToast("Goal updated ✓");
+  if (settings.sheetsUrl) {
+    setSyncStatus("syncing");
+    const ok = await Promise.race([
+      postToSheets("update_goal", {
+        oldName: oldGoal.name,
+        data: { name: icon + " " + cleanName, target, saved, monthly, due, color: colorVal[0] }
+      }),
+      new Promise(r => setTimeout(() => r(false), 6000))
+    ]);
+    if (ok) { setSyncStatus("ok"); showToast("Goal updated + synced ✓"); }
+    else    { setSyncStatus("error"); showToast("Updated locally — Sheets sync failed"); }
+  }
+}
+
+let editInstIdx = -1;
+
+function openEditInstModal(idx) {
+  editInstIdx = idx;
+  const p = INSTALLMENTS[idx];
+  document.getElementById("ei-name").value = (p.icon && p.icon !== "📦" ? p.icon + " " : "") + p.name;
+  // Build category dropdown
+  document.getElementById("ei-category").innerHTML = EXPENSE_CATS.map(c => '<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
+  const catSel = document.getElementById("ei-category");
+  for (let i=0;i<catSel.options.length;i++) if(catSel.options[i].value===p.cat){catSel.selectedIndex=i;break;}
+  document.getElementById("ei-total").value   = p.total   || "";
+  document.getElementById("ei-monthly").value = p.monthly || "";
+  document.getElementById("ei-total-mo").value= p.total_mo|| "";
+  document.getElementById("ei-paid").value    = p.paid    || 0;
+  // Set color
+  const colorSel = document.getElementById("ei-color");
+  for (let i=0;i<colorSel.options.length;i++) if(colorSel.options[i].value===p.color){colorSel.selectedIndex=i;break;}
+  document.getElementById("modal-edit-inst").classList.remove("hidden");
+  setTimeout(() => document.getElementById("ei-name").focus(), 150);
+}
+
+async function confirmEditInst() {
+  if (editInstIdx < 0) return;
+  const name    = document.getElementById("ei-name").value.trim();
+  const total   = parseFloat(document.getElementById("ei-total").value) || 0;
+  const monthly = parseFloat(document.getElementById("ei-monthly").value) || 0;
+  const totalMo = parseInt(document.getElementById("ei-total-mo").value) || 0;
+  const paid    = parseInt(document.getElementById("ei-paid").value) || 0;
+  const cat     = document.getElementById("ei-category").value;
+  const color   = document.getElementById("ei-color").value;
+  if (!name)                { showToast("Enter an item name"); return; }
+  if (!total || total<=0)   { showToast("Enter a total amount"); return; }
+  if (!monthly || monthly<=0){ showToast("Enter monthly payment"); return; }
+  if (!totalMo || totalMo<=0){ showToast("Enter total months"); return; }
+  const oldInst = { ...INSTALLMENTS[editInstIdx] };
+  const icon = name.match(/^\p{Emoji}/u)?.[0] || oldInst.icon || "📦";
+  const cleanName = name.replace(/^\p{Emoji}\s*/u, "");
+  INSTALLMENTS[editInstIdx] = { ...oldInst, icon, name: cleanName, cat, total, monthly, total_mo: totalMo, paid: Math.min(paid, totalMo), color };
+  saveInsts();
+  closeModal("edit-inst");
+  renderInstallments();
+  showToast("Instalment updated ✓");
+  if (settings.sheetsUrl) {
+    setSyncStatus("syncing");
+    const ok = await Promise.race([
+      postToSheets("update_installment", {
+        oldName: oldInst.name,
+        data: { name: icon + " " + cleanName, category: cat, total, monthly, totalMonths: totalMo, monthsPaid: Math.min(paid, totalMo), color }
+      }),
+      new Promise(r => setTimeout(() => r(false), 6000))
+    ]);
+    if (ok) { setSyncStatus("ok"); showToast("Instalment updated + synced ✓"); }
+    else    { setSyncStatus("error"); showToast("Updated locally — Sheets sync failed"); }
+  }
+}
+
+let editTxId = null;
+let editTxType = "Expense";
+
+function setEditType(type) {
+  editTxType = type;
+  const expBtn = document.getElementById("edit-btn-expense");
+  const incBtn = document.getElementById("edit-btn-income");
+  if (type === "Expense") {
+    expBtn.style.background = "var(--white)"; expBtn.style.color = "var(--red)";
+    expBtn.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)";
+    incBtn.style.background = "none"; incBtn.style.color = "var(--slate-400)";
+    incBtn.style.boxShadow = "none";
+  } else {
+    incBtn.style.background = "var(--white)"; incBtn.style.color = "var(--green)";
+    incBtn.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)";
+    expBtn.style.background = "none"; expBtn.style.color = "var(--slate-400)";
+    expBtn.style.boxShadow = "none";
+  }
+  // rebuild category dropdown
+  const cats = type === "Income" ? INCOME_CATS : EXPENSE_CATS;
+  document.getElementById("edit-category").innerHTML = cats.map(c => '<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
+}
+
+function openEditTxModal(id) {
+  const tx = txs.find(t => t.id === id);
+  if (!tx) return;
+  editTxId = id;
+  editTxType = tx.type || "Expense";
+  setEditType(editTxType);
+  document.getElementById("edit-amount").value = tx.amount || "";
+  // Set category
+  const catSel = document.getElementById("edit-category");
+  for (let i = 0; i < catSel.options.length; i++) {
+    if (catSel.options[i].value === tx.category) { catSel.selectedIndex = i; break; }
+  }
+  document.getElementById("edit-desc").value = tx.desc || tx.description || "";
+  document.getElementById("edit-notes").value = tx.notes || "";
+  // Build date dropdowns
+  const now = new Date(), cy = now.getFullYear();
+  buildDaySelect("edit-date-d", 1);
+  buildMonthSelect("edit-date-m", 1);
+  buildYearSelect("edit-date-y", cy, 3, 0);
+  // Set date values from transaction
+  if (tx.date) {
+    const parts = tx.date.split("-");
+    if (parts.length === 3) {
+      const y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
+      const dSel = document.getElementById("edit-date-d");
+      const mSel = document.getElementById("edit-date-m");
+      const ySel = document.getElementById("edit-date-y");
+      for (let i=0;i<dSel.options.length;i++) if(parseInt(dSel.options[i].value)===d){dSel.selectedIndex=i;break;}
+      for (let i=0;i<mSel.options.length;i++) if(parseInt(mSel.options[i].value)===m){mSel.selectedIndex=i;break;}
+      for (let i=0;i<ySel.options.length;i++) if(parseInt(ySel.options[i].value)===y){ySel.selectedIndex=i;break;}
+    }
+  }
+  document.getElementById("modal-edit-tx").classList.remove("hidden");
+  setTimeout(() => document.getElementById("edit-amount").focus(), 150);
+}
+
+async function confirmEditTx() {
+  if (!editTxId) return;
+  const amount = parseFloat(document.getElementById("edit-amount").value);
+  const desc   = document.getElementById("edit-desc").value.trim();
+  const cat    = document.getElementById("edit-category").value;
+  const notes  = document.getElementById("edit-notes").value.trim();
+  const date   = getDateVal("edit-date-d","edit-date-m","edit-date-y");
+  if (!amount || amount <= 0) { showToast("Enter a valid amount"); return; }
+  if (!desc)                  { showToast("Enter a description"); return; }
+  const idx = txs.findIndex(t => t.id === editTxId);
+  if (idx < 0) { showToast("Transaction not found"); return; }
+  const oldTx = { ...txs[idx] };
+  txs[idx] = { ...oldTx, type: editTxType, category: cat, desc, amount, notes, date };
+  saveTxs();
+  closeModal("edit-tx");
+  renderHistory();
+  renderHome();
+  showToast("Transaction updated ✓");
+  if (settings.sheetsUrl) {
+    setSyncStatus("syncing");
+    const ok = await Promise.race([
+      postToSheets("update_transaction", {
+        rowId: oldTx.rowId,
+        data: { oldDesc: oldTx.desc || oldTx.description || "", oldAmount: oldTx.amount,
+                date, type: editTxType, category: cat, description: desc, amount, notes }
+      }),
+      new Promise(r => setTimeout(() => r(false), 6000))
+    ]);
+    if (ok) { setSyncStatus("ok"); showToast("Updated + synced to Sheets ✓"); }
+    else    { setSyncStatus("error"); showToast("Updated locally — Sheets sync failed"); }
+  }
 }
 
 async function deleteTx(id) {
@@ -1178,6 +1546,7 @@ function renderGoals() {
       '<div class="goal-footer"><span>'+(isDone?'🎉 Goal reached!':fmt(g.target-g.saved)+' remaining')+'</span><span>Target: '+g.due+'</span></div>' +
       '<div class="goal-actions">' +
         '<button class="goal-action-btn goal-save-btn" onclick="openGoalModal('+idx+')"'+(isDone?' disabled style="opacity:0.4"':'')+'>+ Add savings</button>' +
+        '<button class="goal-action-btn goal-edit-btn" onclick="openEditGoalModal('+idx+')">✏️</button>' +
         '<button class="goal-action-btn goal-delete-btn" onclick="deleteGoal('+idx+')">🗑️</button>' +
       '</div>' +
     '</div>';
@@ -1240,6 +1609,7 @@ function renderInstallments() {
       '</div>' +
       '<div class="inst-actions">' +
         '<button class="inst-action-btn inst-pay-btn" onclick="openInstModal('+idx+')"'+(isDone?' disabled':'')+'>✓ Mark this month paid</button>' +
+        '<button class="inst-action-btn inst-edit-btn" onclick="openEditInstModal('+idx+')">✏️</button>' +
         '<button class="inst-action-btn inst-delete-btn" onclick="deleteInst('+idx+')">🗑️</button>' +
       '</div>' +
     '</div>';
