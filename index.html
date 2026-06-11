@@ -80,10 +80,15 @@
   .balance-card { margin: 14px 20px 0; background: var(--slate-900); border-radius: 20px; padding: 20px; }
   .balance-label { font-size: 10px; color: #475569; margin-bottom: 4px; letter-spacing: 0.3px; }
   .balance-amount { font-size: 34px; font-weight: 700; color: var(--white); letter-spacing: -1.5px; margin-bottom: 14px; line-height: 1; }
-  .balance-actions { display: flex; gap: 8px; }
-  .bal-action { flex: 1; background: rgba(255,255,255,0.07); border-radius: 10px; padding: 9px 6px; text-align: center; border: none; cursor: pointer; }
-  .bal-action-icon { font-size: 16px; margin-bottom: 2px; }
-  .bal-action-label { font-size: 9px; color: #64748b; }
+  .balance-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .bal-action { border: none; border-radius: 14px; padding: 10px 4px 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: opacity 0.15s; }
+  .bal-action:active { opacity: 0.75; }
+  .bal-action-icon { font-size: 20px; }
+  .bal-action-label { font-size: 10px; font-weight: 600; }
+  .bal-action.c-add  { background: #1e3a5f; } .bal-action.c-add  .bal-action-icon { color: #60a5fa; } .bal-action.c-add  .bal-action-label { color: #93c5fd; }
+  .bal-action.c-goal { background: #1a3a2a; } .bal-action.c-goal .bal-action-icon { color: #34d399; } .bal-action.c-goal .bal-action-label { color: #6ee7b7; }
+  .bal-action.c-debt { background: #3a1a2a; } .bal-action.c-debt .bal-action-icon { color: #f472b6; } .bal-action.c-debt .bal-action-label { color: #f9a8d4; }
+  .bal-action.c-anlt { background: #3a2a10; } .bal-action.c-anlt .bal-action-icon { color: #fbbf24; } .bal-action.c-anlt .bal-action-label { color: #fde68a; }
 
   .home-header { padding: 20px 20px 0; display: flex; justify-content: space-between; align-items: center; }
   .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--indigo-light);
@@ -333,10 +338,10 @@
     <div class="balance-label">CURRENT BALANCE</div>
     <div class="balance-amount" id="home-balance">฿0</div>
     <div class="balance-actions">
-      <button class="bal-action" onclick="goTo('add')"><div class="bal-action-icon">➕</div><div class="bal-action-label">Add</div></button>
-      <button class="bal-action" onclick="goTo('goals')"><div class="bal-action-icon">🎯</div><div class="bal-action-label">Goals</div></button>
-      <button class="bal-action" onclick="goTo('installments')"><div class="bal-action-icon">📅</div><div class="bal-action-label">Debts</div></button>
-      <button class="bal-action" onclick="goTo('analytics')"><div class="bal-action-icon">📊</div><div class="bal-action-label">Analytics</div></button>
+      <button class="bal-action c-add" onclick="goTo('add')"><div class="bal-action-icon">➕</div><div class="bal-action-label">Add</div></button>
+      <button class="bal-action c-goal" onclick="goTo('goals')"><div class="bal-action-icon">🎯</div><div class="bal-action-label">Goals</div></button>
+      <button class="bal-action c-debt" onclick="goTo('installments')"><div class="bal-action-icon">📅</div><div class="bal-action-label">Debts</div></button>
+      <button class="bal-action c-anlt" onclick="goTo('analytics')"><div class="bal-action-icon">📊</div><div class="bal-action-label">Analytics</div></button>
     </div>
   </div>
   <div class="chart-section">
