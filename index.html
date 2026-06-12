@@ -304,6 +304,17 @@
 
   .hist-filter { font-size: 11px; font-weight: 600; padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--slate-200); background: var(--white); color: var(--slate-500); cursor: pointer; font-family: inherit; transition: all 0.15s; }
   .hist-filter.active { background: var(--slate-900); color: var(--white); border-color: var(--slate-900); }
+  .hist-adv-btn { display:flex; align-items:center; gap:5px; padding:5px 12px; border-radius:20px; border:1.5px solid var(--slate-200); background:var(--white); color:var(--slate-500); font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; margin-left:auto; }
+  .hist-adv-btn.active { border-color:var(--teal); color:var(--teal); background:#f0fdfa; }
+  .hist-adv-panel { margin:8px 20px 0; background:var(--white); border:1px solid var(--slate-200); border-radius:var(--radius); padding:12px 14px; display:none; }
+  .hist-adv-panel.open { display:block; }
+  .hist-adv-row { display:flex; gap:8px; margin-bottom:10px; }
+  .hist-adv-row:last-child { margin-bottom:0; }
+  .hist-adv-sel { flex:1; background:var(--slate-50); border:1px solid var(--slate-200); border-radius:var(--radius-sm); padding:8px 10px; font-size:12px; font-weight:500; color:var(--slate-900); font-family:inherit; outline:none; appearance:none; -webkit-appearance:none; cursor:pointer; }
+  .hist-active-filters { display:flex; gap:6px; flex-wrap:wrap; margin:6px 20px 0; }
+  .hist-filter-tag { display:flex; align-items:center; gap:4px; padding:4px 10px; background:#f0fdfa; border:1px solid #99f6e4; border-radius:20px; font-size:10px; font-weight:600; color:var(--teal-dark); }
+  .hist-filter-tag button { background:none; border:none; cursor:pointer; color:var(--teal-dark); font-size:12px; line-height:1; padding:0; margin-left:2px; }
+  .hist-clear-all { font-size:10px; font-weight:600; color:var(--slate-400); background:none; border:none; cursor:pointer; font-family:inherit; text-decoration:underline; margin-left:2px; }
 
   .hist-tx-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--white); border-radius: var(--radius-sm); border: 1px solid var(--slate-200); margin-bottom: 7px; }
   .hist-tx-del { width: 30px; height: 30px; border-radius: 8px; background: #fef2f2; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
@@ -927,17 +938,56 @@
     </button>
     <div><div class="meta">All transactions</div><div class="page-title">History</div></div>
   </div>
-  <div style="margin:12px 20px 0;display:flex;gap:8px">
-    <button class="hist-filter active" id="hf-all"      onclick="setHistFilter('all')">All</button>
-    <button class="hist-filter"        id="hf-expense"  onclick="setHistFilter('Expense')">Expense</button>
-    <button class="hist-filter"        id="hf-income"   onclick="setHistFilter('Income')">Income</button>
+  <!-- Single filter button -->
+  <div style="margin:12px 20px 0;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:13px;font-weight:600;color:var(--slate-900)" id="hist-type-label">All transactions</span>
+    <button class="hist-adv-btn" id="hist-adv-btn" onclick="toggleHistAdv()">
+      <i class="ti ti-adjustments-horizontal" style="font-size:13px" aria-hidden="true"></i>
+      <span id="hist-adv-btn-label">Filter</span>
+    </button>
   </div>
-  <div style="margin:10px 20px 0;position:relative">
+  <!-- Filter panel -->
+  <div class="hist-adv-panel" id="hist-adv-panel">
+    <div class="hist-adv-row">
+      <select class="hist-adv-sel" id="hist-filter-type" onchange="onHistTypeChange()">
+        <option value="all">All types</option>
+        <option value="Expense">Expense only</option>
+        <option value="Income">Income only</option>
+      </select>
+    </div>
+    <div class="hist-adv-row">
+      <select class="hist-adv-sel" id="hist-filter-year" onchange="renderHistory()">
+        <option value="">All years</option>
+      </select>
+      <select class="hist-adv-sel" id="hist-filter-month" onchange="renderHistory()">
+        <option value="">All months</option>
+        <option value="0">January</option><option value="1">February</option>
+        <option value="2">March</option><option value="3">April</option>
+        <option value="4">May</option><option value="5">June</option>
+        <option value="6">July</option><option value="7">August</option>
+        <option value="8">September</option><option value="9">October</option>
+        <option value="10">November</option><option value="11">December</option>
+      </select>
+    </div>
+    <div class="hist-adv-row">
+      <select class="hist-adv-sel" id="hist-filter-cat" onchange="renderHistory()">
+        <option value="">All categories</option>
+      </select>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:4px">
+      <button onclick="clearHistFilters()" style="font-size:11px;font-weight:600;color:var(--slate-400);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline">Clear all</button>
+    </div>
+  </div>
+  <!-- Active filter tags -->
+  <div class="hist-active-filters" id="hist-active-filters"></div>
+  <!-- Search bar -->
+  <div style="margin:8px 20px 0;position:relative">
     <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--slate-400)"></i>
     <input id="hist-search" type="text" placeholder="Search transactions…"
       style="width:100%;border:1px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px 12px 10px 34px;font-size:13px;font-family:inherit;outline:none;background:var(--white);color:var(--slate-900)"
       oninput="renderHistory()">
   </div>
+  <!-- Count + sort -->
   <div style="margin:4px 20px 0;display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:11px;color:var(--slate-400)" id="hist-count">0 transactions</span>
     <select id="hist-sort" onchange="renderHistory()"
@@ -1279,6 +1329,23 @@ function changePin() {
 }
 
 function goTo(page) {
+  // Clear history filters whenever navigating away from history
+  const currentPage = document.querySelector(".page.active");
+  if (currentPage && currentPage.id === "page-history" && page !== "history") {
+    histFilter = "all";
+    ["hist-filter-type","hist-filter-year","hist-filter-month","hist-filter-cat","hist-search"]
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "hist-filter-type" ? "all" : ""; });
+    const panel = document.getElementById("hist-adv-panel");
+    const btn   = document.getElementById("hist-adv-btn");
+    if (panel) panel.classList.remove("open");
+    if (btn)   btn.classList.remove("active");
+    const tagsEl   = document.getElementById("hist-active-filters");
+    const advLabel = document.getElementById("hist-adv-btn-label");
+    const heading  = document.getElementById("hist-type-label");
+    if (tagsEl)   tagsEl.innerHTML = "";
+    if (advLabel) advLabel.textContent = "Filter";
+    if (heading)  heading.textContent = "All transactions";
+  }
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.getElementById("page-"+page).classList.add("active");
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
@@ -1289,25 +1356,132 @@ function goTo(page) {
   if (page==="installments") renderInstallments();
   if (page==="add")          setupAdd();
   if (page==="settings")     renderSettings();
-  if (page==="history")      { histFilter="all"; document.getElementById("hist-search").value=""; renderHistory(); }
+  if (page==="history")      { histFilter="all"; document.getElementById("hist-search").value=""; document.getElementById("hist-adv-panel").classList.remove("open"); document.getElementById("hist-adv-btn").classList.remove("active"); if(document.getElementById("hist-filter-type")) document.getElementById("hist-filter-type").value="all"; buildHistFilterDropdowns(); renderHistory(); }
   if (page==="budget")       renderBudget();
 }
 
 let histFilter = "all";
-function setHistFilter(f) {
-  histFilter = f;
-  ["all","expense","income"].forEach(x => {
-    const el = document.getElementById("hf-"+x);
-    if (el) el.classList.toggle("active", x === f.toLowerCase());
-  });
+
+function onHistTypeChange() {
+  histFilter = document.getElementById("hist-filter-type").value;
+  // Reset category when type changes so stale categories don't linger
+  document.getElementById("hist-filter-cat").value = "";
+  buildHistCategoryDropdown();
+  renderHistory();
+}
+
+function toggleHistAdv() {
+  const panel = document.getElementById("hist-adv-panel");
+  const btn   = document.getElementById("hist-adv-btn");
+  const isOpen = panel.classList.toggle("open");
+  btn.classList.toggle("active", isOpen);
+  if (isOpen) buildHistFilterDropdowns();
+}
+
+function buildHistFilterDropdowns() {
+  buildHistYearDropdown();
+  buildHistCategoryDropdown();
+}
+
+function buildHistYearDropdown() {
+  const years = [...new Set(txs.map(t => new Date(t.date).getFullYear()))].sort((a,b) => b-a);
+  const ySel  = document.getElementById("hist-filter-year");
+  const curY  = ySel.value;
+  ySel.innerHTML = '<option value="">All years</option>' +
+    years.map(y => '<option value="'+y+'"'+(y==curY?' selected':'')+'>'+y+'</option>').join("");
+}
+
+function buildHistCategoryDropdown() {
+  const cats = [...new Set(txs
+    .filter(t => histFilter === "all" || t.type === histFilter)
+    .map(t => t.category).filter(Boolean)
+  )].sort();
+  const cSel = document.getElementById("hist-filter-cat");
+  const curC = cSel.value;
+  cSel.innerHTML = '<option value="">All categories</option>' +
+    cats.map(c => '<option value="'+c+'"'+(c===curC?' selected':'')+'>'+c+'</option>').join("");
+}
+
+function clearHistFilters() {
+  histFilter = "all";
+  document.getElementById("hist-filter-type").value  = "all";
+  document.getElementById("hist-filter-year").value  = "";
+  document.getElementById("hist-filter-month").value = "";
+  document.getElementById("hist-filter-cat").value   = "";
+  document.getElementById("hist-search").value       = "";
+  buildHistCategoryDropdown();
+  renderHistory();
+}
+
+function getHistActiveFilters() {
+  return {
+    year:  document.getElementById("hist-filter-year")?.value  || "",
+    month: document.getElementById("hist-filter-month")?.value,
+    cat:   document.getElementById("hist-filter-cat")?.value   || ""
+  };
+}
+
+function renderHistTags(f) {
+  const tags = [];
+  if (histFilter !== "all")  tags.push({ label: histFilter,                       key: "type"  });
+  if (f.year)                tags.push({ label: f.year,                           key: "year"  });
+  if (f.month !== "" && f.month !== undefined && f.month !== null)
+                              tags.push({ label: MO[parseInt(f.month)],           key: "month" });
+  if (f.cat)                  tags.push({ label: f.cat.replace(/^\S+\s/, ""),   key: "cat"   });
+  // Update the heading label
+  const heading = document.getElementById("hist-type-label");
+  if (heading) {
+    if (histFilter === "Expense") heading.textContent = "Expenses";
+    else if (histFilter === "Income") heading.textContent = "Income";
+    else heading.textContent = "All transactions";
+  }
+  // Update filter button label with active count
+  const advLabel = document.getElementById("hist-adv-btn-label");
+  if (advLabel) {
+    const activeCount = tags.length;
+    advLabel.textContent = activeCount > 0 ? "Filter (" + activeCount + ")" : "Filter";
+  }
+  const el = document.getElementById("hist-active-filters");
+  if (!el) return;
+  el.innerHTML = tags.map(t =>
+    '<div class="hist-filter-tag">' + t.label +
+    '<button onclick="clearHistTag(\'' + t.key + '\')" aria-label="Remove filter">×</button></div>'
+  ).join("");
+}
+
+function clearHistTag(key) {
+  if (key === "type")  { histFilter = "all"; document.getElementById("hist-filter-type").value = "all"; buildHistCategoryDropdown(); }
+  if (key === "year")  document.getElementById("hist-filter-year").value  = "";
+  if (key === "month") document.getElementById("hist-filter-month").value = "";
+  if (key === "cat")   document.getElementById("hist-filter-cat").value   = "";
   renderHistory();
 }
 
 function renderHistory() {
   const search = (document.getElementById("hist-search")?.value || "").toLowerCase();
   const sort   = document.getElementById("hist-sort")?.value || "newest";
+  const f      = getHistActiveFilters();
+
+  // Render active filter tags
+  renderHistTags(f);
+
+  // Update adv button badge
+  const hasFilters = f.year || (f.month !== "" && f.month !== undefined) || f.cat;
+  const advBtn = document.getElementById("hist-adv-btn");
+  if (advBtn) advBtn.classList.toggle("active", !!hasFilters);
+
   let list = txs.filter(t => {
+    // Type filter
     if (histFilter !== "all" && t.type !== histFilter) return false;
+    // Year filter
+    if (f.year && new Date(t.date).getFullYear() != f.year) return false;
+    // Month filter
+    if (f.month !== "" && f.month !== undefined && f.month !== null && f.month !== "") {
+      if (new Date(t.date).getMonth() != parseInt(f.month)) return false;
+    }
+    // Category filter
+    if (f.cat && t.category !== f.cat) return false;
+    // Search
     if (search) {
       const desc = (t.desc || t.description || "").toLowerCase();
       const cat  = (t.category || "").toLowerCase();
@@ -1315,12 +1489,15 @@ function renderHistory() {
     }
     return true;
   });
+
   if (sort === "newest")  list.sort((a,b) => new Date(b.date) - new Date(a.date));
   if (sort === "oldest")  list.sort((a,b) => new Date(a.date) - new Date(b.date));
   if (sort === "highest") list.sort((a,b) => b.amount - a.amount);
   if (sort === "lowest")  list.sort((a,b) => a.amount - b.amount);
+
   const countEl = document.getElementById("hist-count");
   if (countEl) countEl.textContent = list.length + " transaction" + (list.length !== 1 ? "s" : "");
+
   const el = document.getElementById("hist-list");
   if (!el) return;
   if (!list.length) { el.innerHTML = '<div class="empty-state">No transactions found</div>'; return; }
