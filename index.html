@@ -18,6 +18,14 @@
     --slate-50: #f8fafc; --white: #ffffff;
     --nav-h: 64px; --radius: 16px; --radius-sm: 10px;
   }
+  body.dark {
+    --teal-light: #134e4a; --teal-dark: #5eead4;
+    --indigo: #818cf8; --indigo-light: #1e1b4b;
+    --slate-900: #f1f5f9; --slate-700: #cbd5e1; --slate-500: #94a3b8;
+    --slate-400: #64748b; --slate-200: #334155; --slate-100: #1e293b;
+    --slate-50: #0f172a; --white: #1e293b;
+    background: #0f172a !important; color: #f1f5f9 !important;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
   body { font-family: 'Urbanist', sans-serif; background: var(--slate-50); color: var(--slate-900); max-width: 430px; margin: 0 auto; min-height: 100vh; overflow-x: hidden; }
@@ -299,6 +307,25 @@
   .budget-add-btn { margin: 12px 20px 0; width: calc(100% - 40px); padding: 13px; background: var(--white); border: 1.5px dashed var(--slate-200); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--slate-400); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
   .budget-add-btn:active { background: var(--slate-50); }
 
+  /* Sparkline in budget cards */
+  .sparkline-wrap { margin: 8px 0 4px; }
+  .sparkline-lbl { font-size: 9px; color: var(--slate-400); margin-bottom: 3px; display:flex; justify-content:space-between; }
+
+  /* Swipe-to-delete on history rows */
+  .swipe-container { position: relative; overflow: hidden; border-radius: var(--radius-sm); margin-bottom: 7px; }
+  .swipe-del-bg { position: absolute; right: 0; top: 0; bottom: 0; width: 72px; background: #fef2f2; display: flex; align-items: center; justify-content: center; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .hist-tx-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--white); border-radius: var(--radius-sm); border: 1px solid var(--slate-200); transition: transform 0.18s ease; touch-action: pan-y; margin-bottom: 0; will-change: transform; }
+  .hist-tx-row.no-transition { transition: none; }
+
+  /* Month-over-month comparison */
+  .mom-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--slate-100); font-size: 12px; }
+  .mom-row:last-child { border-bottom: none; }
+  .mom-cat { color: var(--slate-700); flex: 1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-right:8px; }
+  .mom-delta { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; flex-shrink:0; }
+  .mom-delta.up { background: #fef2f2; color: #991b1b; }
+  .mom-delta.dn { background: #f0fdf4; color: #166534; }
+  .mom-delta.flat { background: var(--slate-100); color: var(--slate-500); }
+
   .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
   .modal-overlay.hidden { display: none; }
   .modal-sheet { background: var(--white); border-radius: 20px 20px 0 0; width: 100%; max-width: 430px; padding: 24px 20px 40px; }
@@ -474,7 +501,11 @@
   <div class="chart-section">
     <div class="chart-header">
       <span class="section-label">Spending</span>
-      <div class="period-pills"><button class="period-pill active">1W</button><button class="period-pill">1M</button><button class="period-pill">3M</button></div>
+      <div class="period-pills">
+        <button class="period-pill active" onclick="setChartPeriod('1W',this)">1W</button>
+        <button class="period-pill" onclick="setChartPeriod('1M',this)">1M</button>
+        <button class="period-pill" onclick="setChartPeriod('3M',this)">3M</button>
+      </div>
     </div>
     <div class="chart-wrap">
       <div class="chart-amount" id="chart-amount">฿0</div>
@@ -577,6 +608,11 @@
     <div class="sec-hd" style="margin-bottom:8px"><span class="section-label" id="an-year-label">Yearly overview</span></div>
     <div id="an-year-summary" style="display:flex;gap:8px"></div>
   </div>
+  <!-- Month-over-month comparison -->
+  <div style="margin:14px 20px 0">
+    <div class="sec-hd" style="margin-bottom:8px"><span class="section-label" id="mom-section-label">vs last month</span></div>
+    <div class="card" style="padding:12px 14px" id="mom-section"></div>
+  </div>
   <div class="spacer"></div>
 </div>
 
@@ -588,6 +624,7 @@
     <div class="gsumm"><div class="gsumm-val" id="inst-balance">฿0</div><div class="gsumm-lbl">Total balance</div></div>
     <div class="gsumm"><div class="gsumm-val" id="inst-count">0</div><div class="gsumm-lbl">Active plans</div></div>
   </div>
+  <div id="inst-income-warning" style="margin:8px 20px 0;display:none;padding:10px 14px;border-radius:var(--radius-sm);font-size:11px;font-weight:600"></div>
   <div class="inst-grid" id="inst-list"></div>
   <div class="spacer"></div>
 </div>
@@ -651,6 +688,15 @@
       <div class="settings-row"><div><div class="settings-row-label">Auto-sync on add</div><div class="settings-row-sub">Post to Sheets when you add a transaction</div></div><button class="toggle on" id="toggle-autosync" onclick="toggleSetting('autosync')"></button></div>
       <div class="settings-row" onclick="fetchFromSheets()"><div><div class="settings-row-label">Pull from Google Sheets</div><div class="settings-row-sub" id="last-pull-label">Fetch all transactions from Sheets</div></div><div class="settings-row-right">↓ Pull</div></div>
       <div class="settings-row" onclick="manualSync()"><div><div class="settings-row-label">Push local data to Sheets</div><div class="settings-row-sub" id="last-sync-label">Never synced</div></div><div class="settings-row-right">↑ Push</div></div>
+    </div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-label">Appearance</div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <div><div class="settings-row-label">Dark mode</div><div class="settings-row-sub">Switch to a dark colour scheme</div></div>
+        <button class="toggle" id="toggle-dark" onclick="toggleDarkMode()"></button>
+      </div>
     </div>
   </div>
   <div class="settings-section">
@@ -914,6 +960,7 @@ async function startup() {
     else { setLoading("Working offline", 90); await delay(600); }
   } else { setLoading("Loading…", 80); await delay(300); }
   setLoading("Ready", 100); await delay(300);
+  applyDarkMode();
   document.getElementById("loading-screen").classList.add("hidden");
   if (settings.pinEnabled) {
     document.getElementById("pin-screen").classList.remove("hidden");
@@ -1059,8 +1106,12 @@ function renderHistory() {
   if(!list.length){el.innerHTML='<div class="empty-state">No transactions found</div>';return;}
   el.innerHTML=list.map(t=>{
     const isInc=t.type==="Income",d=new Date(t.date),desc=t.desc||t.description||"";
-    return '<div class="hist-tx-row"><div class="tx-icon">'+(t.category||"").split(" ")[0]+'</div><div style="flex:1;min-width:0"><div class="tx-name">'+desc+'</div><div class="tx-sub">'+(t.category||"").replace(/^\S+\s/,"")+" · "+d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear()+'</div></div><span class="tx-amt '+(isInc?'pos':'neg')+'" style="margin-right:8px">'+(isInc?"+":"-")+fmt(t.amount)+'</span><button class="hist-tx-edit" onclick="openEditTxModal('+t.id+')" aria-label="Edit"><i class="ti ti-pencil" style="font-size:15px;color:#2563eb"></i></button><button class="hist-tx-del" onclick="deleteTx('+t.id+')" aria-label="Delete"><i class="ti ti-trash" style="font-size:15px;color:#ef4444"></i></button></div>';
+    return '<div class="swipe-container" data-id="'+t.id+'">' +
+      '<div class="swipe-del-bg"><i class="ti ti-trash" style="font-size:20px;color:#ef4444"></i></div>' +
+      '<div class="hist-tx-row" data-id="'+t.id+'"><div class="tx-icon">'+(t.category||"").split(" ")[0]+'</div><div style="flex:1;min-width:0"><div class="tx-name">'+desc+'</div><div class="tx-sub">'+(t.category||"").replace(/^\S+\s/,"")+" · "+d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear()+'</div></div><span class="tx-amt '+(isInc?'pos':'neg')+'" style="margin-right:8px">'+(isInc?"+":"-")+fmt(t.amount)+'</span><button class="hist-tx-edit" onclick="openEditTxModal('+t.id+')" aria-label="Edit"><i class="ti ti-pencil" style="font-size:15px;color:#2563eb"></i></button></div>' +
+    '</div>';
   }).join("");
+  initSwipeToDelete();;
 }
 
 async function refreshApp() {
@@ -1156,17 +1207,54 @@ function monthTxs(mo,yr) { const d=new Date(),m=(mo!==undefined)?mo:d.getMonth()
 function yearTxs(yr) { return txs.filter(t=>{const td=new Date(t.date);return td.getFullYear()===yr;}); }
 function calcSummary(arr) { const inc=arr.filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0),exp=arr.filter(t=>t.type==="Expense").reduce((s,t)=>s+t.amount,0); return {inc,exp,net:inc-exp,rate:inc>0?(inc-exp)/inc:0}; }
 
+// ══ DARK MODE ════════════════════════════════════════════════
+function toggleDarkMode() {
+  settings.darkMode = !settings.darkMode;
+  saveSettings(); applyDarkMode(); renderSettings();
+}
+function applyDarkMode() {
+  document.body.classList.toggle('dark', !!settings.darkMode);
+  const btn = document.getElementById('toggle-dark');
+  if (btn) btn.className = 'toggle' + (settings.darkMode ? ' on' : '');
+}
+
+// ══ HOME ═════════════════════════════════════════════════════
+let chartPeriod = '1W';
+
 function renderHome() {
-  const arr=monthTxs(),{inc,exp,net}=calcSummary(arr);
-  document.getElementById("home-balance").textContent=fmt(net); document.getElementById("home-inc").textContent=fmt(inc); document.getElementById("home-exp").textContent=fmt(exp);
-  const today=new Date(),weekSpend=Array(7).fill(0);
-  for(let i=6;i>=0;i--){const d=new Date(today);d.setDate(today.getDate()-i);const ds=d.toISOString().split("T")[0];weekSpend[6-i]=txs.filter(t=>t.date===ds&&t.type==="Expense").reduce((s,t)=>s+t.amount,0);}
-  document.getElementById("chart-amount").textContent=fmt(weekSpend.reduce((a,b)=>a+b,0));
-  const W=300,H=60,pad=4,max=Math.max(...weekSpend,1);
-  const pts=weekSpend.map((v,i)=>`${(i/(weekSpend.length-1))*(W-pad*2)+pad},${pad+(1-v/max)*(H-pad*2)}`);
-  document.getElementById("chart-line").setAttribute("points",pts.join(" ")); document.getElementById("chart-area").setAttribute("points",[...pts,`${W-pad},${H}`,`${pad},${H}`].join(" "));
+  const arr=monthTxs(), {inc,exp,net}=calcSummary(arr);
+  document.getElementById("home-balance").textContent=fmt(net);
+  document.getElementById("home-inc").textContent=fmt(inc);
+  document.getElementById("home-exp").textContent=fmt(exp);
+  renderSpendingChart();
   const recent=[...arr].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
-  const el=document.getElementById("home-tx-list"); el.innerHTML=recent.length?recent.map(txRowHTML).join(""):'<div class="empty-state">No transactions this month</div>';
+  const el=document.getElementById("home-tx-list");
+  el.innerHTML=recent.length?recent.map(txRowHTML).join(''):'<div class="empty-state">No transactions this month</div>';
+}
+
+function renderSpendingChart() {
+  const today=new Date();
+  let points=[], labels=[];
+  if (chartPeriod==='1W') {
+    points=Array(7).fill(0); labels=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    for(let i=6;i>=0;i--){const d=new Date(today);d.setDate(today.getDate()-i);const ds=d.toISOString().split('T')[0];points[6-i]=txs.filter(t=>t.date===ds&&t.type==='Expense').reduce((s,t)=>s+t.amount,0);}
+    document.querySelector('.chart-sub').textContent='Total spent this week';
+  } else if (chartPeriod==='1M') {
+    points=Array(4).fill(0); labels=['Wk 1','Wk 2','Wk 3','Wk 4'];
+    for(let i=29;i>=0;i--){const d=new Date(today);d.setDate(today.getDate()-i);const ds=d.toISOString().split('T')[0];const wi=Math.min(Math.floor((29-i)/7),3);points[wi]+=txs.filter(t=>t.date===ds&&t.type==='Expense').reduce((s,t)=>s+t.amount,0);}
+    document.querySelector('.chart-sub').textContent='Total spent this month';
+  } else {
+    points=Array(3).fill(0);
+    for(let i=2;i>=0;i--){const d=new Date(today.getFullYear(),today.getMonth()-i,1);labels.push(MO[d.getMonth()]);points[2-i]=txs.filter(t=>{const td=new Date(t.date);return td.getMonth()===d.getMonth()&&td.getFullYear()===d.getFullYear()&&t.type==='Expense';}).reduce((s,t)=>s+t.amount,0);}
+    document.querySelector('.chart-sub').textContent='Spending last 3 months';
+  }
+  document.getElementById("chart-amount").textContent=fmt(points.reduce((a,b)=>a+b,0));
+  const dayRow=document.querySelector('.chart-section .chart-wrap > div:last-child');
+  if(dayRow) dayRow.innerHTML=labels.map(l=>'<span>'+l+'</span>').join('');
+  const W=300,H=60,pad=4,max=Math.max(...points,1);
+  const pts=points.map((v,i)=>`${(i/(points.length-1))*(W-pad*2)+pad},${pad+(1-v/max)*(H-pad*2)}`);
+  document.getElementById("chart-line").setAttribute("points",pts.join(" "));
+  document.getElementById("chart-area").setAttribute("points",[...pts,`${W-pad},${H}`,`${pad},${H}`].join(" "));
 }
 function txRowHTML(t) {
   const isInc=t.type==="Income",d=new Date(t.date),desc=t.desc||t.description||"";
@@ -1182,6 +1270,15 @@ function buildGoalsYearDropdown() {
 }
 function clearGoalsFilters() { document.getElementById("goals-filter-status").value="all"; document.getElementById("goals-filter-year").value=""; renderGoals(); }
 function clearGoalsTag(key) { if(key==="status")document.getElementById("goals-filter-status").value="all"; if(key==="year")document.getElementById("goals-filter-year").value=""; renderGoals(); }
+// Calculate actual avg monthly savings toward a goal from tx history
+function calcActualMonthlyContrib(g) {
+  // Look for income-tagged transactions that might represent savings (manual savings additions
+  // are stored in g.saved directly, so we estimate from the saved delta vs time)
+  // Use the simpler approach: spread g.saved over months since creation (or 6 months max)
+  const monthsTracked = Math.max(1, Math.min(6, Math.round(g.saved / (g.monthly || 1))));
+  return g.saved / monthsTracked;
+}
+
 function renderGoalsFilterTags(status,year) {
   const tags=[]; if(status!=="all")tags.push({label:status==="active"?"Active":"Completed",key:"status"}); if(year)tags.push({label:year,key:"year"});
   const btnLabel=document.getElementById("goals-filter-btn-label"); if(btnLabel)btnLabel.textContent=tags.length>0?"Filter ("+tags.length+")":"Filter";
@@ -1202,7 +1299,21 @@ function renderGoals() {
   if(!filtered.length){document.getElementById("goals-list").innerHTML='<div class="empty-state">No goals match this filter</div>';return;}
   document.getElementById("goals-list").innerHTML=filtered.map(({g,idx})=>{
     const pct=Math.min(Math.round(g.saved/g.target*100),100),isDone=g.saved>=g.target;
-    return '<div class="goal-card"><div class="goal-top"><div style="display:flex;align-items:center;gap:8px"><div class="goal-icon-wrap" style="background:'+(g.bg||'#f1f5f9')+'">'+(g.icon||'🎯')+'</div><div><div class="goal-name">'+g.name+'</div><div class="goal-saved">'+fmt(g.saved)+' saved of '+fmt(g.target)+'</div></div></div><div class="goal-pct" style="color:'+g.color+'">'+pct+'%</div></div><div class="goal-track"><div class="goal-fill" style="width:'+pct+'%;background:'+g.color+'"></div></div><div class="goal-footer"><span>'+(isDone?'🎉 Goal reached!':fmt(g.target-g.saved)+' remaining')+'</span><span>Target: '+g.due+'</span></div><div class="goal-actions"><button class="goal-action-btn goal-save-btn" onclick="openGoalModal('+idx+')"'+(isDone?' disabled style="opacity:0.4"':'')+'>+ Add savings</button><button class="goal-action-btn goal-edit-btn" onclick="openEditGoalModal('+idx+')">✏️</button><button class="goal-action-btn goal-delete-btn" onclick="deleteGoal('+idx+')">🗑️</button></div></div>';
+    // Dynamic projected completion based on actual avg monthly contribution
+    let projLabel='';
+    if (!isDone) {
+      const actualMonthly = calcActualMonthlyContrib(g);
+      if (actualMonthly > 0) {
+        const monthsLeft = Math.ceil((g.target - g.saved) / actualMonthly);
+        const projDate = new Date(); projDate.setMonth(projDate.getMonth() + monthsLeft);
+        projLabel = 'On track: ' + MO[projDate.getMonth()] + ' ' + projDate.getFullYear();
+      } else if (g.monthly > 0) {
+        const monthsLeft = Math.ceil((g.target - g.saved) / g.monthly);
+        const projDate = new Date(); projDate.setMonth(projDate.getMonth() + monthsLeft);
+        projLabel = 'Est: ' + MO[projDate.getMonth()] + ' ' + projDate.getFullYear();
+      }
+    }
+    return '<div class="goal-card"><div class="goal-top"><div style="display:flex;align-items:center;gap:8px"><div class="goal-icon-wrap" style="background:'+(g.bg||'#f1f5f9')+'">'+(g.icon||'🎯')+'</div><div><div class="goal-name">'+g.name+'</div><div class="goal-saved">'+fmt(g.saved)+' saved of '+fmt(g.target)+'</div></div></div><div class="goal-pct" style="color:'+g.color+'">'+pct+'%</div></div><div class="goal-track"><div class="goal-fill" style="width:'+pct+'%;background:'+g.color+'"></div></div><div class="goal-footer"><span>'+(isDone?'🎉 Goal reached!':fmt(g.target-g.saved)+' remaining')+'</span><span style="color:'+(projLabel?'var(--teal)':'var(--slate-400)')+'">'+( isDone?'':projLabel||('Target: '+g.due) )+'</span></div><div class="goal-actions"><button class="goal-action-btn goal-save-btn" onclick="openGoalModal('+idx+')"'+(isDone?' disabled style="opacity:0.4"':'')+'>+ Add savings</button><button class="goal-action-btn goal-edit-btn" onclick="openEditGoalModal('+idx+')">✏️</button><button class="goal-action-btn goal-delete-btn" onclick="deleteGoal('+idx+')">🗑️</button></div></div>';
   }).join("");
 }
 async function deleteGoal(idx) {
@@ -1307,12 +1418,74 @@ function renderAnalytics() {
   closeDonutDetail();
   const yearArr=yearTxs(yr),yInc=yearArr.filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0),yExp=yearArr.filter(t=>t.type==="Expense").reduce((s,t)=>s+t.amount,0),yNet=yInc-yExp,yRate=yInc>0?Math.round((yNet/yInc)*100):0,netColor=yNet>=0?"#22c55e":"#ef4444";
   document.getElementById("an-year-summary").innerHTML='<div class="an-year-summ-box"><div class="an-year-summ-val" style="color:#22c55e">'+fmt(yInc)+'</div><div class="an-year-summ-lbl">Year income</div></div><div class="an-year-summ-box"><div class="an-year-summ-val" style="color:#ef4444">'+fmt(yExp)+'</div><div class="an-year-summ-lbl">Year expenses</div></div><div class="an-year-summ-box"><div class="an-year-summ-val" style="color:'+netColor+'">'+fmt(yNet)+'</div><div class="an-year-summ-lbl">Year net</div></div><div class="an-year-summ-box"><div class="an-year-summ-val">'+yRate+'%</div><div class="an-year-summ-lbl">Year rate</div></div>';
+  // Month-over-month comparison (Layout 3 — delta section)
+  renderMoM(mo, yr);
+}
+
+function renderMoM(mo, yr) {
+  const momEl = document.getElementById('mom-section');
+  const momLbl = document.getElementById('mom-section-label');
+  if (!momEl) return;
+  // Previous month
+  let prevMo = mo - 1, prevYr = yr;
+  if (prevMo < 0) { prevMo = 11; prevYr = yr - 1; }
+  const currArr = monthTxs(mo, yr).filter(t => t.type === 'Expense');
+  const prevArr = monthTxs(prevMo, prevYr).filter(t => t.type === 'Expense');
+  if (momLbl) momLbl.textContent = 'vs ' + MO[prevMo] + ' ' + prevYr;
+  // Build category map for both months
+  const currMap = {}, prevMap = {};
+  currArr.forEach(t => { currMap[t.category] = (currMap[t.category]||0) + t.amount; });
+  prevArr.forEach(t => { prevMap[t.category] = (prevMap[t.category]||0) + t.amount; });
+  // Union of all categories
+  const allCats = [...new Set([...Object.keys(currMap), ...Object.keys(prevMap)])];
+  allCats.sort((a,b) => (currMap[b]||0) - (currMap[a]||0));
+  if (!allCats.length) {
+    momEl.innerHTML = '<div class="empty-state" style="padding:12px 0">No expense data to compare</div>';
+    return;
+  }
+  const totalCurr = currArr.reduce((s,t)=>s+t.amount,0);
+  const totalPrev = prevArr.reduce((s,t)=>s+t.amount,0);
+  const totalDelta = totalCurr - totalPrev;
+  const totalDeltaPct = totalPrev > 0 ? Math.round((totalDelta/totalPrev)*100) : 0;
+  const totalClass = totalDelta > 0 ? 'up' : totalDelta < 0 ? 'dn' : 'flat';
+  const totalSign = totalDelta > 0 ? '+' : '';
+  let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--slate-100)">' +
+    '<span style="font-size:11px;color:var(--slate-500)">Total expenses</span>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span style="font-size:10px;color:var(--slate-400)">'+fmt(totalPrev)+' → '+fmt(totalCurr)+'</span>' +
+      '<span class="mom-delta '+totalClass+'">'+totalSign+totalDeltaPct+'%</span>' +
+    '</div></div>';
+  html += allCats.slice(0,8).map(cat => {
+    const curr = currMap[cat] || 0, prev = prevMap[cat] || 0;
+    const delta = curr - prev;
+    const pct = prev > 0 ? Math.round((delta/prev)*100) : (curr > 0 ? 100 : 0);
+    const cls = delta > 0 ? 'up' : delta < 0 ? 'dn' : 'flat';
+    const sign = delta > 0 ? '+' : '';
+    const name = cat.replace(/^\S+\s/, '');
+    return '<div class="mom-row">' +
+      '<span class="mom-cat">'+cat.split(' ')[0]+' '+name+'</span>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:10px;color:var(--slate-400)">' + (prev>0?fmt(prev):'—') + ' → ' + (curr>0?fmt(curr):'—') + '</span>' +
+        '<span class="mom-delta '+cls+'">' + (delta===0?'—':sign+pct+'%') + '</span>' +
+      '</div></div>';
+  }).join('');
+  momEl.innerHTML = html;
 }
 
 // ══ INSTALLMENTS ══════════════════════════════════════════════
 function renderInstallments() {
   const active=INSTALLMENTS.filter(p=>p.paid<p.total_mo),monthly=active.reduce((s,p)=>s+p.monthly,0),balance=INSTALLMENTS.reduce((s,p)=>s+Math.max(p.total-p.monthly*p.paid,0),0);
   document.getElementById("inst-monthly").textContent=fmt(monthly); document.getElementById("inst-balance").textContent=fmt(balance); document.getElementById("inst-count").textContent=active.length;
+  // Income commitment warning
+  const now=new Date(), incomeThisMonth=monthTxs(now.getMonth(),now.getFullYear()).filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0);
+  const warnEl=document.getElementById("inst-income-warning");
+  if (warnEl && incomeThisMonth>0 && monthly>0) {
+    const pct=Math.round((monthly/incomeThisMonth)*100);
+    const color=pct>=50?"#991b1b":pct>=30?"#92400e":"#166534";
+    const bg=pct>=50?"#fef2f2":pct>=30?"#fffbeb":"#f0fdf4";
+    warnEl.style.display="block"; warnEl.style.background=bg; warnEl.style.color=color;
+    warnEl.textContent="⚠ Monthly instalments are "+pct+"% of your income ("+fmt(monthly)+" of "+fmt(incomeThisMonth)+")";
+  } else if (warnEl) { warnEl.style.display="none"; }
   document.getElementById("inst-list").innerHTML=INSTALLMENTS.map((p,idx)=>{
     const pct=Math.round(p.paid/p.total_mo*100),rem=p.total_mo-p.paid,bal=Math.max(p.total-p.monthly*p.paid,0),isDone=rem<=0;
     return '<div class="inst-card"><div class="inst-top"><div><div class="inst-name">'+p.icon+' '+p.name+'</div><div class="inst-cat">'+p.cat+'</div></div><span class="inst-badge '+(isDone?'badge-done':'badge-active')+'">'+(isDone?'Paid off':'Active')+'</span></div><div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:4px"><span>'+p.paid+' of '+p.total_mo+' months paid</span><span style="font-weight:600;color:'+p.color+'">'+pct+'%</span></div><div class="inst-track"><div class="inst-fill" style="width:'+pct+'%;background:'+p.color+'"></div></div><div class="inst-stats"><div><div style="font-size:9px;color:#94a3b8">Monthly</div><div class="inst-stat-val">'+fmt(p.monthly)+'</div></div><div style="text-align:center"><div style="font-size:9px;color:#94a3b8">Months left</div><div class="inst-stat-val">'+rem+'</div></div><div style="text-align:right"><div style="font-size:9px;color:#94a3b8">Balance</div><div class="inst-stat-val" style="color:'+(isDone?'#94a3b8':'#ef4444')+'">'+fmt(bal)+'</div></div></div><div class="inst-actions"><button class="inst-action-btn inst-pay-btn" onclick="openInstModal('+idx+')"'+(isDone?' disabled':'')+'>✓ Mark this month paid</button><button class="inst-action-btn inst-edit-btn" onclick="openEditInstModal('+idx+')">✏️</button><button class="inst-action-btn inst-delete-btn" onclick="deleteInst('+idx+')">🗑️</button></div></div>';
@@ -1358,6 +1531,44 @@ function setupAdd() {
 }
 function updateCats() { const cats=currentType==="Income"?INCOME_CATS:EXPENSE_CATS; document.getElementById("f-category").innerHTML=cats.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join(""); }
 function updateInstCats() { document.getElementById("i-category").innerHTML=EXPENSE_CATS.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join(""); }
+
+function initSwipeToDelete() {
+  document.querySelectorAll('.swipe-container').forEach(container => {
+    const row = container.querySelector('.hist-tx-row');
+    if (!row) return;
+    const id = parseInt(container.dataset.id);
+    let startX=0, currentX=0, isDragging=false;
+    const THRESHOLD = 72;
+
+    row.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX; currentX = 0; isDragging = true;
+      row.classList.add('no-transition');
+    }, {passive:true});
+
+    row.addEventListener('touchmove', e => {
+      if (!isDragging) return;
+      const dx = e.touches[0].clientX - startX;
+      if (dx > 0) return; // only swipe left
+      currentX = Math.max(dx, -THRESHOLD - 20);
+      row.style.transform = 'translateX('+currentX+'px)';
+    }, {passive:true});
+
+    row.addEventListener('touchend', () => {
+      isDragging = false;
+      row.classList.remove('no-transition');
+      if (currentX < -THRESHOLD) {
+        row.style.transform = 'translateX(-'+THRESHOLD+'px)';
+        // tap delete bg to confirm, or auto-delete after 1.5s
+        container.querySelector('.swipe-del-bg').onclick = () => { deleteTx(id); };
+        setTimeout(() => {
+          if (document.querySelector('.swipe-container[data-id="'+id+'"]')) deleteTx(id);
+        }, 1500);
+      } else {
+        row.style.transform = '';
+      }
+    });
+  });
+}
 
 function setBtn(id,loading,label,bg) { const btn=document.getElementById(id);if(!btn)return;btn.disabled=loading;btn.style.opacity=loading?"0.6":"1";btn.textContent=loading?"Saving…":label;if(bg)btn.style.background=bg; }
 function flashBtn(id,label,bg) { const btn=document.getElementById(id);if(!btn)return;btn.disabled=false;btn.style.opacity="1";btn.textContent="✓ Saved!";btn.style.background="#22c55e";setTimeout(()=>{btn.textContent=label;btn.style.background=bg||"";},1400); }
@@ -1432,6 +1643,7 @@ function renderSettings() {
   document.getElementById("toggle-autosync").className="toggle"+(settings.autosync?" on":"");
   document.getElementById("toggle-pin").className="toggle"+(settings.pinEnabled?" on":"");
   document.getElementById("toggle-notif").className="toggle"+(settings.notif?" on":"");
+  applyDarkMode();
   if(settings.lastSync)document.getElementById("last-sync-label").textContent="Last pushed: "+new Date(settings.lastSync).toLocaleString();
   if(settings.lastPull)document.getElementById("last-pull-label").textContent="Last pulled: "+new Date(settings.lastPull).toLocaleString();
   if(Notification.permission==="granted")document.getElementById("notif-status").textContent="✓ Notifications enabled";
@@ -1454,7 +1666,13 @@ function confirmClearGoals() { if(confirm("Delete all goals? This does not affec
 function confirmClearInsts() { if(confirm("Delete all instalments? This does not affect Google Sheets.")){INSTALLMENTS.length=0;localStorage.removeItem("ft_insts");showToast("Instalments cleared");goTo("installments");} }
 function confirmClear() { if(confirm("Delete ALL local transactions? Google Sheets data is safe.")){localStorage.removeItem("ft_txs");localStorage.removeItem("ft_unsynced");txs=[];unsyncedIds=[];saveTxs();showToast("Local data cleared");goTo("home");} }
 document.getElementById("sheets-url").addEventListener("blur",function(){settings.sheetsUrl=this.value.trim();saveSettings();updateSyncBar();});
-document.querySelectorAll(".period-pill").forEach(p=>p.addEventListener("click",function(){document.querySelectorAll(".period-pill").forEach(x=>x.classList.remove("active"));this.classList.add("active");}));
+
+function setChartPeriod(period, btn) {
+  chartPeriod = period;
+  document.querySelectorAll('.period-pill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  renderSpendingChart();
+}
 
 // ══ BUDGET ════════════════════════════════════════════════════
 let BUDGETS = JSON.parse(localStorage.getItem("ft_budgets") || "[]");
@@ -1531,6 +1749,23 @@ function renderBudget() {
     const pct   = b.limit > 0 ? Math.min(Math.round(spent / b.limit * 100), 100) : 0;
     const color = pct >= 100 ? "#ef4444" : pct >= 80 ? "#f59e0b" : "#0d9488";
     const emoji = b.cat.split(" ")[0];
+    const catName = b.cat.replace(/^\S+\s/, "");
+    // Sparkline: last 6 months of spending for this category
+    const sparkData = [];
+    for (let i=5;i>=0;i--) {
+      const d=new Date(budgetYear,budgetMonth-i,1);
+      const mo=d.getMonth(),yr=d.getFullYear();
+      sparkData.push(txs.filter(t=>{const td=new Date(t.date);return td.getMonth()===mo&&td.getFullYear()===yr&&t.type==="Expense"&&(t.category||"").includes(catName);}).reduce((s,t)=>s+t.amount,0));
+    }
+    const sparkMax=Math.max(...sparkData,1);
+    const sparkW=80,sparkH=24,barW=9,barGap=4;
+    const sparkSvg='<svg width="'+sparkW+'" height="'+sparkH+'" style="display:block">'+
+      sparkData.map((v,i)=>{
+        const h=Math.max(2,Math.round((v/sparkMax)*(sparkH-2)));
+        const x=i*(barW+barGap), y=sparkH-h;
+        const isLast=(i===sparkData.length-1);
+        return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h+'" rx="2" fill="'+( isLast?color:"#cbd5e1")+'"/>';
+      }).join("")+'</svg>';
     return '<div class="budget-card">' +
       '<div class="budget-card-top">' +
         '<div class="budget-cat">' + emoji + ' ' + b.cat.replace(/^\S+\s/, "") + '</div>' +
@@ -1542,6 +1777,7 @@ function renderBudget() {
       '</div>' +
       '<div class="budget-bar"><div class="budget-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
       '<div class="budget-amounts"><span class="budget-spent">' + fmt(spent) + ' spent</span><span>limit: ' + fmt(b.limit) + '</span></div>' +
+      '<div class="sparkline-wrap"><div class="sparkline-lbl"><span>Last 6 months</span><span>'+MO[(budgetMonth+11)%12]+' → '+MO[budgetMonth]+'</span></div>'+sparkSvg+'</div>' +
       (pct >= 80 ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:' + color + ';background:' + (pct>=100?'#fef2f2':'#fffbeb') + ';padding:5px 8px;border-radius:6px">' + (pct>=100?'⚠️ Over budget!':'⚠️ Approaching limit') + '</div>' : '') +
     '</div>';
   }).join("");
