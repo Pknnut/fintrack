@@ -131,6 +131,16 @@
   .see-all { font-size: 11px; color: var(--teal); font-weight: 600; background: none; border: none; cursor: pointer; }
 
   .goals-header { padding: 24px 20px 0; }
+  .goals-filter-btn { display:flex; align-items:center; gap:5px; padding:5px 12px; border-radius:20px; border:1.5px solid var(--slate-200); background:var(--white); color:var(--slate-500); font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+  .goals-filter-btn.active { border-color:#0f766e; color:#0f766e; background:#f0fdfa; }
+  .goals-filter-panel { margin:10px 20px 0; background:var(--white); border:1px solid var(--slate-200); border-radius:var(--radius); padding:12px 14px; display:none; }
+  .goals-filter-panel.open { display:block; }
+  .goals-filter-row { display:flex; gap:8px; margin-bottom:10px; }
+  .goals-filter-row:last-child { margin-bottom:0; }
+  .goals-filter-sel { flex:1; background:var(--slate-50); border:1px solid var(--slate-200); border-radius:var(--radius-sm); padding:8px 10px; font-size:12px; font-weight:500; color:var(--slate-900); font-family:inherit; outline:none; appearance:none; -webkit-appearance:none; cursor:pointer; }
+  .goals-active-filters { display:flex; gap:6px; flex-wrap:wrap; margin:6px 20px 0; }
+  .goals-filter-tag { display:flex; align-items:center; gap:4px; padding:4px 10px; background:#f0fdfa; border:1px solid #99f6e4; border-radius:20px; font-size:10px; font-weight:600; color:#0f766e; }
+  .goals-filter-tag button { background:none; border:none; cursor:pointer; color:#0f766e; font-size:12px; line-height:1; padding:0; margin-left:2px; }
   .goals-summary { margin: 12px 20px 0; display: flex; gap: 8px; }
   .gsumm { flex: 1; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 10px; }
   .gsumm-val { font-size: 15px; font-weight: 700; color: var(--slate-900); }
@@ -153,9 +163,9 @@
   .goal-edit-btn { background: #eff6ff; color: #2563eb; flex: 0 0 44px; }
 
   .analytics-header { padding: 0; }
-  .an-header-block { background: #0f766e; padding: 24px 20px 16px; }
-  .an-header-meta { font-size: 10px; color: #99f6e4; margin-bottom: 4px; }
-  .an-header-title { font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px; }
+  .an-header-block { background: none; padding: 24px 20px 12px; }
+  .an-header-meta { font-size: 10px; color: var(--slate-400); margin-bottom: 4px; }
+  .an-header-title { font-size: 22px; font-weight: 700; color: var(--slate-900); letter-spacing: -0.5px; }
   .revenue-card { margin: 14px 20px 0; background: var(--white); border-radius: var(--radius); border: 1px solid var(--slate-200); padding: 16px; }
   .rev-label { font-size: 10px; color: rgba(255,255,255,0.65); margin-bottom: 4px; }
   .rev-amount { font-size: 30px; font-weight: 700; color: var(--slate-900); letter-spacing: -1px; margin-bottom: 4px; }
@@ -172,13 +182,13 @@
   .an-year-summ-box { flex: 1; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 8px 10px; text-align: center; }
   .an-year-summ-val { font-size: 12px; font-weight: 700; color: var(--slate-900); }
   .an-year-summ-lbl { font-size: 9px; color: var(--slate-400); margin-top: 2px; }
-  .an-filter-chip { display:flex; align-items:center; gap:6px; background:#0d6b63; border-radius:20px; padding:6px 12px; cursor:pointer; border:1px solid #0a5a54; }
+  .an-filter-chip { display:flex; align-items:center; gap:6px; background:#0f766e; border-radius:20px; padding:6px 12px; cursor:pointer; border:1px solid #0a5a54; }
   .an-filter-chip span { font-size:12px; font-weight:600; color:#ffffff; }
   .an-filter-chip .ti-calendar { font-size:12px; color:#5eead4; }
   .an-filter-chip .ti-chevron-down { font-size:12px; color:#99f6e4; transition:transform 0.2s; }
   .an-filter-chip.open .ti-chevron-down { transform:rotate(180deg); }
-  .an-filter-row { display:flex; align-items:center; justify-content:space-between; padding:10px 20px 4px; background:#0f766e; }
-  .an-filter-viewing { font-size:10px; color:#99f6e4; font-weight:500; }
+  .an-filter-row { display:flex; align-items:center; justify-content:space-between; padding:10px 20px 4px; background:none; }
+  .an-filter-viewing { font-size:10px; color:var(--slate-400); font-weight:500; }
   .an-dropdown { margin:0 20px 10px; background:var(--white); border:1px solid var(--slate-200); border-radius:var(--radius); overflow:hidden; }
   .an-dropdown.hidden { display:none; }
   .an-dropdown-hd { padding:10px 14px 8px; font-size:10px; font-weight:600; color:var(--slate-400); border-bottom:1px solid var(--slate-100); letter-spacing:.04em; }
@@ -653,7 +663,36 @@
 
 <!-- GOALS -->
 <div class="page" id="page-goals">
-  <div class="goals-header"><div class="meta">2026</div><div class="page-title">Your Goals</div></div>
+  <div class="goals-header">
+    <div class="meta">Overview</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="page-title">Your Goals</div>
+      <button class="goals-filter-btn" id="goals-filter-btn" onclick="toggleGoalsFilter()">
+        <i class="ti ti-adjustments-horizontal" style="font-size:13px" aria-hidden="true"></i>
+        <span id="goals-filter-btn-label">Filter</span>
+      </button>
+    </div>
+  </div>
+  <!-- Filter panel -->
+  <div class="goals-filter-panel" id="goals-filter-panel">
+    <div class="goals-filter-row">
+      <select class="goals-filter-sel" id="goals-filter-status" onchange="renderGoals()">
+        <option value="all">All goals</option>
+        <option value="active">Active</option>
+        <option value="completed">Completed</option>
+      </select>
+    </div>
+    <div class="goals-filter-row">
+      <select class="goals-filter-sel" id="goals-filter-year" onchange="renderGoals()">
+        <option value="">Any target year</option>
+      </select>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:4px">
+      <button onclick="clearGoalsFilters()" style="font-size:11px;font-weight:600;color:var(--slate-400);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline">Clear all</button>
+    </div>
+  </div>
+  <!-- Active filter tags -->
+  <div class="goals-active-filters" id="goals-active-filters"></div>
   <div class="goals-summary">
     <div class="gsumm"><div class="gsumm-val" id="goals-total-saved">฿0</div><div class="gsumm-lbl">Total saved</div></div>
     <div class="gsumm"><div class="gsumm-val" id="goals-active">0</div><div class="gsumm-lbl">Active goals</div></div>
@@ -951,8 +990,8 @@
     <div class="hist-adv-row">
       <select class="hist-adv-sel" id="hist-filter-type" onchange="onHistTypeChange()">
         <option value="all">All types</option>
-        <option value="Expense">Expense only</option>
-        <option value="Income">Income only</option>
+        <option value="Expense">Expense</option>
+        <option value="Income">Income</option>
       </select>
     </div>
     <div class="hist-adv-row">
@@ -1351,7 +1390,16 @@ function goTo(page) {
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
   const nb = document.getElementById("nav-"+page); if(nb) nb.classList.add("active");
   if (page==="home")         renderHome();
-  if (page==="goals")        renderGoals();
+  if (page==="goals") {
+    // Reset filter panel when entering goals page
+    const gPanel = document.getElementById("goals-filter-panel");
+    const gBtn   = document.getElementById("goals-filter-btn");
+    if (gPanel) gPanel.classList.remove("open");
+    if (document.getElementById("goals-filter-status")) document.getElementById("goals-filter-status").value = "all";
+    if (document.getElementById("goals-filter-year"))   document.getElementById("goals-filter-year").value   = "";
+    buildGoalsYearDropdown();
+    renderGoals();
+  }
   if (page==="analytics")    { closeAnalyticsDropdown(); renderAnalytics(); }
   if (page==="installments") renderInstallments();
   if (page==="add")          setupAdd();
@@ -1824,21 +1872,87 @@ function txRowHTML(t) {
   return '<div class="tx-row"><div class="tx-icon">'+(t.category||"").split(" ")[0]+'</div><div style="flex:1;min-width:0"><div class="tx-name">'+desc+'</div><div class="tx-sub">'+(t.category||"").replace(/^\S+\s/,"")+" · "+d.getDate()+" "+MO[d.getMonth()]+'</div></div><span class="tx-amt '+(isInc?'pos':'neg')+'">'+(isInc?"+":"-")+fmt(t.amount)+'</span></div>';
 }
 
+function toggleGoalsFilter() {
+  const panel = document.getElementById("goals-filter-panel");
+  const btn   = document.getElementById("goals-filter-btn");
+  const isOpen = panel.classList.toggle("open");
+  btn.classList.toggle("active", isOpen);
+  if (isOpen) buildGoalsYearDropdown();
+}
+
+function buildGoalsYearDropdown() {
+  // Extract unique target years from goal due dates (format: "Jan 2027")
+  const years = [...new Set(
+    GOALS.map(g => g.due ? g.due.split(" ")[1] : null).filter(Boolean)
+  )].sort();
+  const sel = document.getElementById("goals-filter-year");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Any target year</option>' +
+    years.map(y => '<option value="'+y+'"'+(y===cur?' selected':'')+'>'+y+'</option>').join("");
+}
+
+function clearGoalsFilters() {
+  document.getElementById("goals-filter-status").value = "all";
+  document.getElementById("goals-filter-year").value   = "";
+  renderGoals();
+}
+
+function clearGoalsTag(key) {
+  if (key === "status") document.getElementById("goals-filter-status").value = "all";
+  if (key === "year")   document.getElementById("goals-filter-year").value   = "";
+  renderGoals();
+}
+
+function renderGoalsFilterTags(status, year) {
+  const tags = [];
+  if (status !== "all") tags.push({ label: status === "active" ? "Active" : "Completed", key: "status" });
+  if (year)             tags.push({ label: year, key: "year" });
+  // Update button label with count
+  const btnLabel = document.getElementById("goals-filter-btn-label");
+  if (btnLabel) btnLabel.textContent = tags.length > 0 ? "Filter (" + tags.length + ")" : "Filter";
+  const btn = document.getElementById("goals-filter-btn");
+  if (btn) btn.classList.toggle("active", tags.length > 0 || document.getElementById("goals-filter-panel").classList.contains("open"));
+  const el = document.getElementById("goals-active-filters");
+  if (!el) return;
+  el.innerHTML = tags.map(t =>
+    '<div class="goals-filter-tag">' + t.label +
+    '<button onclick="clearGoalsTag(\'' + t.key + '\')" aria-label="Remove filter">×</button></div>'
+  ).join("");
+}
+
 function renderGoals() {
+  const statusFilter = document.getElementById("goals-filter-status")?.value || "all";
+  const yearFilter   = document.getElementById("goals-filter-year")?.value   || "";
+
+  // Render filter tags
+  renderGoalsFilterTags(statusFilter, yearFilter);
+
+  // Always update summary stats from ALL goals (unfiltered)
+  const totalSaved  = GOALS.reduce((s,g) => s + g.saved, 0);
+  const activeCount = GOALS.filter(g => g.saved < g.target).length;
+  const avgPct      = GOALS.length ? Math.round(GOALS.reduce((s,g) => s + (g.saved/g.target*100), 0) / GOALS.length) : 0;
+  document.getElementById("goals-total-saved").textContent = fmt(totalSaved);
+  document.getElementById("goals-active").textContent      = activeCount;
+  document.getElementById("goals-avg-pct").textContent     = avgPct + "%";
+
   if (!GOALS.length) {
-    document.getElementById("goals-total-saved").textContent="฿0.00";
-    document.getElementById("goals-active").textContent="0";
-    document.getElementById("goals-avg-pct").textContent="0%";
-    document.getElementById("goals-list").innerHTML='<div class="empty-state">No goals yet — tap + to add one</div>';
+    document.getElementById("goals-list").innerHTML = '<div class="empty-state">No goals yet — tap + to add one</div>';
     return;
   }
-  const total=GOALS.reduce((s,g)=>s+g.saved,0);
-  const avg=Math.round(GOALS.reduce((s,g)=>s+(g.saved/g.target*100),0)/GOALS.length);
-  document.getElementById("goals-total-saved").textContent=fmt(total);
-  document.getElementById("goals-active").textContent=GOALS.length;
-  document.getElementById("goals-avg-pct").textContent=avg+"%";
-  document.getElementById("goals-list").innerHTML=GOALS.map((g,idx)=>{
-    const pct=Math.min(Math.round(g.saved/g.target*100),100);
+
+  // Apply filters
+  let filtered = GOALS.map((g, idx) => ({ g, idx }));
+  if (statusFilter === "active")    filtered = filtered.filter(({ g }) => g.saved < g.target);
+  if (statusFilter === "completed") filtered = filtered.filter(({ g }) => g.saved >= g.target);
+  if (yearFilter) filtered = filtered.filter(({ g }) => g.due && g.due.includes(yearFilter));
+
+  if (!filtered.length) {
+    document.getElementById("goals-list").innerHTML = '<div class="empty-state">No goals match this filter</div>';
+    return;
+  }
+
+  document.getElementById("goals-list").innerHTML = filtered.map(({ g, idx }) => {
+    const pct    = Math.min(Math.round(g.saved / g.target * 100), 100);
     const isDone = g.saved >= g.target;
     return '<div class="goal-card">' +
       '<div class="goal-top">' +
