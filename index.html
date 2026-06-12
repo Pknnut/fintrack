@@ -1223,6 +1223,12 @@ async function confirmEditTx() {
 
 async function deleteTx(id) {
   if(!confirm("Delete this transaction?"))return;
+  await _doDeleteTx(id);
+}
+async function deleteTxSilent(id) {
+  await _doDeleteTx(id);
+}
+async function _doDeleteTx(id) {
   const tx=txs.find(t=>t.id===id); txs=txs.filter(t=>t.id!==id); unsyncedIds=unsyncedIds.filter(uid=>uid!==id);
   localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds)); saveTxs(); renderHistory(); renderHome();
   if(tx&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_transaction",{rowId:tx.rowId,data:{desc:tx.desc||tx.description||"",amount:tx.amount}}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){setSyncStatus("ok");showToast("Transaction deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — Sheets sync failed");}}
@@ -1567,39 +1573,67 @@ function updateCats() { const cats=currentType==="Income"?INCOME_CATS:EXPENSE_CA
 function updateInstCats() { document.getElementById("i-category").innerHTML=EXPENSE_CATS.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join(""); }
 
 function initSwipeToDelete() {
+  // Track which row is currently open so tapping elsewhere snaps it back
+  let openRow = null;
+
+  document.addEventListener('touchstart', e => {
+    if (!openRow) return;
+    if (!openRow.closest('.swipe-container').contains(e.target)) {
+      openRow.classList.remove('no-transition');
+      openRow.style.transform = '';
+      openRow = null;
+    }
+  }, {passive:true});
+
   document.querySelectorAll('.swipe-container').forEach(container => {
     const row = container.querySelector('.hist-tx-row');
-    if (!row) return;
+    const bg  = container.querySelector('.swipe-del-bg');
+    if (!row || !bg) return;
     const id = parseInt(container.dataset.id);
     let startX=0, currentX=0, isDragging=false;
     const THRESHOLD = 72;
 
     row.addEventListener('touchstart', e => {
-      startX = e.touches[0].clientX; currentX = 0; isDragging = true;
+      // If a different row is open, close it first
+      if (openRow && openRow !== row) {
+        openRow.classList.remove('no-transition');
+        openRow.style.transform = '';
+        openRow = null;
+      }
+      startX = e.touches[0].clientX;
+      currentX = row.style.transform ? -THRESHOLD : 0; // preserve open state
+      isDragging = true;
       row.classList.add('no-transition');
     }, {passive:true});
 
     row.addEventListener('touchmove', e => {
       if (!isDragging) return;
       const dx = e.touches[0].clientX - startX;
-      if (dx > 0) return; // only swipe left
-      currentX = Math.max(dx, -THRESHOLD - 20);
-      row.style.transform = 'translateX('+currentX+'px)';
+      const newX = currentX + dx;
+      if (newX > 0) return; // can't swipe right past origin
+      row.style.transform = 'translateX(' + Math.max(newX, -THRESHOLD - 16) + 'px)';
     }, {passive:true});
 
-    row.addEventListener('touchend', () => {
+    row.addEventListener('touchend', e => {
       isDragging = false;
       row.classList.remove('no-transition');
-      if (currentX < -THRESHOLD) {
-        row.style.transform = 'translateX(-'+THRESHOLD+'px)';
-        // tap delete bg to confirm, or auto-delete after 1.5s
-        container.querySelector('.swipe-del-bg').onclick = () => { deleteTx(id); };
-        setTimeout(() => {
-          if (document.querySelector('.swipe-container[data-id="'+id+'"]')) deleteTx(id);
-        }, 1500);
+      const finalX = parseFloat(row.style.transform.replace('translateX(','')) || 0;
+      if (finalX < -THRESHOLD / 2) {
+        // Snap open — reveal bin, wait for tap
+        row.style.transform = 'translateX(-' + THRESHOLD + 'px)';
+        openRow = row;
       } else {
+        // Snap closed
         row.style.transform = '';
+        openRow = null;
       }
+    });
+
+    // Tap on bin icon — show confirm dialog, then delete
+    bg.addEventListener('click', () => {
+      row.style.transform = '';
+      openRow = null;
+      deleteTx(id); // this calls confirm() before deleting
     });
   });
 }
