@@ -326,6 +326,22 @@
   .mom-delta.dn { background: #f0fdf4; color: #166534; }
   .mom-delta.flat { background: var(--slate-100); color: var(--slate-500); }
 
+  /* Recurring transaction suggestion banner */
+  .recurring-banner { margin: 10px 20px 0; background: var(--indigo-light); border: 1px solid #a5b4fc; border-radius: var(--radius-sm); padding: 11px 14px; display: none; }
+  .recurring-banner.show { display: block; }
+  .recurring-banner-title { font-size: 12px; font-weight: 700; color: var(--indigo); margin-bottom: 6px; }
+  .recurring-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(99,102,241,0.15); }
+  .recurring-item:last-child { border-bottom: none; }
+  .recurring-item-name { font-size: 12px; color: var(--slate-700); }
+  .recurring-item-amt { font-size: 11px; color: var(--slate-500); }
+  .recurring-add-btn { font-size: 10px; font-weight: 700; background: var(--indigo); color: var(--white); border: none; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+  /* Recurring toggle on add form */
+  .recurring-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); margin-top: 10px; }
+  .recurring-toggle-lbl { font-size: 12px; font-weight: 600; color: var(--slate-700); }
+  .recurring-toggle-sub { font-size: 10px; color: var(--slate-400); margin-top: 1px; }
+  /* Export button on analytics */
+  .an-export-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--slate-200); background: var(--white); color: var(--slate-500); font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
   .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
   .modal-overlay.hidden { display: none; }
   .modal-sheet { background: var(--white); border-radius: 20px 20px 0 0; width: 100%; max-width: 430px; padding: 24px 20px 40px; }
@@ -518,6 +534,11 @@
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--slate-400);margin-top:4px"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
     </div>
   </div>
+  <div class="recurring-banner" id="recurring-banner">
+    <div class="recurring-banner-title">Suggested this month</div>
+    <div id="recurring-suggestions"></div>
+    <button onclick="dismissRecurringSuggestions()" style="margin-top:8px;font-size:10px;color:var(--slate-400);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline">Dismiss</button>
+  </div>
   <div class="tx-section">
     <div class="sec-hd"><span class="section-label">Recent</span><button class="see-all" onclick="goTo('history')">See all</button></div>
     <div class="card" style="padding:6px 14px" id="home-tx-list"></div>
@@ -562,6 +583,7 @@
         </button>
       </div>
     </div>
+  <button class="an-export-btn" onclick="exportAnalyticsImage()" style="margin:6px 20px 0;"><i class="ti ti-photo-down" style="font-size:14px"></i> Save as image</button>
   </div>
   <!-- Period picker: year first, then month, apply button -->
   <div class="period-picker hidden" id="an-picker">
@@ -647,6 +669,10 @@
       <div class="form-field"><label>NOTES (optional)</label><input id="f-notes" type="text" placeholder="Optional note"></div>
     </div>
     <div class="sync-indicator"><div class="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--slate-300);" id="add-sync-dot"></div><span id="add-sync-label">Will save locally only</span></div>
+    <div class="recurring-toggle-row" id="recurring-toggle-row">
+      <div><div class="recurring-toggle-lbl">Mark as recurring</div><div class="recurring-toggle-sub">Remind me to add this every month</div></div>
+      <button class="toggle" id="toggle-recurring" onclick="toggleRecurring()"></button>
+    </div>
     <button class="submit-btn" id="btn-add-tx" onclick="submitTx()">Add Transaction</button>
   </div>
   <div id="form-goal" style="display:none">
@@ -717,6 +743,7 @@
     <div class="settings-label">Data</div>
     <div class="settings-card">
       <button class="settings-btn" onclick="exportData()">Export transactions as JSON</button>
+      <button class="settings-btn" onclick="goTo('analytics');setTimeout(exportAnalyticsImage,400)">Export current month as image</button>
       <button class="settings-btn" onclick="rebuildAnalyticsSheet()">Rebuild Analytics sheet in Google Sheets</button>
       <button class="settings-btn danger" onclick="confirmClearGoals()">Clear all goals</button>
       <button class="settings-btn danger" onclick="confirmClearInsts()">Clear all instalments</button>
@@ -825,6 +852,9 @@ if (_savedGoals) GOALS.push(..._savedGoals);
 if (_savedInsts) { INSTALLMENTS.length = 0; INSTALLMENTS.push(..._savedInsts); }
 let pinBuffer = "", pinMode = "enter", pinSetupFirst = "";
 let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
+let RECURRING = JSON.parse(localStorage.getItem("ft_recurring") || "[]");
+let isRecurring = false;
+function saveRecurring() { localStorage.setItem("ft_recurring", JSON.stringify(RECURRING)); }
 
 if (!settings.pin || settings.pin.length !== 6) settings.pin = "123456";
 if (settings.pinEnabled === undefined) settings.pinEnabled = true;
@@ -961,6 +991,7 @@ async function startup() {
   } else { setLoading("Loading…", 80); await delay(300); }
   setLoading("Ready", 100); await delay(300);
   applyDarkMode();
+  checkRecurringSuggestions();
   document.getElementById("loading-screen").classList.add("hidden");
   if (settings.pinEnabled) {
     document.getElementById("pin-screen").classList.remove("hidden");
@@ -1525,6 +1556,9 @@ function setupAdd() {
   buildDaySelect("i-start-d",d);buildMonthSelect("i-start-m",mo);buildYearSelect("i-start-y",y,1,0);
   ["f-amount","f-desc","f-notes","g-name","g-target","g-saved","g-monthly","i-name","i-total","i-monthly","i-total-mo"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("i-paid").value="0"; updateCats(); updateInstCats();
+  isRecurring = false;
+  const togRec = document.getElementById("toggle-recurring");
+  if (togRec) togRec.className = "toggle";
   const hasUrl=!!settings.sheetsUrl;
   document.getElementById("add-sync-dot").style.background=hasUrl?"#22c55e":"#cbd5e1";
   document.getElementById("add-sync-label").textContent=hasUrl&&settings.autosync?"Will sync to Google Sheets":"Will save locally only";
@@ -1579,6 +1613,13 @@ async function submitTx() {
   if(!amount||amount<=0){showToast("Enter a valid amount");return;} if(!desc){showToast("Enter a description");return;}
   setBtn("btn-add-tx",true,"Add Transaction");
   const tx={id:Date.now(),date,type:currentType,category:cat,desc,amount,notes}; txs.push(tx); saveTxs();
+  if (isRecurring) {
+    const existing = RECURRING.findIndex(r => r.desc === desc && r.category === cat);
+    const recEntry = {id:tx.id, desc, category:cat, amount, type:currentType, notes};
+    if (existing >= 0) RECURRING[existing] = recEntry; else RECURRING.push(recEntry);
+    saveRecurring();
+    showToast("Added as recurring ✓");
+  }
   if(settings.sheetsUrl&&settings.autosync){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("add_transaction",{data:{...tx}}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){showToast("Added + synced ✓");setSyncStatus("ok");}else{unsyncedIds.push(tx.id);localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds));showToast("Saved locally — will sync later");setSyncStatus("error");}}
   else showToast("Transaction added ✓");
   flashBtn("btn-add-tx","Add Transaction","#0f172a"); await delay(900); goTo("home");
@@ -1816,6 +1857,174 @@ async function deleteBudget(idx) {
     BUDGETS.splice(idx,1); saveBudgets(); renderBudget();
     await syncBudgetsToSheets(); showToast("Budget removed + synced ✓");
   }
+}
+
+// ══ RECURRING TRANSACTIONS ═══════════════════════════════════
+function toggleRecurring() {
+  isRecurring = !isRecurring;
+  const btn = document.getElementById("toggle-recurring");
+  if (btn) btn.className = "toggle" + (isRecurring ? " on" : "");
+}
+
+function checkRecurringSuggestions() {
+  if (!RECURRING.length) return;
+  const now = new Date();
+  const currentMo = now.getMonth(), currentYr = now.getFullYear();
+  // Find recurring items NOT already added this month
+  const thisMonthDescs = new Set(
+    txs.filter(t => { const d = new Date(t.date); return d.getMonth()===currentMo && d.getFullYear()===currentYr; })
+       .map(t => (t.desc||t.description||"").toLowerCase())
+  );
+  const due = RECURRING.filter(r => !thisMonthDescs.has((r.desc||"").toLowerCase()));
+  const banner = document.getElementById("recurring-banner");
+  const sugEl  = document.getElementById("recurring-suggestions");
+  if (!banner || !sugEl) return;
+  if (!due.length) { banner.classList.remove("show"); return; }
+  sugEl.innerHTML = due.map(r =>
+    '<div class="recurring-item">' +
+      '<div><div class="recurring-item-name">' + (r.desc||"") + '</div>' +
+      '<div class="recurring-item-amt">' + (r.category||"").replace(/^\S+\s/,"") + ' · ' + fmt(r.amount) + '</div></div>' +
+      '<button class="recurring-add-btn" onclick="addRecurringNow(' + JSON.stringify(r).replace(/"/g,"&quot;") + ')">+ Add</button>' +
+    '</div>'
+  ).join("");
+  banner.classList.add("show");
+}
+
+async function addRecurringNow(r) {
+  const now = new Date();
+  const date = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
+  const tx = {id:Date.now(), date, type:r.type||"Expense", category:r.category, desc:r.desc, amount:r.amount, notes:r.notes||""};
+  txs.push(tx); saveTxs();
+  showToast("Added: " + r.desc + " ✓");
+  checkRecurringSuggestions();
+  renderHome();
+  if (settings.sheetsUrl && settings.autosync) {
+    setSyncStatus("syncing");
+    const ok = await Promise.race([postToSheets("add_transaction",{data:{...tx}}), new Promise(res=>setTimeout(()=>res(false),6000))]);
+    if (ok) setSyncStatus("ok"); else setSyncStatus("error");
+  }
+}
+
+function dismissRecurringSuggestions() {
+  const banner = document.getElementById("recurring-banner");
+  if (banner) banner.classList.remove("show");
+}
+
+function removeRecurring(desc, category) {
+  RECURRING = RECURRING.filter(r => !(r.desc===desc && r.category===category));
+  saveRecurring();
+  showToast("Removed from recurring");
+  checkRecurringSuggestions();
+}
+
+// ══ EXPORT ANALYTICS AS IMAGE ════════════════════════════════
+function exportAnalyticsImage() {
+  const mo = analyticsMonth, yr = analyticsYear;
+  const arr = monthTxs(mo, yr);
+  const {inc, exp, net, rate} = calcSummary(arr);
+
+  // Category breakdown
+  const catMap = {};
+  arr.filter(t=>t.type==="Expense").forEach(t=>{ catMap[t.category]=(catMap[t.category]||0)+t.amount; });
+  const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const totalExp = cats.reduce((s,[,v])=>s+v,0);
+
+  const W = 720, rowH = 36, headerH = 120, statsH = 100, catH = (cats.length||1)*rowH + 40;
+  const H = headerH + statsH + catH + 60;
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  const isDark = document.body.classList.contains("dark");
+
+  const BG     = isDark ? "#0f172a" : "#f8fafc";
+  const CARD   = isDark ? "#1e293b" : "#ffffff";
+  const TEXT   = isDark ? "#f1f5f9" : "#0f172a";
+  const MUTED  = isDark ? "#94a3b8" : "#64748b";
+  const BORDER = isDark ? "#334155" : "#e2e8f0";
+  const TEAL   = "#0d9488";
+  const COLORS = ["#6366f1","#0d9488","#f59e0b","#ef4444","#22c55e","#8b5cf6","#ec4899","#f97316"];
+
+  const thb = n => "฿" + Number(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  // Background
+  ctx.fillStyle = BG; ctx.fillRect(0,0,W,H);
+
+  // Header card
+  ctx.fillStyle = CARD;
+  roundRect(ctx, 20, 20, W-40, headerH-20, 16);
+  ctx.fill();
+
+  // Title
+  ctx.fillStyle = TEXT; ctx.font = "bold 28px 'Urbanist', sans-serif";
+  ctx.fillText("FinTrack", 40, 68);
+  ctx.fillStyle = MUTED; ctx.font = "18px 'Urbanist', sans-serif";
+  ctx.fillText(MO[mo] + " " + yr + " · Monthly summary", 40, 95);
+
+  // Teal accent bar
+  ctx.fillStyle = TEAL; ctx.fillRect(20, 20, 6, headerH-20);
+
+  // Stats row
+  const stats = [
+    {lbl:"Income",    val:thb(inc), color:"#22c55e"},
+    {lbl:"Expenses",  val:thb(exp), color:"#ef4444"},
+    {lbl:"Net",       val:thb(net), color: net>=0?"#22c55e":"#ef4444"},
+    {lbl:"Rate",      val:Math.round(rate*100)+"%", color:TEXT},
+  ];
+  const sw = (W-40)/4;
+  stats.forEach(({lbl,val,color},i) => {
+    const x = 20 + i*sw, y = headerH + 10;
+    ctx.fillStyle = CARD; roundRect(ctx, x+4, y, sw-8, statsH-10, 12); ctx.fill();
+    ctx.fillStyle = MUTED; ctx.font = "13px 'Urbanist', sans-serif";
+    ctx.fillText(lbl, x+16, y+24);
+    ctx.fillStyle = color; ctx.font = "bold 22px 'Urbanist', sans-serif";
+    ctx.fillText(val, x+16, y+54);
+  });
+
+  // Category section
+  const catY = headerH + statsH + 10;
+  ctx.fillStyle = CARD; roundRect(ctx,20,catY,W-40,catH,16); ctx.fill();
+  ctx.fillStyle = TEXT; ctx.font = "bold 16px 'Urbanist', sans-serif";
+  ctx.fillText("Expenses by category", 40, catY+28);
+
+  cats.forEach(([cat,amt],i) => {
+    const y = catY + 46 + i*rowH;
+    const name = cat.replace(/^\S+\s/,"");
+    const emoji = cat.split(" ")[0];
+    const pct = totalExp > 0 ? amt/totalExp : 0;
+    const barW = (W-160) * pct;
+    const color = COLORS[i % COLORS.length];
+
+    ctx.fillStyle = MUTED; ctx.font = "14px 'Urbanist', sans-serif";
+    ctx.fillText(emoji + " " + name, 40, y+18);
+    ctx.fillStyle = BORDER; roundRect(ctx,200,y+4,W-220,14,7); ctx.fill();
+    ctx.fillStyle = color; roundRect(ctx,200,y+4,Math.max(barW,4),14,7); ctx.fill();
+    ctx.fillStyle = TEXT; ctx.font = "bold 13px 'Urbanist', sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(thb(amt), W-24, y+18);
+    ctx.textAlign = "left";
+  });
+
+  // Footer
+  const footY = H - 30;
+  ctx.fillStyle = MUTED; ctx.font = "12px 'Urbanist', sans-serif";
+  ctx.fillText("Generated by FinTrack · " + new Date().toLocaleDateString("en-GB"), 40, footY);
+
+  // Download
+  const link = document.createElement("a");
+  link.download = "fintrack-" + MO[mo].toLowerCase() + "-" + yr + ".png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+  showToast("Saved as image ✓");
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
 }
 
 startup();
