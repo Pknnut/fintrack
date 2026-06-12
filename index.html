@@ -854,7 +854,29 @@ let pinBuffer = "", pinMode = "enter", pinSetupFirst = "";
 let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
 let RECURRING = JSON.parse(localStorage.getItem("ft_recurring") || "[]");
 let isRecurring = false;
-function saveRecurring() { localStorage.setItem("ft_recurring", JSON.stringify(RECURRING)); }
+function saveRecurring() {
+  localStorage.setItem("ft_recurring", JSON.stringify(RECURRING));
+  if (settings.sheetsUrl) syncRecurringToSheets();
+}
+async function syncRecurringToSheets() {
+  await Promise.race([
+    postToSheets("save_recurring", { recurring: RECURRING }),
+    new Promise(r => setTimeout(() => r(false), 6000))
+  ]);
+}
+async function fetchRecurringFromSheets(silent = false) {
+  if (!settings.sheetsUrl) return false;
+  try {
+    const res  = await fetch(settings.sheetsUrl + "?action=get_recurring");
+    const data = await res.json();
+    if (data.recurring && Array.isArray(data.recurring) && data.recurring.length) {
+      RECURRING = data.recurring;
+      localStorage.setItem("ft_recurring", JSON.stringify(RECURRING));
+      return true;
+    }
+    return false;
+  } catch { return false; }
+}
 
 if (!settings.pin || settings.pin.length !== 6) settings.pin = "123456";
 if (settings.pinEnabled === undefined) settings.pinEnabled = true;
@@ -985,7 +1007,7 @@ async function startup() {
   setLoading("Starting up…", 10);
   if (settings.sheetsUrl) {
     setLoading("Fetching data from Google Sheets…", 25);
-    const [txOk, budgetOk] = await Promise.all([fetchFromSheets(true), fetchBudgetsFromSheets(true)]);
+    const [txOk, budgetOk] = await Promise.all([fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true)]);
     if (txOk || budgetOk) { setLoading("Data loaded ✓", 90); await delay(600); }
     else { setLoading("Working offline", 90); await delay(600); }
   } else { setLoading("Loading…", 80); await delay(300); }
@@ -1148,7 +1170,7 @@ function renderHistory() {
 async function refreshApp() {
   const icon=document.querySelector("#refresh-btn i"); if(icon)icon.classList.add("spin");
   showToast("Refreshing…");
-  const [txOk,budgetOk]=await Promise.all([fetchFromSheets(true),fetchBudgetsFromSheets(true)]);
+  const [txOk,budgetOk]=await Promise.all([fetchFromSheets(true),fetchBudgetsFromSheets(true),fetchRecurringFromSheets(true)]);
   if(icon)icon.classList.remove("spin"); renderHome(); renderAnalytics();
   if(txOk||budgetOk)showToast("Refreshed ✓"); else showToast("Up to date ✓");
 }
