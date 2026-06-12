@@ -2583,11 +2583,7 @@ document.querySelectorAll(".period-pill").forEach(p => p.addEventListener("click
 }));
 // ══ BUDGET ════════════════════════════════════════════════════
 let BUDGETS = JSON.parse(localStorage.getItem("ft_budgets") || "[]");
-if (!BUDGETS.length) BUDGETS = [
-  { cat: "🍜 Food & Dining",    limit: 5000 },
-  { cat: "🚗 Grab / Transport", limit: 2000 },
-  { cat: "🛒 Groceries",        limit: 3000 },
-];
+if (!BUDGETS.length) BUDGETS = [];
 function saveBudgets() { localStorage.setItem("ft_budgets", JSON.stringify(BUDGETS)); }
 
 async function fetchBudgetsFromSheets(silent = false) {
