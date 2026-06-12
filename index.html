@@ -2070,98 +2070,99 @@ function exportAnalyticsImage() {
   const arr = monthTxs(mo, yr);
   const {inc, exp, net, rate} = calcSummary(arr);
 
-  // Category breakdown
   const catMap = {};
   arr.filter(t=>t.type==="Expense").forEach(t=>{ catMap[t.category]=(catMap[t.category]||0)+t.amount; });
   const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const totalExp = cats.reduce((s,[,v])=>s+v,0);
 
-  const W = 720, rowH = 36, headerH = 120, statsH = 100, catH = (cats.length||1)*rowH + 40;
-  const H = headerH + statsH + catH + 60;
+  const W = 800, PAD = 28, rowH = 40;
+  const headerH = 110, statsH = 96, catH = (cats.length||1)*rowH + 52, footH = 48;
+  const H = headerH + statsH + catH + footH;
+  const DPR = 2;
   const canvas = document.createElement("canvas");
-  canvas.width = W; canvas.height = H;
+  canvas.width = W * DPR; canvas.height = H * DPR;
   const ctx = canvas.getContext("2d");
-  const isDark = document.body.classList.contains("dark");
+  ctx.scale(DPR, DPR);
 
-  const BG     = isDark ? "#0f172a" : "#f8fafc";
+  const isDark = document.body.classList.contains("dark");
+  const BG     = isDark ? "#0f172a" : "#f1f5f9";
   const CARD   = isDark ? "#1e293b" : "#ffffff";
   const TEXT   = isDark ? "#f1f5f9" : "#0f172a";
   const MUTED  = isDark ? "#94a3b8" : "#64748b";
+  const SUBTLE = isDark ? "#64748b" : "#94a3b8";
   const BORDER = isDark ? "#334155" : "#e2e8f0";
   const TEAL   = "#0d9488";
   const COLORS = ["#6366f1","#0d9488","#f59e0b","#ef4444","#22c55e","#8b5cf6","#ec4899","#f97316"];
+  const thb = n => "\u0e3f" + Number(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
 
-  const thb = n => "฿" + Number(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-
-  // Background
   ctx.fillStyle = BG; ctx.fillRect(0,0,W,H);
 
   // Header card
-  ctx.fillStyle = CARD;
-  roundRect(ctx, 20, 20, W-40, headerH-20, 16);
-  ctx.fill();
-
-  // Title
-  ctx.fillStyle = TEXT; ctx.font = "bold 28px 'Urbanist', sans-serif";
-  ctx.fillText("FinTrack", 40, 68);
-  ctx.fillStyle = MUTED; ctx.font = "18px 'Urbanist', sans-serif";
-  ctx.fillText(MO[mo] + " " + yr + " · Monthly summary", 40, 95);
-
-  // Teal accent bar
-  ctx.fillStyle = TEAL; ctx.fillRect(20, 20, 6, headerH-20);
+  ctx.fillStyle = CARD; roundRect(ctx, PAD, PAD, W-PAD*2, headerH-PAD, 14); ctx.fill();
+  ctx.fillStyle = TEAL; ctx.fillRect(PAD, PAD, 5, headerH-PAD);
+  ctx.fillStyle = TEXT; ctx.font = "700 26px \'Urbanist\',system-ui,sans-serif";
+  ctx.fillText("FinTrack", PAD+18, PAD+38);
+  ctx.fillStyle = MUTED; ctx.font = "15px \'Urbanist\',system-ui,sans-serif";
+  ctx.fillText(MO[mo] + " " + yr + "  \u00b7  Monthly summary", PAD+18, PAD+62);
 
   // Stats row
   const stats = [
-    {lbl:"Income",    val:thb(inc), color:"#22c55e"},
-    {lbl:"Expenses",  val:thb(exp), color:"#ef4444"},
-    {lbl:"Net",       val:thb(net), color: net>=0?"#22c55e":"#ef4444"},
-    {lbl:"Rate",      val:Math.round(rate*100)+"%", color:TEXT},
+    {lbl:"Income",   val:thb(inc), color:"#16a34a"},
+    {lbl:"Expenses", val:thb(exp), color:"#dc2626"},
+    {lbl:"Net",      val:thb(net), color:net>=0?"#16a34a":"#dc2626"},
+    {lbl:"Rate",     val:Math.round(rate*100)+"%", color:TEXT},
   ];
-  const sw = (W-40)/4;
+  const sw = (W - PAD*2) / 4;
   stats.forEach(({lbl,val,color},i) => {
-    const x = 20 + i*sw, y = headerH + 10;
-    ctx.fillStyle = CARD; roundRect(ctx, x+4, y, sw-8, statsH-10, 12); ctx.fill();
-    ctx.fillStyle = MUTED; ctx.font = "13px 'Urbanist', sans-serif";
-    ctx.fillText(lbl, x+16, y+24);
-    ctx.fillStyle = color; ctx.font = "bold 22px 'Urbanist', sans-serif";
-    ctx.fillText(val, x+16, y+54);
+    const x = PAD + i*sw, y = headerH;
+    ctx.fillStyle = CARD; roundRect(ctx, x+3, y+4, sw-6, statsH-8, 10); ctx.fill();
+    ctx.strokeStyle = BORDER; ctx.lineWidth = 0.5; roundRect(ctx, x+3, y+4, sw-6, statsH-8, 10); ctx.stroke();
+    ctx.fillStyle = MUTED; ctx.font = "12px \'Urbanist\',system-ui,sans-serif";
+    ctx.fillText(lbl, x+14, y+24);
+    ctx.fillStyle = color; ctx.font = "700 19px \'Urbanist\',system-ui,sans-serif";
+    if (ctx.measureText(val).width > sw-28) ctx.font = "700 15px \'Urbanist\',system-ui,sans-serif";
+    ctx.fillText(val, x+14, y+56);
   });
 
   // Category section
-  const catY = headerH + statsH + 10;
-  ctx.fillStyle = CARD; roundRect(ctx,20,catY,W-40,catH,16); ctx.fill();
-  ctx.fillStyle = TEXT; ctx.font = "bold 16px 'Urbanist', sans-serif";
-  ctx.fillText("Expenses by category", 40, catY+28);
+  const catY = headerH + statsH + 8;
+  const INNER = 16, LABEL_W = 150, AMT_W = 110;
+  const barX = PAD + INNER + LABEL_W + 8;
+  const barMaxW = W - PAD*2 - INNER*2 - LABEL_W - AMT_W - 16;
+  ctx.fillStyle = CARD; roundRect(ctx, PAD, catY, W-PAD*2, catH, 14); ctx.fill();
+  ctx.strokeStyle = BORDER; ctx.lineWidth = 0.5; roundRect(ctx, PAD, catY, W-PAD*2, catH, 14); ctx.stroke();
+  ctx.fillStyle = TEXT; ctx.font = "700 15px \'Urbanist\',system-ui,sans-serif";
+  ctx.fillText("Expenses by category", PAD+INNER, catY+26);
 
   cats.forEach(([cat,amt],i) => {
-    const y = catY + 46 + i*rowH;
+    const y = catY + 44 + i*rowH;
     const name = cat.replace(/^\S+\s/,"");
     const emoji = cat.split(" ")[0];
     const pct = totalExp > 0 ? amt/totalExp : 0;
-    const barW = (W-160) * pct;
     const color = COLORS[i % COLORS.length];
-
-    ctx.fillStyle = MUTED; ctx.font = "14px 'Urbanist', sans-serif";
-    ctx.fillText(emoji + " " + name, 40, y+18);
-    ctx.fillStyle = BORDER; roundRect(ctx,200,y+4,W-220,14,7); ctx.fill();
-    ctx.fillStyle = color; roundRect(ctx,200,y+4,Math.max(barW,4),14,7); ctx.fill();
-    ctx.fillStyle = TEXT; ctx.font = "bold 13px 'Urbanist', sans-serif";
+    if (i > 0) {
+      ctx.strokeStyle = BORDER; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(PAD+INNER, y-6); ctx.lineTo(W-PAD-INNER, y-6); ctx.stroke();
+    }
+    ctx.fillStyle = TEXT; ctx.font = "14px \'Urbanist\',system-ui,sans-serif";
+    ctx.fillText(emoji + " " + name, PAD+INNER, y+16);
+    ctx.fillStyle = BORDER; roundRect(ctx, barX, y+4, barMaxW, 12, 6); ctx.fill();
+    ctx.fillStyle = color; roundRect(ctx, barX, y+4, Math.max(barMaxW*pct, 6), 12, 6); ctx.fill();
+    ctx.fillStyle = TEXT; ctx.font = "700 13px \'Urbanist\',system-ui,sans-serif";
     ctx.textAlign = "right";
-    ctx.fillText(thb(amt), W-24, y+18);
+    ctx.fillText(thb(amt), W-PAD-INNER, y+16);
     ctx.textAlign = "left";
   });
 
   // Footer
-  const footY = H - 30;
-  ctx.fillStyle = MUTED; ctx.font = "12px 'Urbanist', sans-serif";
-  ctx.fillText("Generated by FinTrack · " + new Date().toLocaleDateString("en-GB"), 40, footY);
+  ctx.fillStyle = SUBTLE; ctx.font = "11px \'Urbanist\',system-ui,sans-serif";
+  ctx.fillText("Generated by FinTrack  \u00b7  " + new Date().toLocaleDateString("en-GB"), PAD+4, H-footH+20);
 
-  // Download
   const link = document.createElement("a");
   link.download = "fintrack-" + MO[mo].toLowerCase() + "-" + yr + ".png";
-  link.href = canvas.toDataURL("image/png");
+  link.href = canvas.toDataURL("image/png", 1.0);
   link.click();
-  showToast("Saved as image ✓");
+  showToast("Saved as image \u2713");
 }
 
 function roundRect(ctx, x, y, w, h, r) {
