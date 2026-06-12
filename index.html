@@ -152,11 +152,14 @@
   .goal-delete-btn { background: var(--slate-100); color: var(--slate-500); flex: 0 0 44px; }
   .goal-edit-btn { background: #eff6ff; color: #2563eb; flex: 0 0 44px; }
 
-  .analytics-header { padding: 24px 20px 0; }
-  .revenue-card { margin: 14px 20px 0; background: var(--teal); border-radius: 20px; padding: 18px; }
+  .analytics-header { padding: 0; }
+  .an-header-block { background: #0f766e; padding: 24px 20px 16px; }
+  .an-header-meta { font-size: 10px; color: #99f6e4; margin-bottom: 4px; }
+  .an-header-title { font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px; }
+  .revenue-card { margin: 14px 20px 0; background: var(--white); border-radius: var(--radius); border: 1px solid var(--slate-200); padding: 16px; }
   .rev-label { font-size: 10px; color: rgba(255,255,255,0.65); margin-bottom: 4px; }
-  .rev-amount { font-size: 30px; font-weight: 700; color: var(--white); letter-spacing: -1px; margin-bottom: 4px; }
-  .rev-change { font-size: 11px; color: #99f6e4; font-weight: 500; margin-bottom: 16px; }
+  .rev-amount { font-size: 30px; font-weight: 700; color: var(--slate-900); letter-spacing: -1px; margin-bottom: 4px; }
+  .rev-change { font-size: 11px; color: var(--slate-400); font-weight: 500; margin-bottom: 12px; }
   .bar-chart { display: flex; align-items: flex-end; gap: 5px; height: 56px; }
   .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
   .bar-inner { width: 100%; border-radius: 4px 4px 0 0; }
@@ -165,14 +168,17 @@
   .an-stat { flex: 1; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 11px; }
   .an-stat-val { font-size: 16px; font-weight: 700; color: var(--slate-900); }
   .an-stat-lbl { font-size: 9px; color: var(--slate-400); margin-top: 2px; }
-  .an-year-pill { flex-shrink: 0; padding: 5px 10px; border-radius: 8px; font-size: 10px; font-weight: 600; border: 1px solid var(--slate-200); background: var(--white); color: var(--slate-500); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
-  .an-year-pill.active { background: var(--slate-900); color: var(--white); border-color: var(--slate-900); }
-  .an-filter-chip { display:flex; align-items:center; gap:6px; background:#1e293b; border-radius:20px; padding:6px 12px; cursor:pointer; border:1px solid #334155; }
-  .an-filter-chip span { font-size:12px; font-weight:600; color:var(--white); }
-  .an-filter-chip i { font-size:12px; color:var(--slate-400); transition:transform 0.2s; }
-  .an-filter-chip.open i.ti-chevron-down { transform:rotate(180deg); }
-  .an-filter-row { display:flex; align-items:center; justify-content:space-between; padding:8px 20px 4px; }
-  .an-filter-viewing { font-size:10px; color:var(--slate-400); font-weight:500; }
+  /* an-year-pill removed — month navigation handled by filter dropdown */
+  .an-year-summ-box { flex: 1; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 8px 10px; text-align: center; }
+  .an-year-summ-val { font-size: 12px; font-weight: 700; color: var(--slate-900); }
+  .an-year-summ-lbl { font-size: 9px; color: var(--slate-400); margin-top: 2px; }
+  .an-filter-chip { display:flex; align-items:center; gap:6px; background:#0d6b63; border-radius:20px; padding:6px 12px; cursor:pointer; border:1px solid #0a5a54; }
+  .an-filter-chip span { font-size:12px; font-weight:600; color:#ffffff; }
+  .an-filter-chip .ti-calendar { font-size:12px; color:#5eead4; }
+  .an-filter-chip .ti-chevron-down { font-size:12px; color:#99f6e4; transition:transform 0.2s; }
+  .an-filter-chip.open .ti-chevron-down { transform:rotate(180deg); }
+  .an-filter-row { display:flex; align-items:center; justify-content:space-between; padding:10px 20px 4px; background:#0f766e; }
+  .an-filter-viewing { font-size:10px; color:#99f6e4; font-weight:500; }
   .an-dropdown { margin:0 20px 10px; background:var(--white); border:1px solid var(--slate-200); border-radius:var(--radius); overflow:hidden; }
   .an-dropdown.hidden { display:none; }
   .an-dropdown-hd { padding:10px 14px 8px; font-size:10px; font-weight:600; color:var(--slate-400); border-bottom:1px solid var(--slate-100); letter-spacing:.04em; }
@@ -191,6 +197,33 @@
   .an-mo-empty { width:18px; height:18px; border-radius:50%; border:1.5px solid var(--slate-200); flex-shrink:0; }
   .an-mo-dot { font-size:9px; margin-left:4px; }
   .cat-section { margin: 14px 20px 0; }
+  .an-donut-wrap { display:flex; align-items:center; gap:14px; padding:4px 0 8px; }
+  .an-donut-legend { flex:1; min-width:0; }
+  .an-donut-item { display:flex; align-items:center; gap:7px; padding:5px 6px; border-radius:8px; cursor:pointer; transition:opacity 0.2s, background 0.15s; }
+  .an-donut-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .an-donut-name { font-size:11px; font-weight:500; color:var(--slate-700); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .an-donut-pct { font-size:11px; font-weight:700; color:var(--slate-900); }
+  .an-donut-arrow { font-size:11px; color:var(--slate-300); margin-left:2px; transition:color 0.15s; }
+  .an-donut-item.selected { background:#f0fdf4; }
+  .an-donut-item.selected .an-donut-name { color:var(--slate-900); font-weight:700; }
+  .an-donut-item.selected .an-donut-arrow { color:#22c55e; }
+  .an-donut-item.dimmed { opacity:0.35; }
+  .an-donut-detail { margin:0 20px 12px; background:#f8fafc; border-radius:var(--radius); padding:12px 14px; display:none; }
+  .an-donut-detail.visible { display:block; }
+  .an-detail-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .an-detail-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+  .an-detail-name { font-size:13px; font-weight:600; color:var(--slate-900); flex:1; }
+  .an-detail-hint { font-size:10px; color:var(--slate-400); }
+  .an-detail-stats { display:flex; gap:8px; margin-bottom:10px; }
+  .an-detail-stat { flex:1; background:var(--white); border-radius:var(--radius-sm); padding:8px 10px; }
+  .an-detail-stat-val { font-size:13px; font-weight:700; color:var(--slate-900); }
+  .an-detail-stat-lbl { font-size:9px; color:var(--slate-400); margin-top:2px; }
+  .an-detail-txlist { max-height:160px; overflow-y:auto; }
+  .an-detail-tx { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--slate-200); font-size:11px; }
+  .an-detail-tx:last-child { border-bottom:none; }
+  .an-detail-tx-desc { color:var(--slate-700); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-right:8px; }
+  .an-detail-tx-date { color:var(--slate-400); font-size:10px; margin-right:8px; flex-shrink:0; }
+  .an-detail-tx-amt { color:#ef4444; font-weight:600; flex-shrink:0; }
   .cat-item { margin-bottom: 11px; }
   .cat-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--slate-700); margin-bottom: 5px; font-weight: 500; }
   .cat-val { color: var(--slate-400); font-weight: 400; }
@@ -542,7 +575,7 @@
   <div class="home-header">
     <div style="display:flex;align-items:center;gap:10px">
       <div class="avatar">N</div>
-      <div><div class="greeting">How are your finances looking today,,</div>
+      <div><div class="greeting">Good morning,</div>
         <div style="font-size:15px;font-weight:700;color:var(--slate-900)">Nut 👋</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
@@ -621,15 +654,17 @@
 
 <!-- ANALYTICS -->
 <div class="page" id="page-analytics">
-  <div class="analytics-header"><div class="meta">Monthly view</div><div class="page-title">Analytics</div></div>
-  <!-- Filter row: "Viewing" label + dropdown chip -->
-  <div class="an-filter-row">
-    <span class="an-filter-viewing">Viewing</span>
-    <button class="an-filter-chip" id="an-filter-chip" onclick="toggleAnalyticsDropdown()" aria-label="Select period">
-      <i class="ti ti-calendar" aria-hidden="true"></i>
-      <span id="an-filter-label">Jun 2026</span>
-      <i class="ti ti-chevron-down"></i>
-    </button>
+  <!-- Teal-green header block -->
+  <div class="an-header-block">
+    <div class="an-header-meta">Monthly view</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="an-header-title">Analytics</div>
+      <button class="an-filter-chip" id="an-filter-chip" onclick="toggleAnalyticsDropdown()" aria-label="Select period">
+        <i class="ti ti-calendar" aria-hidden="true"></i>
+        <span id="an-filter-label">Jun 2026</span>
+        <i class="ti ti-chevron-down"></i>
+      </button>
+    </div>
   </div>
   <!-- Dropdown (hidden by default) -->
   <div class="an-dropdown hidden" id="an-dropdown">
@@ -644,28 +679,56 @@
     </div>
     <div class="an-mo-list" id="an-mo-list"></div>
   </div>
-  <!-- Income card -->
-  <div class="revenue-card" style="margin:0 20px">
-    <div class="rev-label" id="an-rev-label">TOTAL INCOME · JUN 2026</div>
-    <div class="rev-amount" id="rev-amount">฿0</div>
-    <div class="rev-change" id="rev-change">— this month</div>
-    <div class="bar-chart" id="analytics-bars" style="height:56px"></div>
-    <div style="display:flex;justify-content:space-between;font-size:8px;color:rgba(255,255,255,0.45);margin-top:4px" id="analytics-bar-labels"></div>
+  <!-- 2x2 stat grid -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 20px 0">
+    <div class="card" style="padding:12px 14px">
+      <div style="font-size:9px;color:var(--slate-400);margin-bottom:4px">Income</div>
+      <div style="font-size:16px;font-weight:700;color:#22c55e" id="an-inc">฿0</div>
+    </div>
+    <div class="card" style="padding:12px 14px">
+      <div style="font-size:9px;color:var(--slate-400);margin-bottom:4px">Expenses</div>
+      <div style="font-size:16px;font-weight:700;color:#ef4444" id="an-exp">฿0</div>
+    </div>
+    <div class="card" style="padding:12px 14px">
+      <div style="font-size:9px;color:var(--slate-400);margin-bottom:4px">Net savings</div>
+      <div style="font-size:16px;font-weight:700;color:var(--slate-900)" id="an-net">฿0</div>
+    </div>
+    <div class="card" style="padding:12px 14px">
+      <div style="font-size:9px;color:var(--slate-400);margin-bottom:4px">Savings rate</div>
+      <div style="font-size:16px;font-weight:700;color:var(--slate-900)" id="an-rate">0%</div>
+    </div>
   </div>
-  <div class="an-stats">
-    <div class="an-stat"><div class="an-stat-val" id="an-exp">฿0</div><div class="an-stat-lbl">Expenses</div></div>
-    <div class="an-stat"><div class="an-stat-val" id="an-net">฿0</div><div class="an-stat-lbl">Net savings</div></div>
-    <div class="an-stat"><div class="an-stat-val" id="an-rate">0%</div><div class="an-stat-lbl">Savings rate</div></div>
-    <div class="an-stat"><div class="an-stat-val" id="an-txcount">0</div><div class="an-stat-lbl">Transactions</div></div>
-  </div>
-  <!-- Year overview strip -->
-  <div style="margin:12px 20px 0">
-    <div class="sec-hd"><span class="section-label" id="an-year-label">Overview</span></div>
-    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px" id="an-year-strip"></div>
-  </div>
+  <!-- Donut chart + legend -->
   <div class="cat-section">
     <div class="sec-hd"><span class="section-label">Expenses by category</span></div>
-    <div class="card" style="padding:14px" id="cat-breakdown"></div>
+    <div class="an-donut-wrap" style="padding:4px 20px 8px">
+      <svg id="an-donut-svg" width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0;cursor:pointer" onclick="handleDonutSvgTap(event)">
+        <g id="an-donut-arcs"></g>
+        <text id="an-donut-center-pct" x="55" y="48" text-anchor="middle" font-size="15" font-weight="700" fill="#0f172a">0%</text>
+        <text id="an-donut-center-lbl" x="55" y="64" text-anchor="middle" font-size="10" fill="#94a3b8">saved</text>
+      </svg>
+      <div class="an-donut-legend" id="an-donut-legend"></div>
+    </div>
+  </div>
+  <div class="an-donut-detail" id="an-donut-detail">
+    <div class="an-detail-header">
+      <div class="an-detail-dot" id="an-detail-dot"></div>
+      <div class="an-detail-name" id="an-detail-name">—</div>
+      <span class="an-detail-hint">tap again to close</span>
+    </div>
+    <div class="an-detail-stats">
+      <div class="an-detail-stat"><div class="an-detail-stat-val" id="an-detail-amt">฿0</div><div class="an-detail-stat-lbl">Total spent</div></div>
+      <div class="an-detail-stat"><div class="an-detail-stat-val" id="an-detail-pct">0%</div><div class="an-detail-stat-lbl">Of expenses</div></div>
+      <div class="an-detail-stat"><div class="an-detail-stat-val" id="an-detail-count">0</div><div class="an-detail-stat-lbl">Transactions</div></div>
+    </div>
+    <div class="an-detail-txlist" id="an-detail-txlist"></div>
+  </div>
+  <!-- Year summary -->
+  <div style="margin:12px 20px 0">
+    <div class="sec-hd" style="margin-bottom:8px">
+      <span class="section-label" id="an-year-label">Yearly overview</span>
+    </div>
+    <div id="an-year-summary" style="display:flex;gap:8px"></div>
   </div>
   <div class="spacer"></div>
 </div>
@@ -1682,73 +1745,202 @@ function buildAnalyticsDropdown() {
   }).join("");
 }
 
+let _activeDonutIdx = -1;
+
+function handleDonutSvgTap(e) {
+  // Figure out which arc was tapped by checking proximity to arc center angle
+  const sorted = window._anSorted || [];
+  if (!sorted.length) return;
+  const svg  = document.getElementById("an-donut-svg");
+  const rect = svg.getBoundingClientRect();
+  const cx   = rect.left + rect.width  / 2;
+  const cy   = rect.top  + rect.height / 2;
+  const dx   = e.clientX - cx;
+  const dy   = e.clientY - cy;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const R    = rect.width * 0.38; // approximate ring radius
+  // Only respond if tap is roughly on the ring
+  if (dist < R * 0.55 || dist > R * 1.45) {
+    if (_activeDonutIdx >= 0) closeDonutDetail();
+    return;
+  }
+  // Find angle and map to arc index
+  const CIRC    = 2 * Math.PI * 42;
+  const totalExp = window._anTotalExp || 0;
+  let angle = Math.atan2(dy, dx) + Math.PI / 2; // offset so 0 = top
+  if (angle < 0) angle += 2 * Math.PI;
+  let cumAngle = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    const arcAngle = (sorted[i][1] / totalExp) * 2 * Math.PI;
+    if (angle <= cumAngle + arcAngle) { toggleDonutDetail(i); return; }
+    cumAngle += arcAngle;
+  }
+}
+
+function toggleDonutDetail(idx) {
+  if (_activeDonutIdx === idx && document.getElementById("an-donut-detail").classList.contains("visible")) {
+    closeDonutDetail();
+    return;
+  }
+  openDonutDetail(idx);
+}
+
+function openDonutDetail(idx) {
+  const sorted   = window._anSorted   || [];
+  const arr      = window._anArr      || [];
+  const totalExp = window._anTotalExp || 0;
+  if (!sorted[idx]) return;
+  _activeDonutIdx = idx;
+
+  const [cat, amt] = sorted[idx];
+  const color   = CAT_COLORS[idx % CAT_COLORS.length];
+  const pct     = totalExp > 0 ? Math.round((amt / totalExp) * 100) : 0;
+  const catName = cat.replace(/^\S+\s/, "");
+  const txs_    = arr.filter(t => t.type === "Expense" && t.category === cat)
+                     .sort((a, b) => b.amount - a.amount);
+
+  // Update detail panel
+  document.getElementById("an-detail-dot").style.background = color;
+  document.getElementById("an-detail-name").textContent     = catName;
+  document.getElementById("an-detail-amt").textContent      = fmt(amt);
+  document.getElementById("an-detail-pct").textContent      = pct + "%";
+  document.getElementById("an-detail-count").textContent    = txs_.length;
+  document.getElementById("an-detail-txlist").innerHTML = txs_.map(t => {
+    const d    = new Date(t.date);
+    const desc = t.desc || t.description || "";
+    return '<div class="an-detail-tx">' +
+      '<span class="an-detail-tx-desc">' + desc + '</span>' +
+      '<span class="an-detail-tx-date">' + d.getDate() + ' ' + MO[d.getMonth()] + '</span>' +
+      '<span class="an-detail-tx-amt">-' + fmt(t.amount) + '</span>' +
+    '</div>';
+  }).join("") || '<div style="font-size:11px;color:var(--slate-400);padding:6px 0">No transactions</div>';
+
+  // Donut center: show category pct + name
+  document.getElementById("an-donut-center-pct").textContent  = pct + "%";
+  document.getElementById("an-donut-center-pct").setAttribute("fill", color);
+  document.getElementById("an-donut-center-lbl").textContent  = catName.length > 9 ? catName.slice(0,9) + "…" : catName;
+  document.getElementById("an-donut-center-lbl").setAttribute("fill", "#334155");
+
+  // Arc opacity: selected = 1, others = 0.25
+  const arcEls = document.getElementById("an-donut-arcs").querySelectorAll("circle");
+  arcEls.forEach((el, i) => { el.style.opacity = i === idx ? "1" : "0.25"; });
+
+  // Legend rows: selected = green highlight + bold, others = dimmed
+  document.querySelectorAll(".an-donut-item").forEach((el, i) => {
+    el.classList.toggle("selected", i === idx);
+    el.classList.toggle("dimmed",   i !== idx);
+  });
+
+  document.getElementById("an-donut-detail").classList.add("visible");
+}
+
+function closeDonutDetail() {
+  _activeDonutIdx = -1;
+  document.getElementById("an-donut-detail").classList.remove("visible");
+
+  // Restore donut center to savings rate
+  const savedPctEl = document.getElementById("an-donut-center-pct");
+  const savedLblEl = document.getElementById("an-donut-center-lbl");
+  if (savedPctEl) { savedPctEl.setAttribute("fill", "#0f172a"); }
+  if (savedLblEl) { savedLblEl.textContent = "saved"; savedLblEl.setAttribute("fill", "#94a3b8"); }
+
+  // Restore arcs
+  const arcEls = document.getElementById("an-donut-arcs").querySelectorAll("circle");
+  arcEls.forEach(el => { el.style.opacity = "1"; });
+
+  // Restore legend rows
+  document.querySelectorAll(".an-donut-item").forEach(el => {
+    el.classList.remove("selected", "dimmed");
+  });
+}
+
 function renderAnalytics() {
   const mo = analyticsMonth, yr = analyticsYear;
   const arr = monthTxs(mo, yr);
   const {inc, exp, net, rate} = calcSummary(arr);
 
-  // Update filter chip label
+  // Filter chip label
   document.getElementById("an-filter-label").textContent = MO[mo] + " " + yr;
-  document.getElementById("an-year-label").textContent   = yr + " overview";
-  document.getElementById("an-rev-label").textContent    = "TOTAL INCOME · " + MO[mo].toUpperCase() + " " + yr;
+  document.getElementById("an-year-label").textContent   = "Yearly overview";
 
-  // Income card
-  document.getElementById("rev-amount").textContent = fmt(inc);
-  document.getElementById("rev-change").textContent = fmt(net) + " net · " + Math.round(rate * 100) + "% savings rate";
+  // 2x2 stat grid
+  const netEl = document.getElementById("an-net");
+  document.getElementById("an-inc").textContent  = fmt(inc);
+  document.getElementById("an-exp").textContent  = fmt(exp);
+  netEl.textContent = fmt(net);
+  netEl.style.color = net >= 0 ? "#22c55e" : "#ef4444";
+  document.getElementById("an-rate").textContent = Math.round(rate * 100) + "%";
 
-  // Stats
-  document.getElementById("an-exp").textContent     = fmt(exp);
-  document.getElementById("an-net").textContent     = fmt(net);
-  document.getElementById("an-rate").textContent    = Math.round(rate * 100) + "%";
-  document.getElementById("an-txcount").textContent = arr.length;
-
-  // Daily spend bars for selected month
-  const daysInMonth = new Date(yr, mo + 1, 0).getDate();
-  const dailyExp    = Array(daysInMonth).fill(0);
-  arr.filter(t => t.type === "Expense").forEach(t => {
-    const d = new Date(t.date).getDate();
-    if (d >= 1 && d <= daysInMonth) dailyExp[d - 1] += t.amount;
-  });
-  const maxDay = Math.max(...dailyExp, 1);
-  const step   = daysInMonth <= 15 ? 1 : daysInMonth <= 20 ? 2 : 5;
-  const barsEl   = document.getElementById("analytics-bars");
-  const labelsEl = document.getElementById("analytics-bar-labels");
-  barsEl.innerHTML = dailyExp.map((v, i) => {
-    const h = Math.max(Math.round((v / maxDay) * 100), v > 0 ? 4 : 0);
-    const isToday = (yr === new Date().getFullYear() && mo === new Date().getMonth() && (i + 1) === new Date().getDate());
-    return '<div class="bar-col"><div class="bar-inner" style="height:' + h + '%;background:' + (isToday ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.3)') + '"></div></div>';
-  }).join("");
-  labelsEl.innerHTML = dailyExp.map((_, i) =>
-    ((i + 1) % step === 1 || i === 0) ? '<span>' + (i + 1) + '</span>' : '<span></span>'
-  ).join("");
-
-  // Year strip — one pill per month of selected year
-  const yearArr = yearTxs(yr);
-  const stripEl = document.getElementById("an-year-strip");
-  stripEl.innerHTML = MO.map((m, i) => {
-    const mArr  = yearArr.filter(t => new Date(t.date).getMonth() === i);
-    const mExp  = mArr.filter(t => t.type === "Expense").reduce((s, t) => s + t.amount, 0);
-    const mInc  = mArr.filter(t => t.type === "Income").reduce((s, t)  => s + t.amount, 0);
-    const isAct = i === mo;
-    const hasTx = mArr.length > 0;
-    const dot   = !hasTx ? "" : (mInc >= mExp
-      ? ' <span style="color:#22c55e;font-size:8px">▲</span>'
-      : ' <span style="color:#ef4444;font-size:8px">▼</span>');
-    const dimmed = !hasTx ? ";opacity:0.45" : "";
-    return '<button class="an-year-pill' + (isAct ? ' active' : '') + '" onclick="analyticsMonth=' + i + ';closeAnalyticsDropdown();renderAnalytics()" style="' + dimmed + '">' + m + dot + '</button>';
-  }).join("");
-
-  // Category breakdown
+  // Donut chart — expenses by category
   const catMap = {};
-  arr.filter(t => t.type === "Expense").forEach(t => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
-  const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
-  const maxV   = sorted[0]?.[1] || 1;
-  document.getElementById("cat-breakdown").innerHTML = sorted.length
-    ? sorted.map(([cat, amt], i) =>
-        '<div class="cat-item"><div class="cat-row"><span>' + cat + '</span><span class="cat-val">' + fmt(amt) + '</span></div>' +
-        '<div class="cat-track"><div class="cat-fill" style="width:' + Math.round(amt / maxV * 100) + '%;background:' + CAT_COLORS[i % CAT_COLORS.length] + '"></div></div></div>'
-      ).join("")
-    : '<div class="empty-state">No expense data for ' + MO[mo] + ' ' + yr + '</div>';
+  arr.filter(t => t.type === "Expense").forEach(t => {
+    catMap[t.category] = (catMap[t.category] || 0) + t.amount;
+  });
+  const sorted   = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const totalExp = sorted.reduce((s, [, v]) => s + v, 0);
+  const savedPct = inc > 0 ? Math.round((net / inc) * 100) : 0;
+
+  // Update center text
+  document.getElementById("an-donut-center-pct").textContent = savedPct + "%";
+
+  // Draw arcs
+  const R = 42, CX = 55, CY = 55, CIRCUMFERENCE = 2 * Math.PI * R;
+  const arcsEl = document.getElementById("an-donut-arcs");
+  if (sorted.length === 0) {
+    arcsEl.innerHTML = '<circle cx="55" cy="55" r="42" fill="none" stroke="#e2e8f0" stroke-width="16"/>';
+  } else {
+    let offset = -CIRCUMFERENCE / 4; // start at 12 o'clock
+    arcsEl.innerHTML = sorted.map(([cat, amt], i) => {
+      const pct  = amt / totalExp;
+      const dash = pct * CIRCUMFERENCE;
+      const gap  = CIRCUMFERENCE - dash;
+      const arc  = '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none"' +
+        ' stroke="' + CAT_COLORS[i % CAT_COLORS.length] + '"' +
+        ' stroke-width="16"' +
+        ' stroke-dasharray="' + dash.toFixed(2) + ' ' + gap.toFixed(2) + '"' +
+        ' stroke-dashoffset="' + (-offset).toFixed(2) + '"' +
+        ' style="transition:stroke-dasharray 0.4s ease"/>';
+      offset += dash;
+      return arc;
+    }).join("");
+  }
+
+  // Store sorted data globally for tap detail
+  window._anSorted   = sorted;
+  window._anArr      = arr;
+  window._anTotalExp = totalExp;
+
+  // Legend — flush, no dividers, each row tappable
+  const legendEl = document.getElementById("an-donut-legend");
+  if (sorted.length === 0) {
+    legendEl.innerHTML = '<div style="font-size:12px;color:var(--slate-400);padding:8px 0">No expense data for ' + MO[mo] + ' ' + yr + '</div>';
+  } else {
+    legendEl.innerHTML = sorted.map(([cat, amt], i) => {
+      const pct  = totalExp > 0 ? Math.round((amt / totalExp) * 100) : 0;
+      const name = cat.replace(/^\S+\s/, "");
+      return '<div class="an-donut-item" onclick="toggleDonutDetail(' + i + ')">' +
+        '<div class="an-donut-dot" style="background:' + CAT_COLORS[i % CAT_COLORS.length] + '"></div>' +
+        '<span class="an-donut-name">' + name + '</span>' +
+        '<span class="an-donut-pct">' + pct + '%</span>' +
+        '<span class="an-donut-arrow">›</span>' +
+      '</div>';
+    }).join("");
+  }
+  // Close detail panel and reset state when switching period
+  closeDonutDetail();
+
+  // Year summary boxes
+  const yearArr  = yearTxs(yr);
+  const yInc     = yearArr.filter(t => t.type === "Income").reduce((s, t)  => s + t.amount, 0);
+  const yExp     = yearArr.filter(t => t.type === "Expense").reduce((s, t) => s + t.amount, 0);
+  const yNet     = yInc - yExp;
+  const yRate    = yInc > 0 ? Math.round((yNet / yInc) * 100) : 0;
+  const netColor = yNet >= 0 ? "#22c55e" : "#ef4444";
+  document.getElementById("an-year-summary").innerHTML =
+    '<div class="an-year-summ-box"><div class="an-year-summ-val" style="color:#22c55e">' + fmt(yInc) + '</div><div class="an-year-summ-lbl">Year income</div></div>' +
+    '<div class="an-year-summ-box"><div class="an-year-summ-val" style="color:#ef4444">' + fmt(yExp) + '</div><div class="an-year-summ-lbl">Year expenses</div></div>' +
+    '<div class="an-year-summ-box"><div class="an-year-summ-val" style="color:' + netColor + '">' + fmt(yNet) + '</div><div class="an-year-summ-lbl">Year net</div></div>' +
+    '<div class="an-year-summ-box"><div class="an-year-summ-val">' + yRate + '%</div><div class="an-year-summ-lbl">Year rate</div></div>';
 }
 
 function renderInstallments() {
