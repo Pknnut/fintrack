@@ -149,6 +149,23 @@
   .goal-action-btn { flex: 1; padding: 8px; border-radius: 8px; border: none; font-size: 11px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
   .goal-action-btn:active { opacity: 0.75; }
   .goal-save-btn { background: #ecfdf5; color: #16a34a; }
+  .goal-spend-btn { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .goal-pill-tag { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:20px; background:#fef3c7; color:#92400e; font-size:9px; font-weight:600; margin-left:4px; }
+  .spend-log { border-top:1px solid var(--slate-100); margin-top:10px; padding-top:10px; }
+  .spend-log-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:10px; font-weight:600; color:var(--slate-400); }
+  .spend-log-bal { color:#d97706; }
+  .spend-log-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--slate-100); }
+  .spend-log-row:last-child { border-bottom:none; }
+  .spend-log-desc { font-size:11px; color:var(--slate-900); }
+  .spend-log-date { font-size:10px; color:var(--slate-400); margin-top:1px; }
+  .spend-log-amt { font-size:11px; font-weight:600; color:#dc2626; flex-shrink:0; }
+  .spend-log-del { background:none; border:none; color:var(--slate-400); cursor:pointer; font-size:13px; padding:0 0 0 6px; line-height:1; }
+  .spend-log-total { display:flex; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1px solid var(--slate-200); font-size:11px; font-weight:600; }
+  .goal-spend-section { margin:14px 20px 0; background:var(--white); border-radius:var(--radius); border:1px solid #fde68a; padding:12px 14px; }
+  .goal-spend-section-hd { font-size:11px; font-weight:600; color:#92400e; margin-bottom:8px; display:flex; align-items:center; gap:5px; }
+  .goal-spend-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--slate-100); font-size:11px; }
+  .goal-spend-row:last-child { border-bottom:none; }
+  .goal-spend-total { display:flex; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1px solid #fde68a; font-size:11px; font-weight:600; color:#d97706; }
   .goal-delete-btn { background: var(--slate-100); color: var(--slate-500); flex: 0 0 44px; }
   .goal-edit-btn { background: #eff6ff; color: #2563eb; flex: 0 0 44px; }
 
@@ -424,6 +441,7 @@
     <div class="form-field" style="margin-bottom:10px"><label>MONTHLY PAYMENT (฿)</label><input id="ei-monthly" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit"></div>
     <div class="form-field" style="margin-bottom:10px"><label>TOTAL MONTHS</label><input id="ei-total-mo" type="number" inputmode="numeric" pattern="[0-9]*" min="1" placeholder="e.g. 12" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit"></div>
     <div class="form-field" style="margin-bottom:10px"><label>MONTHS ALREADY PAID</label><input id="ei-paid" type="number" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="0" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit"></div>
+    <div class="form-field" style="margin-bottom:14px"><label>CATEGORY</label><select id="eg-category"></select></div>
     <div class="form-field" style="margin-bottom:14px"><label>COLOR</label><select id="ei-color" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none"><option value="#6366f1">🟣 Indigo</option><option value="#0d9488">🩵 Teal</option><option value="#f59e0b">🟡 Amber</option><option value="#22c55e">🟢 Green</option><option value="#8b5cf6">💜 Purple</option><option value="#ef4444">🔴 Red</option></select></div>
     <div class="modal-btn-row"><button class="modal-cancel" onclick="closeModal('edit-inst')">Cancel</button><button class="modal-confirm" style="background:#6366f1" onclick="confirmEditInst()">Save changes</button></div>
   </div>
@@ -639,6 +657,14 @@
     <div class="sec-hd" style="margin-bottom:8px"><span class="section-label" id="an-year-label">Yearly overview</span></div>
     <div id="an-year-summary" style="display:flex;gap:8px"></div>
   </div>
+  <!-- Goal spending section -->
+  <div id="goal-spend-section" style="display:none;margin:14px 20px 0">
+    <div class="goal-spend-section">
+      <div class="goal-spend-section-hd"><i class="ti ti-flag" style="font-size:13px"></i> Goal spending this month — not included in stats above</div>
+      <div id="goal-spend-rows"></div>
+      <div class="goal-spend-total"><span>Total from goals</span><span id="goal-spend-total-val">฿0</span></div>
+    </div>
+  </div>
   <!-- Month-over-month comparison (C+E combined) -->
   <div style="margin:14px 20px 0" id="mom-container">
     <div class="sec-hd" style="margin-bottom:8px"><span class="section-label" id="mom-section-label">vs last month</span></div>
@@ -691,6 +717,7 @@
       <div class="form-field"><label>AMOUNT SAVED SO FAR (฿)</label><input id="g-saved" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"></div>
       <div class="form-field"><label>MONTHLY CONTRIBUTION (฿)</label><input id="g-monthly" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"></div>
       <div class="form-field"><label>TARGET DATE</label><div style="display:flex;gap:8px"><select id="g-due-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select><select id="g-due-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select></div></div>
+      <div class="form-field"><label>CATEGORY</label><select id="g-category"></select></div>
       <div class="form-field"><label>COLOR</label><select id="g-color"><option value="#22c55e,#ecfdf5">🟢 Green</option><option value="#6366f1,#eef2ff">🟣 Indigo</option><option value="#f59e0b,#fffbeb">🟡 Amber</option><option value="#0d9488,#ccfbf1">🩵 Teal</option><option value="#ef4444,#fef2f2">🔴 Red</option><option value="#8b5cf6,#f5f3ff">💜 Purple</option></select></div>
     </div>
     <button class="submit-btn" id="btn-add-goal" style="background:#22c55e" onclick="submitGoal()">Add Goal</button>
@@ -709,6 +736,19 @@
     <button class="submit-btn" id="btn-add-inst" style="background:#6366f1" onclick="submitInst()">Add Instalment</button>
   </div>
   <div class="spacer"></div>
+</div>
+
+<!-- SPEND FROM GOAL MODAL -->
+<div class="modal-overlay hidden" id="modal-spend-goal">
+  <div class="modal-sheet">
+    <div class="modal-title" id="spend-goal-title">Spend from goal</div>
+    <div class="modal-sub" id="spend-goal-sub">Recording a spend against this goal</div>
+    <input class="modal-input" id="spend-goal-amount" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="Amount (฿)">
+    <input class="modal-input" id="spend-goal-desc" type="text" placeholder="Description (e.g. Flights, Hotel)" style="margin-top:8px">
+    <input class="modal-input" id="spend-goal-date" type="date" style="margin-top:8px">
+    <div style="font-size:10px;color:var(--slate-400);background:var(--slate-50);border-radius:var(--radius-sm);padding:8px 10px;margin-top:8px;display:flex;align-items:center;gap:5px"><i class="ti ti-info-circle" style="font-size:13px"></i>This will appear in History but won&#39;t affect your monthly Analytics stats.</div>
+    <div class="modal-btn-row"><button class="modal-cancel" onclick="closeModal('spend-goal')">Cancel</button><button class="modal-confirm" style="background:#d97706" onclick="confirmSpendGoal()">Record spend</button></div>
+  </div>
 </div>
 
 <!-- SETTINGS -->
@@ -959,6 +999,7 @@ function openInstModal(idx) {
 function closeModal(type) {
   document.getElementById("modal-" + type).classList.add("hidden");
   if (type==="goal")      modalGoalIdx = -1;
+  if (type==="spend-goal") spendGoalIdx = -1;
   if (type==="inst")      modalInstIdx = -1;
   if (type==="budget")    editBudgetIdx = -1;
   if (type==="edit-tx")   editTxId = null;
@@ -1169,7 +1210,7 @@ function renderHistory() {
     const isInc=t.type==="Income",d=new Date(t.date),desc=t.desc||t.description||"";
     return '<div class="swipe-container" data-id="'+t.id+'">' +
       '<div class="swipe-del-bg"><i class="ti ti-trash" style="font-size:20px;color:#ef4444"></i></div>' +
-      '<div class="hist-tx-row" data-id="'+t.id+'"><div class="tx-icon">'+(t.category||"").split(" ")[0]+'</div><div style="flex:1;min-width:0"><div class="tx-name">'+desc+'</div><div class="tx-sub">'+(t.category||"").replace(/^\S+\s/,"")+" · "+d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear()+'</div></div><span class="tx-amt '+(isInc?'pos':'neg')+'" style="margin-right:8px">'+(isInc?"+":"-")+fmt(t.amount)+'</span><button class="hist-tx-edit" onclick="openEditTxModal('+t.id+')" aria-label="Edit"><i class="ti ti-pencil" style="font-size:15px;color:#2563eb"></i></button></div>' +
+      '<div class="hist-tx-row" data-id="'+t.id+'"><div class="tx-icon">'+(t.category||"").split(" ")[0]+'</div><div style="flex:1;min-width:0"><div class="tx-name">'+desc+(t.fromGoal?'<span class="goal-pill-tag">'+(t.goalName||'Goal')+'</span>':'')+'</div><div class="tx-sub">'+(t.category||"").replace(/^\S+\s/,"")+" · "+d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear()+'</div></div><span class="tx-amt '+(isInc?'pos':'neg')+'" style="margin-right:8px">'+(isInc?"+":"-")+fmt(t.amount)+'</span><button class="hist-tx-edit" onclick="openEditTxModal('+t.id+')" aria-label="Edit"><i class="ti ti-pencil" style="font-size:15px;color:#2563eb"></i></button></div>' +
     '</div>';
   }).join("");
   initSwipeToDelete();;
@@ -1192,14 +1233,19 @@ function openEditGoalModal(idx) {
   if(g.due&&g.due!=="—"){const parts=g.due.split(" ");if(parts.length===2){const mIdx=MO.indexOf(parts[0])+1,y=parseInt(parts[1]),mSel=document.getElementById("eg-due-m"),ySel=document.getElementById("eg-due-y");for(let i=0;i<mSel.options.length;i++)if(parseInt(mSel.options[i].value)===mIdx){mSel.selectedIndex=i;break;}for(let i=0;i<ySel.options.length;i++)if(parseInt(ySel.options[i].value)===y){ySel.selectedIndex=i;break;}}}
   const colorVal=g.color+","+(g.bg||"#f1f5f9"),cSel=document.getElementById("eg-color");
   for(let i=0;i<cSel.options.length;i++)if(cSel.options[i].value===colorVal){cSel.selectedIndex=i;break;}
+  const egCatSel=document.getElementById("eg-category");
+  egCatSel.innerHTML=EXPENSE_CATS.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
+  const goalCat=GOALS[editGoalIdx].category||"";
+  for(let i=0;i<egCatSel.options.length;i++)if(egCatSel.options[i].value===goalCat){egCatSel.selectedIndex=i;break;}
   document.getElementById("modal-edit-goal").classList.remove("hidden"); setTimeout(()=>document.getElementById("eg-name").focus(),150);
 }
 async function confirmEditGoal() {
   if(editGoalIdx<0)return;
+  const egCat=document.getElementById("eg-category").value||"💰 Other";
   const name=document.getElementById("eg-name").value.trim(),target=parseFloat(document.getElementById("eg-target").value)||0,saved=parseFloat(document.getElementById("eg-saved").value)||0,monthly=parseFloat(document.getElementById("eg-monthly").value)||0,due=safeDate(getMonthVal("eg-due-m","eg-due-y")),colorVal=document.getElementById("eg-color").value.split(",");
   if(!name){showToast("Enter a goal name");return;} if(!target||target<=0){showToast("Enter a target amount");return;}
   const oldGoal={...GOALS[editGoalIdx]},icon=name.match(/^\p{Emoji}/u)?.[0]||oldGoal.icon||"🎯",cleanName=name.replace(/^\p{Emoji}\s*/u,"");
-  GOALS[editGoalIdx]={...oldGoal,icon,name:cleanName,target,saved,monthly,due,color:colorVal[0],bg:colorVal[1]||"#f1f5f9"};
+  GOALS[editGoalIdx]={...oldGoal,icon,name:cleanName,target,saved,monthly,due,color:colorVal[0],bg:colorVal[1]||"#f1f5f9",category:egCat,spends:oldGoal.spends||[]};
   saveGoals(); closeModal("edit-goal"); renderGoals(); showToast("Goal updated ✓");
   if(settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("update_goal",{oldName:oldGoal.name,data:{name:icon+" "+cleanName,target,saved,monthly,due,color:colorVal[0]}}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){setSyncStatus("ok");showToast("Goal updated + synced ✓");}else{setSyncStatus("error");showToast("Updated locally — Sheets sync failed");}}
 }
@@ -1380,7 +1426,16 @@ function renderGoals() {
         projLabel = 'Est: ' + MO[projDate.getMonth()] + ' ' + projDate.getFullYear();
       }
     }
-    return '<div class="goal-card"><div class="goal-top"><div style="display:flex;align-items:center;gap:8px"><div class="goal-icon-wrap" style="background:'+(g.bg||'#f1f5f9')+'">'+(g.icon||'🎯')+'</div><div><div class="goal-name">'+g.name+'</div><div class="goal-saved">'+fmt(g.saved)+' saved of '+fmt(g.target)+'</div></div></div><div class="goal-pct" style="color:'+g.color+'">'+pct+'%</div></div><div class="goal-track"><div class="goal-fill" style="width:'+pct+'%;background:'+g.color+'"></div></div><div class="goal-footer"><span>'+(isDone?'🎉 Goal reached!':fmt(g.target-g.saved)+' remaining')+'</span><span style="color:'+(projLabel?'var(--teal)':'var(--slate-400)')+'">'+( isDone?'':projLabel||('Target: '+g.due) )+'</span></div><div class="goal-actions"><button class="goal-action-btn goal-save-btn" onclick="openGoalModal('+idx+')"'+(isDone?' disabled style="opacity:0.4"':'')+'>+ Add savings</button><button class="goal-action-btn goal-edit-btn" onclick="openEditGoalModal('+idx+')">✏️</button><button class="goal-action-btn goal-delete-btn" onclick="deleteGoal('+idx+')">🗑️</button></div></div>';
+        // Build spend log
+    const spends = g.spends || [];
+    const totalSpent = spends.reduce((s,sp)=>s+sp.amount,0);
+    const spendLogHtml = spends.length ? '<div class="spend-log">' +
+      '<div class="spend-log-hd"><span>Spending log</span><span class="spend-log-bal">'+fmt(totalSpent)+' spent</span></div>' +
+      spends.map((sp,si)=>'<div class="spend-log-row"><div><div class="spend-log-desc">'+sp.desc+'</div><div class="spend-log-date">'+sp.date+'</div></div><div style="display:flex;align-items:center"><span class="spend-log-amt">−'+fmt(sp.amount)+'</span><button class="spend-log-del" onclick="deleteGoalSpend('+idx+','+si+')" aria-label="Delete spend">✕</button></div></div>'
+      ).join('') +
+      '<div class="spend-log-total"><span style="color:var(--slate-500)">Total spent</span><span style="color:#dc2626">'+fmt(totalSpent)+'</span></div>' +
+      '</div>' : '';
+    return '<div class="goal-card"><div class="goal-top"><div style="display:flex;align-items:center;gap:8px"><div class="goal-icon-wrap" style="background:'+(g.bg||'#f1f5f9')+'">'+(g.icon||'🎯')+'</div><div><div class="goal-name">'+g.name+'</div><div class="goal-saved">'+fmt(g.saved)+' saved of '+fmt(g.target)+(g.category?' · <span style="color:var(--slate-500)">'+g.category+'</span>':'')+( isDone?' · <span style="color:#16a34a;font-weight:600">Goal reached!</span>':'' )+'</div></div></div><div class="goal-pct" style="color:'+g.color+'">'+pct+'%</div></div><div class="goal-track"><div class="goal-fill" style="width:'+pct+'%;background:'+g.color+'"></div></div><div class="goal-footer"><span>'+(isDone?'🎉 Goal reached!':fmt(g.target-g.saved)+' remaining')+'</span><span style="color:'+(projLabel?'var(--teal)':'var(--slate-400)')+'">'+( isDone?'':projLabel||('Target: '+g.due) )+'</span></div><div class="goal-actions"><button class="goal-action-btn goal-save-btn" onclick="openGoalModal('+idx+')"'+(isDone?' disabled style="opacity:0.4"':'')+'>+ Add savings</button><button class="goal-action-btn goal-spend-btn" onclick="openSpendGoalModal('+idx+')"'+(isDone?'':' style="opacity:0.7"')+'>💸 Spend</button><button class="goal-action-btn goal-edit-btn" onclick="openEditGoalModal('+idx+')">✏️</button><button class="goal-action-btn goal-delete-btn" onclick="deleteGoal('+idx+')">🗑️</button></div>'+spendLogHtml+'</div>';
   }).join("");
 }
 async function deleteGoal(idx) {
@@ -1469,7 +1524,27 @@ function closeDonutDetail() {
   document.querySelectorAll(".an-donut-item").forEach(el=>{el.classList.remove("selected","dimmed");});
 }
 function renderAnalytics() {
-  const mo=analyticsMonth,yr=analyticsYear,arr=monthTxs(mo,yr),{inc,exp,net,rate}=calcSummary(arr);
+  const mo=analyticsMonth,yr=analyticsYear,allArr=monthTxs(mo,yr);
+  // Separate goal spends from regular transactions
+  const arr = allArr.filter(t => !t.fromGoal);
+  const goalSpendArr = allArr.filter(t => t.fromGoal);
+  const {inc,exp,net,rate}=calcSummary(arr);
+  // Render goal-spend section
+  const gsSec = document.getElementById("goal-spend-section");
+  const gsRows = document.getElementById("goal-spend-rows");
+  const gsTotal = document.getElementById("goal-spend-total-val");
+  if (gsSec && gsRows && goalSpendArr.length) {
+    gsSec.style.display = "block";
+    const totalGoalSpend = goalSpendArr.reduce((s,t)=>s+t.amount, 0);
+    gsRows.innerHTML = goalSpendArr.map(t =>
+      '<div class="goal-spend-row">' +
+        '<div><div style="font-size:11px;color:var(--slate-700)">' + (t.desc||"Spend") + '</div>' +
+        '<div style="font-size:10px;color:var(--slate-400)">' + (t.goalName||"") + ' · ' + (t.category||"") + '</div></div>' +
+        '<span style="font-size:11px;font-weight:600;color:#d97706">' + fmt(t.amount) + '</span>' +
+      '</div>'
+    ).join("");
+    if (gsTotal) gsTotal.textContent = fmt(totalGoalSpend);
+  } else if (gsSec) { gsSec.style.display = "none"; }
   document.getElementById("an-filter-label").textContent=MO[mo]+" "+yr; document.getElementById("an-year-label").textContent="Yearly overview";
   const netEl=document.getElementById("an-net"); document.getElementById("an-inc").textContent=fmt(inc); document.getElementById("an-exp").textContent=fmt(exp); netEl.textContent=fmt(net); netEl.style.color=net>=0?"#22c55e":"#ef4444"; document.getElementById("an-rate").textContent=Math.round(rate*100)+"%";
   const catMap={}; arr.filter(t=>t.type==="Expense").forEach(t=>{catMap[t.category]=(catMap[t.category]||0)+t.amount;});
@@ -1672,6 +1747,8 @@ function setupAdd() {
   buildDaySelect("i-start-d",d);buildMonthSelect("i-start-m",mo);buildYearSelect("i-start-y",y,1,0);
   ["f-amount","f-desc","f-notes","g-name","g-target","g-saved","g-monthly","i-name","i-total","i-monthly","i-total-mo"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("i-paid").value="0"; updateCats(); updateInstCats();
+  const gCatSel=document.getElementById("g-category");
+  if(gCatSel)gCatSel.innerHTML=EXPENSE_CATS.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
   isRecurring = false;
   const togRec = document.getElementById("toggle-recurring");
   if (togRec) togRec.className = "toggle";
@@ -1774,7 +1851,8 @@ async function submitGoal() {
   const name=document.getElementById("g-name").value.trim(),target=parseFloat(document.getElementById("g-target").value)||0,saved=parseFloat(document.getElementById("g-saved").value)||0,monthly=parseFloat(document.getElementById("g-monthly").value)||0,due=safeDate(getMonthVal("g-due-m","g-due-y")),colorVal=document.getElementById("g-color").value.split(",");
   if(!name){showToast("Enter a goal name");return;} if(!target||target<=0){showToast("Enter a target amount");return;}
   setBtn("btn-add-goal",true,"Add Goal","#22c55e");
-  const newGoal={id:Date.now(),icon:name.match(/^\p{Emoji}/u)?.[0]||"🎯",name:name.replace(/^\p{Emoji}\s*/u,""),saved,target,monthly,color:colorVal[0],bg:colorVal[1]||"#f1f5f9",due};
+  const category=document.getElementById("g-category").value||"💰 Other";
+  const newGoal={id:Date.now(),icon:name.match(/^\p{Emoji}/u)?.[0]||"🎯",name:name.replace(/^\p{Emoji}\s*/u,""),saved,target,monthly,color:colorVal[0],bg:colorVal[1]||"#f1f5f9",due,category,spends:[]};
   GOALS.push(newGoal); saveGoals();
   if(settings.sheetsUrl&&settings.autosync){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("add_goal",{data:{name,target,saved,monthly,due,color:colorVal[0]}}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){showToast("Goal added + synced ✓");setSyncStatus("ok");}else{showToast("Saved locally — sync timed out");setSyncStatus("error");}}
   else showToast("Goal saved ✓");
@@ -2001,6 +2079,87 @@ async function deleteBudget(idx) {
     BUDGETS.splice(idx,1); saveBudgets(); renderBudget();
     await syncBudgetsToSheets(); showToast("Budget removed + synced ✓");
   }
+}
+
+// ══ GOAL SPENDING ═══════════════════════════════════════════════
+let spendGoalIdx = -1;
+
+function openSpendGoalModal(idx) {
+  spendGoalIdx = idx;
+  const g = GOALS[idx];
+  const spends = g.spends || [];
+  const totalSpent = spends.reduce((s,sp)=>s+sp.amount, 0);
+  const remaining = g.saved - totalSpent;
+  document.getElementById("spend-goal-title").textContent = "Spend from " + g.name;
+  document.getElementById("spend-goal-sub").textContent = (g.category||"") + " · " + fmt(Math.max(remaining,0)) + " remaining";
+  document.getElementById("spend-goal-amount").value = "";
+  document.getElementById("spend-goal-desc").value = "";
+  const today = new Date();
+  document.getElementById("spend-goal-date").value = today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+  document.getElementById("modal-spend-goal").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("spend-goal-amount").focus(), 150);
+}
+
+async function confirmSpendGoal() {
+  if (spendGoalIdx < 0) return;
+  const g = GOALS[spendGoalIdx];
+  const amount = parseFloat(document.getElementById("spend-goal-amount").value) || 0;
+  const desc   = document.getElementById("spend-goal-desc").value.trim() || "Spend from goal";
+  const date   = document.getElementById("spend-goal-date").value || new Date().toISOString().split("T")[0];
+  if (!amount || amount <= 0) { showToast("Enter an amount"); return; }
+
+  // Add to goal's spend log
+  if (!g.spends) g.spends = [];
+  const spendEntry = { id: Date.now(), amount, desc, date };
+  g.spends.push(spendEntry);
+  saveGoals();
+
+  // Create a tagged transaction in txs
+  const tx = {
+    id: Date.now()+1,
+    date,
+    type: "Expense",
+    category: g.category || "💰 Other",
+    desc,
+    amount,
+    notes: "",
+    fromGoal: true,
+    goalId: g.id,
+    goalName: g.name
+  };
+  txs.push(tx); saveTxs();
+
+  closeModal("spend-goal");
+  spendGoalIdx = -1;
+  renderGoals();
+  showToast("Spend recorded ✓");
+
+  // Sync to Sheets
+  if (settings.sheetsUrl && settings.autosync) {
+    setSyncStatus("syncing");
+    const ok = await Promise.race([
+      postToSheets("add_transaction", { data: { ...tx } }),
+      new Promise(r => setTimeout(()=>r(false), 6000))
+    ]);
+    if (ok) { setSyncStatus("ok"); } else { setSyncStatus("error"); }
+  }
+}
+
+function deleteGoalSpend(goalIdx, spendIdx) {
+  if (!confirm("Remove this spend entry?")) return;
+  const g = GOALS[goalIdx];
+  if (!g.spends) return;
+  const spend = g.spends[spendIdx];
+  // Remove from goal spends
+  g.spends.splice(spendIdx, 1);
+  saveGoals();
+  // Remove linked tx if exists
+  if (spend) {
+    txs = txs.filter(t => !(t.fromGoal && t.goalName === g.name && t.amount === spend.amount && t.date === spend.date));
+    saveTxs();
+  }
+  renderGoals();
+  showToast("Spend removed ✓");
 }
 
 // ══ RECURRING TRANSACTIONS ═══════════════════════════════════
