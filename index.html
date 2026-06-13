@@ -2492,7 +2492,7 @@ function renderBudgetTrend() {
   if (!wrap || !el || !BUDGETS.length) { if(wrap) wrap.style.display="none"; return; }
   wrap.style.display = "block";
   const n = budgetTrendMo;
-  const W = 260, H = 56, padT = 10, padB = 14;
+  const W = 260, H = 72, padT = 16, padB = 16;
   const chartH = H - padT - padB;
 
   el.innerHTML = BUDGETS.map(b => {
@@ -2524,13 +2524,30 @@ function renderBudgetTrend() {
     const lastPct = b.limit > 0 ? Math.round(amounts[amounts.length-1]/b.limit*100) : 0;
     const lineColor = lastPct>=100?"#ef4444":lastPct>=80?"#f59e0b":"#0d9488";
     // Axis labels — show first, middle, last only
+    // Format label: full amount for last, short (k) for others
+    function fmtLbl(v, isLast) {
+      if (isLast) return '฿' + (v>=1000?(v/1000).toFixed(v%1000===0?0:1)+'k':Math.round(v));
+      return v>=1000?(v/1000).toFixed(v%1000===0?0:1)+'k':Math.round(v);
+    }
+    // Per-point dot color
+    function dotColor(v) {
+      const p2 = b.limit>0?Math.round(v/b.limit*100):0;
+      return p2>=100?"#ef4444":p2>=80?"#f59e0b":lineColor;
+    }
     const axisLabels = labels.map((l,i) => {
-      const show = i===0 || i===Math.floor((n-1)/2) || i===n-1;
       const isLast = i===n-1;
-      return '<text x="'+(i/(n-1)*W).toFixed(1)+'" y="'+(H-1)+'" font-size="8" fill="'+(isLast?lineColor:'#94a3b8')+'" font-weight="'+(isLast?'bold':'normal')+'" text-anchor="middle">'+(show?l:'')+'</text>';
+      const show = n<=6 || i===0 || i===Math.floor((n-1)/2) || isLast;
+      return '<text x="'+(i/(n-1)*W).toFixed(1)+'" y="'+(H-1)+'" font-size="7.5" fill="'+(isLast?lineColor:'#94a3b8')+'" font-weight="'+(isLast?'bold':'normal')+'" text-anchor="middle">'+(show?l:'')+'</text>';
     }).join('');
-    // Current dot
-    const lastPt = pts[pts.length-1];
+    const dataLabels = pts.map((p,i) => {
+      const isLast = i===n-1;
+      const dc = dotColor(p.v);
+      const lbl = fmtLbl(p.v, isLast);
+      const labelY = (p.y - 6).toFixed(1);
+      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isLast?3.5:2.5)+'" fill="'+dc+'" opacity="'+(isLast?1:0.7)+'"/>' +
+        (isLast ? '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="1.5" fill="#fff"/>' : '') +
+        '<text x="'+p.x.toFixed(1)+'" y="'+labelY+'" font-size="'+(isLast?8:7)+'" font-weight="'+(isLast?'bold':'normal')+'" fill="'+(isLast?dc:'#94a3b8')+'" text-anchor="middle">'+lbl+'</text>';
+    }).join('');
     return '<div class="budget-line-row">' +
       '<div class="budget-line-hd">' +
         '<span class="budget-line-name">' + emoji + ' ' + catName + '</span>' +
@@ -2542,9 +2559,7 @@ function renderBudgetTrend() {
         '<line x1="0" y1="'+limitY.toFixed(1)+'" x2="'+W+'" y2="'+limitY.toFixed(1)+'" stroke="#ef4444" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>' +
         '<text x="2" y="'+(limitY-2).toFixed(1)+'" font-size="7" fill="#ef4444" opacity="0.7">limit</text>' +
         '<path d="'+lineStr+'" fill="none" stroke="'+lineColor+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
-        pts.map((p,i) => i===n-1 ?
-          '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+lineColor+'"/><circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="1.5" fill="#fff"/>' : ''
-        ).join('') +
+        dataLabels +
         axisLabels +
       '</svg>' +
     '</div>';
