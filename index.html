@@ -2126,9 +2126,9 @@ function exportAnalyticsImage() {
 
   // Category section
   const catY = headerH + statsH + 8;
-  const INNER = 16, LABEL_W = 150, AMT_W = 110;
+  const INNER = 16, LABEL_W = 150, AMT_W = 130;
   const barX = PAD + INNER + LABEL_W + 8;
-  const barMaxW = W - PAD*2 - INNER*2 - LABEL_W - AMT_W - 16;
+  const barMaxW = W - PAD*2 - INNER*2 - LABEL_W - AMT_W - 24;
   ctx.fillStyle = CARD; roundRect(ctx, PAD, catY, W-PAD*2, catH, 14); ctx.fill();
   ctx.strokeStyle = BORDER; ctx.lineWidth = 0.5; roundRect(ctx, PAD, catY, W-PAD*2, catH, 14); ctx.stroke();
   ctx.fillStyle = TEXT; ctx.font = "700 15px \'Urbanist\',system-ui,sans-serif";
@@ -2150,7 +2150,7 @@ function exportAnalyticsImage() {
     ctx.fillStyle = color; roundRect(ctx, barX, y+4, Math.max(barMaxW*pct, 6), 12, 6); ctx.fill();
     ctx.fillStyle = TEXT; ctx.font = "700 13px \'Urbanist\',system-ui,sans-serif";
     ctx.textAlign = "right";
-    ctx.fillText(thb(amt), W-PAD-INNER, y+16);
+    ctx.fillText(thb(amt), W - PAD - INNER + 4, y+16);
     ctx.textAlign = "left";
   });
 
