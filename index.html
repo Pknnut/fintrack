@@ -367,6 +367,32 @@
 
   /* Recurring transaction suggestion banner */
   .recurring-banner { margin: 10px 20px 0; background: var(--indigo-light); border: 1px solid #a5b4fc; border-radius: var(--radius-sm); padding: 11px 14px; display: none; }
+  /* In-app notification banners */
+  .notif-banner { margin: 8px 20px 0; border-radius: var(--radius-sm); padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px; }
+  .notif-banner.hidden { display: none; }
+  .notif-icon-wrap { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .notif-body { flex: 1; min-width: 0; }
+  .notif-title { font-size: 11px; font-weight: 700; margin-bottom: 2px; }
+  .notif-sub { font-size: 10px; line-height: 1.4; }
+  .notif-dismiss { background: none; border: none; cursor: pointer; font-size: 16px; opacity: 0.5; padding: 0; flex-shrink: 0; line-height: 1; color: inherit; }
+  .notif-alert { background: #fef2f2; border: 1px solid #fca5a5; color: #7f1d1d; }
+  .notif-warn  { background: #fffbeb; border: 1px solid #fde68a; color: #78350f; }
+  .notif-info  { background: #e1f5ee; border: 1px solid #5DCAA5; color: #064e3b; }
+  /* Instalment payoff timeline */
+  .inst-timeline { margin: 10px 20px 0; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius); padding: 12px 14px; }
+  .inst-tl-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 10px; font-weight: 600; color: var(--slate-400); }
+  .inst-tl-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .inst-tl-row:last-of-type { margin-bottom: 4px; }
+  .inst-tl-name { font-size: 11px; color: var(--slate-700); width: 72px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .inst-tl-track { flex: 1; height: 20px; background: var(--slate-100); border-radius: 4px; position: relative; overflow: hidden; cursor: pointer; }
+  .inst-tl-bar { height: 100%; border-radius: 4px; display: flex; align-items: center; padding: 0 7px; min-width: 8px; }
+  .inst-tl-bar-lbl { font-size: 9px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; }
+  .inst-tl-end { font-size: 9px; color: var(--slate-400); width: 40px; flex-shrink: 0; text-align: right; }
+  .inst-tl-axis { display: flex; padding: 4px 0 0 80px; font-size: 9px; color: var(--slate-400); }
+  .inst-tl-legend { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #ef4444; margin-top: 6px; }
+  /* Sparkline tooltip */
+  .spark-bar-group { position: relative; display: inline-block; }
+  .spark-tip { position: absolute; background: var(--slate-900); color: #fff; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 10; display: none; }
   .recurring-banner.show { display: block; }
   .recurring-banner-title { font-size: 12px; font-weight: 700; color: var(--indigo); margin-bottom: 6px; }
   .recurring-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(99,102,241,0.15); }
@@ -575,6 +601,7 @@
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--slate-400);margin-top:4px"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
     </div>
   </div>
+  <div id="notif-banners"></div>
   <div class="recurring-banner" id="recurring-banner">
     <div class="recurring-banner-title">Suggested this month</div>
     <div id="recurring-suggestions"></div>
@@ -691,10 +718,11 @@
   <div class="inst-header"><div class="meta">Active plans</div><div class="page-title">Installments</div></div>
   <div class="inst-summary">
     <div class="gsumm"><div class="gsumm-val" id="inst-monthly">฿0</div><div class="gsumm-lbl">Monthly burden</div></div>
-    <div class="gsumm"><div class="gsumm-val" id="inst-balance">฿0</div><div class="gsumm-lbl">Total balance</div></div>
+    <div class="gsumm"><div class="gsumm-val" id="inst-balance">฿0</div><div class="gsumm-lbl">Remaining debt</div></div>
     <div class="gsumm"><div class="gsumm-val" id="inst-count">0</div><div class="gsumm-lbl">Active plans</div></div>
   </div>
   <div id="inst-income-warning" style="margin:8px 20px 0;display:none;padding:10px 14px;border-radius:var(--radius-sm);font-size:11px;font-weight:600"></div>
+  <div class="inst-timeline" id="inst-timeline"></div>
   <div class="inst-grid" id="inst-list"></div>
   <div class="spacer"></div>
 </div>
@@ -798,6 +826,9 @@
     <div class="settings-label">Notifications</div>
     <div class="settings-card">
       <div class="settings-row"><div><div class="settings-row-label">Installment due alerts</div><div class="settings-row-sub">Remind me when a payment is due</div></div><button class="toggle" id="toggle-notif" onclick="toggleSetting('notif')"></button></div>
+      <div class="settings-row"><div><div class="settings-row-label">Budget alerts</div><div class="settings-row-sub">Warn when a category hits 80% or 100%</div></div><button class="toggle" id="toggle-notif-budget" onclick="toggleSetting('notifBudget')"></button></div>
+      <div class="settings-row"><div><div class="settings-row-label">Expense log reminder</div><div class="settings-row-sub">Remind if no transactions for 2+ days</div></div><button class="toggle" id="toggle-notif-log" onclick="toggleSetting('notifLog')"></button></div>
+      <div class="settings-row"><div><div class="settings-row-label">Goal savings reminder</div><div class="settings-row-sub">Remind if no contribution this month</div></div><button class="toggle" id="toggle-notif-goal" onclick="toggleSetting('notifGoal')"></button></div>
       <div class="settings-row" onclick="requestNotifPermission()"><div><div class="settings-row-label">Enable browser notifications</div><div class="settings-row-sub" id="notif-status">Permission not granted</div></div><div class="settings-row-right">→</div></div>
     </div>
   </div>
@@ -942,7 +973,10 @@ async function fetchRecurringFromSheets(silent = false) {
 if (!settings.pin || settings.pin.length !== 6) settings.pin = "123456";
 if (settings.pinEnabled === undefined) settings.pinEnabled = true;
 if (settings.autosync   === undefined) settings.autosync   = true;
-if (!settings.notif)     settings.notif     = false;
+if (!settings.notif)        settings.notif        = false;
+if (!settings.notifBudget)  settings.notifBudget  = true;
+if (!settings.notifLog)     settings.notifLog     = true;
+if (!settings.notifGoal)    settings.notifGoal    = false;
 if (!settings.sheetsUrl) settings.sheetsUrl = "";
 saveSettings();
 
@@ -1084,6 +1118,7 @@ async function startup() {
   setLoading("Ready", 100); await delay(300);
   applyDarkMode();
   checkRecurringSuggestions();
+  checkInAppNotifications();
   document.getElementById("loading-screen").classList.add("hidden");
   if (settings.pinEnabled) {
     document.getElementById("pin-screen").classList.remove("hidden");
@@ -1351,6 +1386,21 @@ function yearTxs(yr) { return txs.filter(t=>{const td=new Date(t.date);return td
 function calcSummary(arr) { const inc=arr.filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0),exp=arr.filter(t=>t.type==="Expense").reduce((s,t)=>s+t.amount,0); return {inc,exp,net:inc-exp,rate:inc>0?(inc-exp)/inc:0}; }
 
 // ══ DARK MODE ════════════════════════════════════════════════
+function showSparkTip(tipId) {
+  // Hide all other tips
+  document.querySelectorAll(".spark-tip").forEach(t => t.style.display="none");
+  const el = document.getElementById(tipId);
+  if (!el) return;
+  el.style.display = "block";
+  // Auto-hide after 2 seconds
+  setTimeout(() => { if(el) el.style.display="none"; }, 2000);
+}
+document.addEventListener("click", e => {
+  if (!e.target.closest(".spark-bars")) {
+    document.querySelectorAll(".spark-tip").forEach(t => t.style.display="none");
+  }
+});
+
 function toggleDarkMode() {
   settings.darkMode = !settings.darkMode;
   saveSettings(); applyDarkMode(); renderSettings();
@@ -1780,6 +1830,48 @@ function renderInstallments() {
     warnEl.style.display="block"; warnEl.style.background=bg; warnEl.style.color=color;
     warnEl.textContent="⚠ Monthly instalments are "+pct+"% of your income ("+fmt(monthly)+" of "+fmt(incomeThisMonth)+")";
   } else if (warnEl) { warnEl.style.display="none"; }
+  // ── Option B Timeline ─────────────────────────────────────────
+  const tlEl = document.getElementById("inst-timeline");
+  const activeForTl = INSTALLMENTS.filter(p => p.paid < p.total_mo);
+  if (tlEl && activeForTl.length) {
+    // Sort by months remaining ascending
+    const sorted = [...activeForTl].sort((a,b)=>(a.total_mo-a.paid)-(b.total_mo-b.paid));
+    const maxRem = Math.max(...sorted.map(p=>p.total_mo-p.paid), 1);
+    const rows = sorted.map(p => {
+      const rem = p.total_mo - p.paid;
+      const pct = Math.min(Math.round((rem/maxRem)*100), 100);
+      const bal = Math.max(p.total - p.monthly*p.paid, 0);
+      // End date
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + rem);
+      const endLbl = MO[endDate.getMonth()].slice(0,3) + " " + String(endDate.getFullYear()).slice(2);
+      // Badge color based on months left
+      const badgeBg = rem<=3?"#fee2e2":rem<=6?"#fef3c7":"#dcfce7";
+      const badgeColor = rem<=3?"#991b1b":rem<=6?"#78350f":"#166534";
+      // Bar width = percentage already PAID (progress bar style)
+      const paidPct = Math.min(Math.round((p.paid / p.total_mo) * 100), 100);
+      return '<div class="inst-tl-row">' +
+        '<div class="inst-tl-name">' + p.icon + ' ' + p.name + '</div>' +
+        '<div class="inst-tl-track">' +
+          '<div class="inst-tl-bar" style="width:' + paidPct + '%;background:' + p.color + '">' +
+          '</div>' +
+        '</div>' +
+        '<div style="text-align:right;flex-shrink:0;min-width:88px">' +
+          '<div style="font-size:10px;font-weight:600;color:' + badgeColor + ';background:' + badgeBg + ';padding:2px 8px;border-radius:20px;display:inline-block;white-space:nowrap">' + rem + ' m left</div>' +
+          '<div style="font-size:9px;color:var(--slate-400);margin-top:2px">' + endLbl + ' · ' + fmt(bal) + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+    tlEl.innerHTML =
+      '<div class="inst-tl-hd"><span>Payoff order — soonest first</span>' +
+        '<div style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--slate-400)">' +
+          '<div style="width:8px;height:3px;background:#ef4444;border-radius:1px"></div> further right = longer remaining' +
+        '</div>' +
+      '</div>' + rows;
+  } else if (tlEl) {
+    tlEl.innerHTML = '<div style="font-size:11px;color:var(--slate-400);text-align:center;padding:8px 0">No active instalments</div>';
+  }
+
   document.getElementById("inst-list").innerHTML=INSTALLMENTS.map((p,idx)=>{
     const pct=Math.round(p.paid/p.total_mo*100),rem=p.total_mo-p.paid,bal=Math.max(p.total-p.monthly*p.paid,0),isDone=rem<=0;
     return '<div class="inst-card"><div class="inst-top"><div><div class="inst-name">'+p.icon+' '+p.name+'</div><div class="inst-cat">'+p.cat+'</div></div><span class="inst-badge '+(isDone?'badge-done':'badge-active')+'">'+(isDone?'Paid off':'Active')+'</span></div><div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:4px"><span>'+p.paid+' of '+p.total_mo+' months paid</span><span style="font-weight:600;color:'+p.color+'">'+pct+'%</span></div><div class="inst-track"><div class="inst-fill" style="width:'+pct+'%;background:'+p.color+'"></div></div><div class="inst-stats"><div><div style="font-size:9px;color:#94a3b8">Monthly</div><div class="inst-stat-val">'+fmt(p.monthly)+'</div></div><div style="text-align:center"><div style="font-size:9px;color:#94a3b8">Months left</div><div class="inst-stat-val">'+rem+'</div></div><div style="text-align:right"><div style="font-size:9px;color:#94a3b8">Balance</div><div class="inst-stat-val" style="color:'+(isDone?'#94a3b8':'#ef4444')+'">'+fmt(bal)+'</div></div></div><div class="inst-actions"><button class="inst-action-btn inst-pay-btn" onclick="openInstModal('+idx+')"'+(isDone?' disabled':'')+'>✓ Mark this month paid</button><button class="inst-action-btn inst-edit-btn" onclick="openEditInstModal('+idx+')">✏️</button><button class="inst-action-btn inst-delete-btn" onclick="deleteInst('+idx+')">🗑️</button></div></div>';
@@ -1978,6 +2070,9 @@ function renderSettings() {
   document.getElementById("toggle-autosync").className="toggle"+(settings.autosync?" on":"");
   document.getElementById("toggle-pin").className="toggle"+(settings.pinEnabled?" on":"");
   document.getElementById("toggle-notif").className="toggle"+(settings.notif?" on":"");
+  const tnb=document.getElementById("toggle-notif-budget"); if(tnb) tnb.className="toggle"+(settings.notifBudget?" on":"");
+  const tnl=document.getElementById("toggle-notif-log");    if(tnl) tnl.className="toggle"+(settings.notifLog?" on":"");
+  const tng=document.getElementById("toggle-notif-goal");   if(tng) tng.className="toggle"+(settings.notifGoal?" on":"");
   applyDarkMode();
   if(settings.lastSync)document.getElementById("last-sync-label").textContent="Last pushed: "+new Date(settings.lastSync).toLocaleString();
   if(settings.lastPull)document.getElementById("last-pull-label").textContent="Last pulled: "+new Date(settings.lastPull).toLocaleString();
@@ -1987,6 +2082,9 @@ function toggleSetting(key) {
   if(key==="autosync")settings.autosync=!settings.autosync;
   if(key==="pin")settings.pinEnabled=!settings.pinEnabled;
   if(key==="notif"){settings.notif=!settings.notif;if(settings.notif)requestNotifPermission();}
+  if(key==="notifBudget") settings.notifBudget = !settings.notifBudget;
+  if(key==="notifLog")    settings.notifLog    = !settings.notifLog;
+  if(key==="notifGoal")   settings.notifGoal   = !settings.notifGoal;
   saveSettings(); renderSettings();
 }
 async function requestNotifPermission() {
@@ -2111,21 +2209,27 @@ function renderBudget() {
     const emoji = b.cat.split(" ")[0];
     const catName = b.cat.replace(/^\S+\s/, "");
     // Sparkline: last 6 months of spending for this category
-    const sparkData = [];
+    const sparkData = [], sparkLabels = [];
     for (let i=5;i>=0;i--) {
       const d=new Date(budgetYear,budgetMonth-i,1);
       const mo=d.getMonth(),yr=d.getFullYear();
+      sparkLabels.push(MO[mo].slice(0,3)+" "+String(yr).slice(2));
       sparkData.push(txs.filter(t=>{const td=new Date(t.date);return td.getMonth()===mo&&td.getFullYear()===yr&&t.type==="Expense"&&(t.category||"").includes(catName);}).reduce((s,t)=>s+t.amount,0));
     }
     const sparkMax=Math.max(...sparkData,1);
     const sparkW=80,sparkH=24,barW=9,barGap=4;
-    const sparkSvg='<svg width="'+sparkW+'" height="'+sparkH+'" style="display:block">'+
+    const sparkUid = "sp-"+idx+"-"+budgetYear+budgetMonth;
+    const sparkSvg='<div class="spark-bars" id="'+sparkUid+'" style="position:relative;display:inline-block;width:'+sparkW+'px;height:'+sparkH+'px">'+
       sparkData.map((v,i)=>{
         const h=Math.max(2,Math.round((v/sparkMax)*(sparkH-2)));
         const x=i*(barW+barGap), y=sparkH-h;
         const isLast=(i===sparkData.length-1);
-        return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h+'" rx="2" fill="'+( isLast?color:"#cbd5e1")+'"/>';
-      }).join("")+'</svg>';
+        const tipId = sparkUid+"-t"+i;
+        return '<div style="position:absolute;left:'+x+'px;bottom:0;width:'+barW+'px;height:'+sparkH+'px;display:flex;flex-direction:column;justify-content:flex-end" onclick="showSparkTip(\"'+tipId+'\")">'+
+          '<div class="spark-tip" id="'+tipId+'">'+sparkLabels[i]+'\n'+fmt(v)+'</div>'+
+          '<div style="width:'+barW+'px;height:'+h+'px;border-radius:2px;background:'+( isLast?color:"#cbd5e1")+'"></div>'+
+        '</div>';
+      }).join("")+'</div>';
     return '<div class="budget-card">' +
       '<div class="budget-card-top">' +
         '<div class="budget-cat">' + emoji + ' ' + b.cat.replace(/^\S+\s/, "") + '</div>' +
@@ -2278,6 +2382,97 @@ function deleteGoalSpend(goalIdx, spendIdx) {
   }
   renderGoals();
   showToast("Spend removed ✓");
+}
+
+// ══ IN-APP NOTIFICATIONS ════════════════════════════════════════
+function checkInAppNotifications() {
+  try {
+  const el = document.getElementById("notif-banners");
+  if (!el) return;
+  const banners = [];
+  const now = new Date();
+  const curMo = now.getMonth(), curYr = now.getFullYear();
+  const dismissed = JSON.parse(sessionStorage.getItem("dismissed_notifs") || "[]");
+
+  // Budget alerts (80% / 100%)
+  if (settings.notifBudget && BUDGETS.length) {
+    const monthArr = txs.filter(t => {
+      const d = new Date(t.date);
+      return d.getMonth()===curMo && d.getFullYear()===curYr && t.type==="Expense" && !t.fromGoal;
+    });
+    BUDGETS.forEach(b => {
+      const catName = b.cat.replace(/^\S+\s/, "");
+      const spent = monthArr.filter(t=>(t.category||"").includes(catName)).reduce((s,t)=>s+t.amount,0);
+      const pct = b.limit > 0 ? Math.round(spent/b.limit*100) : 0;
+      const id = "budget_" + b.cat;
+      if (pct >= 100 && !dismissed.includes(id+"_100")) {
+        banners.push({id:id+"_100", type:"alert", icon:"ti-alert-triangle", iconBg:"#fca5a5",
+          title:"Over budget — " + b.cat.replace(/^\S+\s/,""),
+          sub:"You've spent " + fmt(spent) + " of your " + fmt(b.limit) + " limit (" + pct + "%)"});
+      } else if (pct >= 80 && !dismissed.includes(id+"_80")) {
+        banners.push({id:id+"_80", type:"warn", icon:"ti-alert-triangle", iconBg:"#fde68a",
+          title:"Budget alert — " + b.cat.replace(/^\S+\s/,""),
+          sub:"You've spent " + fmt(spent) + " of your " + fmt(b.limit) + " limit (" + pct + "%). " + fmt(b.limit - spent) + " remaining."});
+      }
+    });
+  }
+
+  // Log reminder — no tx in last 2 days
+  if (settings.notifLog) {
+    const id = "log_reminder";
+    if (!dismissed.includes(id)) {
+      const sortedTxs = txs.filter(t=>t.type==="Expense").map(t=>new Date(t.date)).sort((a,b)=>b-a);
+      const lastTx = sortedTxs[0];
+      const daysSince = lastTx ? Math.floor((now - lastTx) / 86400000) : 999;
+      if (daysSince >= 2) {
+        banners.push({id, type:"warn", icon:"ti-clock", iconBg:"#fde68a",
+          title:"No expenses logged recently",
+          sub:"It's been " + daysSince + " day" + (daysSince!==1?"s":"") + " since your last transaction. Don't forget to log your expenses."});
+      }
+    }
+  }
+
+  // Goal savings reminder
+  if (settings.notifGoal && GOALS.length) {
+    GOALS.forEach(g => {
+      if (g.saved >= g.target) return;
+      const id = "goal_" + g.name;
+      if (dismissed.includes(id)) return;
+      const contribs = g.contributions || [];
+      const addedThisMonth = contribs.some(c => {
+        const d = new Date(c.date);
+        return d.getMonth()===curMo && d.getFullYear()===curYr;
+      });
+      if (!addedThisMonth) {
+        banners.push({id, type:"info", icon:"ti-flag", iconBg:"#9FE1CB",
+          title:"Goal reminder — " + g.name,
+          sub:"No savings added this month yet. Monthly target: " + fmt(g.monthly || 0) + "."});
+      }
+    });
+  }
+
+  if (!banners.length) { el.innerHTML = ""; return; }
+  el.innerHTML = banners.map(b =>
+    '<div class="notif-banner notif-' + b.type + '" id="notif-' + b.id + '">' +
+      '<div class="notif-icon-wrap" style="background:' + b.iconBg + '">' +
+        '<i class="ti ' + b.icon + '" style="font-size:14px" aria-hidden="true"></i>' +
+      '</div>' +
+      '<div class="notif-body">' +
+        '<div class="notif-title">' + b.title + '</div>' +
+        '<div class="notif-sub">' + b.sub + '</div>' +
+      '</div>' +
+      '<button class="notif-dismiss" onclick="dismissNotif(&quot;' + b.id + '&quot;)" aria-label="Dismiss">×</button>' +
+    '</div>'
+  ).join("");
+  } catch(e) { console.warn("Notification check failed:", e); }
+}
+
+function dismissNotif(id) {
+  const el = document.getElementById("notif-" + id);
+  if (el) el.remove();
+  const dismissed = JSON.parse(sessionStorage.getItem("dismissed_notifs") || "[]");
+  dismissed.push(id);
+  sessionStorage.setItem("dismissed_notifs", JSON.stringify(dismissed));
 }
 
 // ══ RECURRING TRANSACTIONS ═══════════════════════════════════
