@@ -133,8 +133,8 @@
   .goals-filter-tag button { background:none; border:none; cursor:pointer; color:#0f766e; font-size:12px; line-height:1; padding:0; margin-left:2px; }
   .goals-summary { margin: 12px 20px 0; display: flex; gap: 8px; }
   .gsumm { flex: 1; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 10px; }
+  .gsumm-lbl { font-size: 9px; color: var(--slate-400); margin-bottom: 3px; }
   .gsumm-val { font-size: 15px; font-weight: 700; color: var(--slate-900); }
-  .gsumm-lbl { font-size: 9px; color: var(--slate-400); margin-top: 2px; }
   .goals-grid { margin: 14px 20px 0; display: flex; flex-direction: column; gap: 10px; }
   .goal-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--slate-200); padding: 14px; }
   .goal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -630,9 +630,9 @@
   </div>
   <div class="goals-active-filters" id="goals-active-filters"></div>
   <div class="goals-summary">
-    <div class="gsumm"><div class="gsumm-val" id="goals-total-saved">฿0</div><div class="gsumm-lbl">Total saved</div></div>
-    <div class="gsumm"><div class="gsumm-val" id="goals-active">0</div><div class="gsumm-lbl">Active goals</div></div>
-    <div class="gsumm"><div class="gsumm-val" id="goals-avg-pct">0%</div><div class="gsumm-lbl">Avg. progress</div></div>
+    <div class="gsumm"><div class="gsumm-lbl">Total saved</div><div class="gsumm-val" id="goals-total-saved">฿0</div></div>
+    <div class="gsumm"><div class="gsumm-lbl">Active goals</div><div class="gsumm-val" id="goals-active">0</div></div>
+    <div class="gsumm"><div class="gsumm-lbl">Avg. progress</div><div class="gsumm-val" id="goals-avg-pct">0%</div></div>
   </div>
   <div class="goals-grid" id="goals-list"></div>
   <div class="spacer"></div>
@@ -717,11 +717,32 @@
 <div class="page" id="page-installments">
   <div class="inst-header"><div class="meta">Active plans</div><div class="page-title">Installments</div></div>
   <div class="inst-summary">
-    <div class="gsumm"><div class="gsumm-val" id="inst-monthly">฿0</div><div class="gsumm-lbl">Monthly burden</div></div>
-    <div class="gsumm"><div class="gsumm-val" id="inst-balance">฿0</div><div class="gsumm-lbl">Remaining debt</div></div>
-    <div class="gsumm"><div class="gsumm-val" id="inst-count">0</div><div class="gsumm-lbl">Active plans</div></div>
+    <div class="gsumm"><div class="gsumm-lbl">Monthly burden</div><div class="gsumm-val" id="inst-monthly">฿0</div></div>
+    <div class="gsumm"><div class="gsumm-lbl">Remaining debt</div><div class="gsumm-val" id="inst-balance">฿0</div></div>
+    <div class="gsumm"><div class="gsumm-lbl">Active plans</div><div class="gsumm-val" id="inst-count">0</div></div>
   </div>
   <div id="inst-income-warning" style="margin:8px 20px 0;display:none;padding:10px 14px;border-radius:var(--radius-sm);font-size:11px;font-weight:600"></div>
+  <!-- Instalment filter row -->
+  <div style="display:flex;gap:8px;padding:8px 20px 0">
+    <div style="position:relative;flex:1">
+      <select id="inst-filter-status" onchange="renderInstallments()" style="width:100%;padding:7px 28px 7px 10px;border-radius:var(--radius-sm);border:1px solid var(--slate-200);background:var(--white);color:var(--slate-900);font-size:12px;font-weight:500;font-family:inherit;appearance:none;-webkit-appearance:none;cursor:pointer">
+        <option value="active">Active only</option>
+        <option value="all">All plans</option>
+        <option value="done">Paid off</option>
+      </select>
+      <i class="ti ti-chevron-down" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--slate-400);font-size:13px" aria-hidden="true"></i>
+    </div>
+    <div style="position:relative;flex:1">
+      <select id="inst-filter-sort" onchange="renderInstallments()" style="width:100%;padding:7px 28px 7px 10px;border-radius:var(--radius-sm);border:1px solid var(--slate-200);background:var(--white);color:var(--slate-900);font-size:12px;font-weight:500;font-family:inherit;appearance:none;-webkit-appearance:none;cursor:pointer">
+        <option value="soonest">Soonest to finish</option>
+        <option value="monthly">Highest monthly</option>
+        <option value="balance">Highest balance</option>
+        <option value="name">Name A–Z</option>
+      </select>
+      <i class="ti ti-chevron-down" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--slate-400);font-size:13px" aria-hidden="true"></i>
+    </div>
+  </div>
+  <div id="inst-result-count" style="font-size:10px;color:var(--slate-400);padding:5px 20px 0"></div>
   <div class="inst-timeline" id="inst-timeline"></div>
   <div class="inst-grid" id="inst-list"></div>
   <div class="spacer"></div>
@@ -1872,7 +1893,39 @@ function renderInstallments() {
     tlEl.innerHTML = '<div style="font-size:11px;color:var(--slate-400);text-align:center;padding:8px 0">No active instalments</div>';
   }
 
-  document.getElementById("inst-list").innerHTML=INSTALLMENTS.map((p,idx)=>{
+  // Read filter + sort values
+  const fStatus = (document.getElementById("inst-filter-status")||{value:"active"}).value;
+  const fSort   = (document.getElementById("inst-filter-sort")||{value:"soonest"}).value;
+
+  // Filter
+  let filtered = INSTALLMENTS.map((p,idx)=>({p,idx})).filter(({p})=>{
+    const isDone = p.paid >= p.total_mo;
+    if (fStatus === "active") return !isDone;
+    if (fStatus === "done")   return isDone;
+    return true;
+  });
+
+  // Sort
+  filtered.sort((a,b)=>{
+    if (fSort === "monthly") return b.p.monthly - a.p.monthly;
+    if (fSort === "balance")  return Math.max(b.p.total-b.p.monthly*b.p.paid,0) - Math.max(a.p.total-a.p.monthly*a.p.paid,0);
+    if (fSort === "name")     return (a.p.icon+' '+a.p.name).localeCompare(b.p.icon+' '+b.p.name);
+    // soonest: by months remaining ascending
+    return (a.p.total_mo-a.p.paid) - (b.p.total_mo-b.p.paid);
+  });
+
+  // Hide timeline when showing paid off only
+  const tlEl2 = document.getElementById("inst-timeline");
+  if (tlEl2) tlEl2.style.display = fStatus === "done" ? "none" : "block";
+
+  // Result count
+  const rcEl = document.getElementById("inst-result-count");
+  if (rcEl) {
+    const label = fStatus==="done"?"paid off":fStatus==="active"?"active":"total";
+    rcEl.textContent = "Showing "+filtered.length+" "+label+" plan"+(filtered.length!==1?"s":"");
+  }
+
+  document.getElementById("inst-list").innerHTML=filtered.map(({p,idx})=>{
     const pct=Math.round(p.paid/p.total_mo*100),rem=p.total_mo-p.paid,bal=Math.max(p.total-p.monthly*p.paid,0),isDone=rem<=0;
     return '<div class="inst-card"><div class="inst-top"><div><div class="inst-name">'+p.icon+' '+p.name+'</div><div class="inst-cat">'+p.cat+'</div></div><span class="inst-badge '+(isDone?'badge-done':'badge-active')+'">'+(isDone?'Paid off':'Active')+'</span></div><div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:4px"><span>'+p.paid+' of '+p.total_mo+' months paid</span><span style="font-weight:600;color:'+p.color+'">'+pct+'%</span></div><div class="inst-track"><div class="inst-fill" style="width:'+pct+'%;background:'+p.color+'"></div></div><div class="inst-stats"><div><div style="font-size:9px;color:#94a3b8">Monthly</div><div class="inst-stat-val">'+fmt(p.monthly)+'</div></div><div style="text-align:center"><div style="font-size:9px;color:#94a3b8">Months left</div><div class="inst-stat-val">'+rem+'</div></div><div style="text-align:right"><div style="font-size:9px;color:#94a3b8">Balance</div><div class="inst-stat-val" style="color:'+(isDone?'#94a3b8':'#ef4444')+'">'+fmt(bal)+'</div></div></div><div class="inst-actions"><button class="inst-action-btn inst-pay-btn" onclick="openInstModal('+idx+')"'+(isDone?' disabled':'')+'>✓ Mark this month paid</button><button class="inst-action-btn inst-edit-btn" onclick="openEditInstModal('+idx+')">✏️</button><button class="inst-action-btn inst-delete-btn" onclick="deleteInst('+idx+')">🗑️</button></div></div>';
   }).join("");
