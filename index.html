@@ -1969,6 +1969,31 @@ function confirmClearInsts() { if(confirm("Delete all instalments? This does not
 function confirmClear() { if(confirm("Delete ALL local transactions? Google Sheets data is safe.")){localStorage.removeItem("ft_txs");localStorage.removeItem("ft_unsynced");txs=[];unsyncedIds=[];saveTxs();showToast("Local data cleared");goTo("home");} }
 document.getElementById("sheets-url").addEventListener("blur",function(){settings.sheetsUrl=this.value.trim();saveSettings();updateSyncBar();});
 
+// ── Re-lock on return from background ───────────────────────
+// Uses a 30-second grace period — switching tabs briefly won't re-lock
+let _hiddenAt = null;
+const LOCK_GRACE_MS = 60000; // 60 seconds
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    _hiddenAt = Date.now();
+  } else {
+    if (!settings.pinEnabled) return;
+    if (_hiddenAt === null) return;
+    const away = Date.now() - _hiddenAt;
+    _hiddenAt = null;
+    if (away >= LOCK_GRACE_MS) {
+      // Re-lock: show PIN screen
+      pinBuffer = "";
+      pinMode = "enter";
+      document.getElementById("pin-sub").textContent = "Enter your PIN";
+      document.getElementById("pin-error").textContent = "";
+      updatePinDots();
+      document.getElementById("pin-screen").classList.remove("hidden");
+    }
+  }
+});
+
 function setChartPeriod(period, btn) {
   chartPeriod = period;
   document.querySelectorAll('.period-pill').forEach(p=>p.classList.remove('active'));
