@@ -1081,8 +1081,17 @@ async function fetchFromSheets(silent = false) {
     const res = await fetch(settings.sheetsUrl + "?action=get_transactions");
     const data = await res.json();
     if (data.transactions && Array.isArray(data.transactions)) {
+      // Dedup: remove from unsyncedIds any tx that Sheets already has (matched by date+amount+desc)
+      const sheetsKeys = new Set(data.transactions.map(t => t.date + '|' + t.amount + '|' + (t.description||"")));
+      unsyncedIds = unsyncedIds.filter(uid => {
+        const local = txs.find(t => t.id === uid);
+        if (!local) return false;
+        const key = (local.date||"") + '|' + local.amount + '|' + (local.desc||local.description||"");
+        return !sheetsKeys.has(key); // keep in unsynced only if NOT already in Sheets
+      });
+      localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
       const localOnly = txs.filter(t => !t.rowId && unsyncedIds.includes(t.id));
-      txs = [...data.transactions.map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||""})),...localOnly];
+      txs = [...data.transactions.map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal||false,goalName:t.goalName||""})),...localOnly];
       saveTxs(); settings.lastPull = new Date().toISOString(); saveSettings();
       if (!silent) { setSyncStatus("ok"); showToast(data.transactions.length + " transactions pulled ✓"); document.getElementById("last-pull-label").textContent = "Last pulled: just now"; }
       renderHome(); renderAnalytics(); return true;
@@ -1439,10 +1448,40 @@ function renderGoals() {
   }).join("");
 }
 async function deleteGoal(idx) {
-  if(!confirm('Delete "'+GOALS[idx].name+'"?'))return;
-  const goal=GOALS[idx]; GOALS.splice(idx,1); saveGoals(); renderGoals();
-  if(goal&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_goal",{name:goal.name}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){setSyncStatus("ok");showToast("Goal deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — Sheets sync failed");}}
-  else showToast("Goal deleted");
+  const goal = GOALS[idx];
+  if (!confirm('Delete "' + goal.name + '"?')) return;
+  // Check for linked goal-spend transactions
+  const linkedTxs = txs.filter(t => t.fromGoal && t.goalName === goal.name);
+  let deleteLinked = false;
+  if (linkedTxs.length > 0) {
+    deleteLinked = confirm(
+      linkedTxs.length + ' transaction' + (linkedTxs.length > 1 ? 's' : '') +
+      ' from "' + goal.name + '" exist in History (total: ' + fmt(linkedTxs.reduce((s,t)=>s+t.amount,0)) + ').' +
+      '\n\nDelete these transactions too?\n\n' +
+      'OK = delete transactions\nCancel = keep transactions in History'
+    );
+  }
+  if (deleteLinked) {
+    // Delete linked txs from local + Sheets
+    for (const t of linkedTxs) {
+      txs = txs.filter(x => x.id !== t.id);
+      unsyncedIds = unsyncedIds.filter(uid => uid !== t.id);
+      if (t.rowId && settings.sheetsUrl) {
+        await Promise.race([postToSheets("delete_transaction", {rowId:t.rowId, data:{desc:t.desc||"",amount:t.amount}}), new Promise(r=>setTimeout(()=>r(false),4000))]);
+      }
+    }
+    localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
+    saveTxs();
+  }
+  GOALS.splice(idx, 1); saveGoals(); renderGoals();
+  if (settings.sheetsUrl) {
+    setSyncStatus("syncing");
+    const ok = await Promise.race([postToSheets("delete_goal", {name:goal.name}), new Promise(r=>setTimeout(()=>r(false),6000))]);
+    if (ok) { setSyncStatus("ok"); showToast("Goal deleted" + (deleteLinked ? " + " + linkedTxs.length + " transaction(s) removed" : "") + " ✓"); }
+    else { setSyncStatus("error"); showToast("Deleted locally — Sheets sync failed"); }
+  } else {
+    showToast("Goal deleted" + (deleteLinked ? " + " + linkedTxs.length + " transaction(s) removed" : ""));
+  }
 }
 
 // ══ ANALYTICS ════════════════════════════════════════════════
