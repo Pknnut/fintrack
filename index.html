@@ -2075,7 +2075,7 @@ function exportAnalyticsImage() {
   const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const totalExp = cats.reduce((s,[,v])=>s+v,0);
 
-  const W = 800, PAD = 28, rowH = 40;
+  const W = 960, PAD = 32, rowH = 40;
   const headerH = 110, statsH = 96, catH = (cats.length||1)*rowH + 52, footH = 48;
   const H = headerH + statsH + catH + footH;
   const DPR = 2;
@@ -2126,7 +2126,7 @@ function exportAnalyticsImage() {
 
   // Category section
   const catY = headerH + statsH + 8;
-  const INNER = 16, LABEL_W = 150, AMT_W = 150, BAR_GAP = 12;
+  const INNER = 16, LABEL_W = 150, AMT_W = 180, BAR_GAP = 12;
   const barX = PAD + INNER + LABEL_W + BAR_GAP;
   const amtX = W - PAD - INNER;                          // right-align anchor
   const barMaxW = amtX - AMT_W - barX;                   // bar ends AMT_W before amtX
