@@ -588,13 +588,13 @@
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div class="an-header-title">Analytics</div>
       <div style="display:flex;align-items:center;gap:8px">
+        <button class="an-export-btn" onclick="exportAnalyticsImage()"><i class="ti ti-photo-down" style="font-size:13px"></i> Save</button>
         <button class="period-today-btn" onclick="analyticsGoToday()" style="padding:6px 10px;font-size:11px">Today</button>
         <button class="an-filter-chip" id="an-filter-chip" onclick="toggleAnalyticsDropdown()" aria-label="Select period">
           <i class="ti ti-calendar"></i><span id="an-filter-label">Jun 2026</span><i class="ti ti-chevron-down"></i>
         </button>
       </div>
     </div>
-  <button class="an-export-btn" onclick="exportAnalyticsImage()" style="margin:6px 20px 0;"><i class="ti ti-photo-down" style="font-size:14px"></i> Save as image</button>
   </div>
   <!-- Period picker: year first, then month, apply button -->
   <div class="period-picker hidden" id="an-picker">
