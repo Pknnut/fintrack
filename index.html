@@ -380,6 +380,21 @@
   .notif-info  { background: #e1f5ee; border: 1px solid #5DCAA5; color: #064e3b; }
   /* Instalment payoff timeline */
   .inst-timeline { margin: 10px 20px 0; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius); padding: 12px 14px; }
+  /* Net worth card */
+  .nw-card { margin: 12px 20px 0; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius); padding: 12px 14px; }
+  .nw-card-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .nw-card-title { font-size: 12px; font-weight: 600; color: var(--slate-500); }
+  .nw-total { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+  .nw-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding: 4px 0; }
+  .nw-lbl { color: var(--slate-500); display: flex; align-items: center; gap: 5px; }
+  .nw-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .nw-divider { height: 1px; background: var(--slate-100); margin: 6px 0; }
+  /* Savings rate trend */
+  .rate-chart-wrap { margin: 14px 20px 0; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius); padding: 12px 14px; }
+  .rate-chart-hd { font-size: 12px; font-weight: 600; color: var(--slate-500); margin-bottom: 10px; }
+  /* History date groups */
+  .hist-date-group { font-size: 10px; font-weight: 700; color: var(--slate-400); letter-spacing: .04em; padding: 10px 0 6px; }
+  .hist-date-group:first-child { padding-top: 0; }
   .inst-tl-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 10px; font-weight: 600; color: var(--slate-400); }
   .inst-tl-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .inst-tl-row:last-of-type { margin-bottom: 4px; }
@@ -601,6 +616,7 @@
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--slate-400);margin-top:4px"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
     </div>
   </div>
+  <div id="home-nw-card"></div>
   <div id="notif-banners"></div>
   <div class="recurring-banner" id="recurring-banner">
     <div class="recurring-banner-title">Suggested this month</div>
@@ -705,6 +721,12 @@
       <div class="goal-spend-total"><span>Total from goals</span><span id="goal-spend-total-val">฿0</span></div>
     </div>
   </div>
+  <!-- Savings rate trend — 12 months -->
+  <div class="rate-chart-wrap" id="rate-chart-wrap">
+    <div class="rate-chart-hd">Savings rate — last 12 months</div>
+    <div id="rate-chart-svg"></div>
+    <div id="rate-chart-axis" style="display:flex;justify-content:space-between;font-size:9px;color:var(--slate-400);margin-top:4px"></div>
+  </div>
   <!-- Month-over-month comparison (C+E combined) -->
   <div style="margin:14px 20px 0" id="mom-container">
     <div class="sec-hd" style="margin-bottom:8px"><span class="section-label" id="mom-section-label">vs last month</span></div>
@@ -798,6 +820,21 @@
     <button class="submit-btn" id="btn-add-inst" style="background:#6366f1" onclick="submitInst()">Add Instalment</button>
   </div>
   <div class="spacer"></div>
+</div>
+
+<!-- EDIT CONTRIBUTION MODAL -->
+<div class="modal-overlay hidden" id="modal-edit-contrib">
+  <div class="modal-sheet">
+    <div class="modal-title">Edit contribution</div>
+    <div class="modal-sub" id="edit-contrib-sub">Update this savings entry</div>
+    <input class="modal-input" id="edit-contrib-amount" type="number" inputmode="decimal" placeholder="Amount (฿)">
+    <input class="modal-input" id="edit-contrib-note" type="text" placeholder="Note (optional)" style="margin-top:8px">
+    <input class="modal-input" id="edit-contrib-date" type="date" style="margin-top:8px">
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeModal('edit-contrib')">Cancel</button>
+      <button class="modal-confirm" style="background:#22c55e" onclick="confirmEditContrib()">Save changes</button>
+    </div>
+  </div>
 </div>
 
 <!-- SPEND FROM GOAL MODAL -->
@@ -1070,7 +1107,8 @@ function openInstModal(idx) {
 function closeModal(type) {
   document.getElementById("modal-" + type).classList.add("hidden");
   if (type==="goal")      modalGoalIdx = -1;
-  if (type==="spend-goal") spendGoalIdx = -1;
+  if (type==="spend-goal")   spendGoalIdx = -1;
+  if (type==="edit-contrib") { editContribGoalIdx=-1; editContribIdx=-1; }
   if (type==="inst")      modalInstIdx = -1;
   if (type==="budget")    editBudgetIdx = -1;
   if (type==="edit-tx")   editTxId = null;
@@ -1292,13 +1330,33 @@ function renderHistory() {
   const countEl=document.getElementById("hist-count"); if(countEl)countEl.textContent=list.length+" transaction"+(list.length!==1?"s":"");
   const el=document.getElementById("hist-list"); if(!el)return;
   if(!list.length){el.innerHTML='<div class="empty-state">No transactions found</div>';return;}
-  el.innerHTML=list.map(t=>{
+  // Date grouping
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(today.getDate()-1);
+  let lastDateKey = null;
+  const rows = list.map(t=>{
     const isInc=t.type==="Income",d=new Date(t.date),desc=t.desc||t.description||"";
-    return '<div class="swipe-container" data-id="'+t.id+'">' +
+    d.setHours(0,0,0,0);
+    const dateKey = t.date;
+    let groupHdr = "";
+    if (dateKey !== lastDateKey) {
+      lastDateKey = dateKey;
+      let lbl;
+      if (d.getTime()===today.getTime())          lbl = "Today";
+      else if (d.getTime()===yesterday.getTime()) lbl = "Yesterday";
+      else lbl = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()] + " " + d.getDate() + " " + MO[d.getMonth()] + " " + d.getFullYear();
+      groupHdr = '<div class="hist-date-group">'+lbl+'</div>';
+    }
+    const row = '<div class="swipe-container" data-id="'+t.id+'">' +
       '<div class="swipe-del-bg"><i class="ti ti-trash" style="font-size:20px;color:#ef4444"></i></div>' +
-      '<div class="hist-tx-row" data-id="'+t.id+'"><div class="tx-icon">'+(t.category||"").split(" ")[0]+'</div><div style="flex:1;min-width:0"><div class="tx-name">'+desc+(t.fromGoal?'<span class="goal-pill-tag">'+(t.goalName||'Goal')+'</span>':'')+'</div><div class="tx-sub">'+(t.category||"").replace(/^\S+\s/,"")+" · "+d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear()+'</div></div><span class="tx-amt '+(isInc?'pos':'neg')+'" style="margin-right:8px">'+(isInc?"+":"-")+fmt(t.amount)+'</span><button class="hist-tx-edit" onclick="openEditTxModal('+t.id+')" aria-label="Edit"><i class="ti ti-pencil" style="font-size:15px;color:#2563eb"></i></button></div>' +
+      '<div class="hist-tx-row" data-id="'+t.id+'"><div class="tx-icon">'+(t.category||"").split(" ")[0]+'</div><div style="flex:1;min-width:0"><div class="tx-name">'+desc+(t.fromGoal?'<span class="goal-pill-tag">'+(t.goalName||'Goal')+'</span>':'')+
+      '</div><div class="tx-sub">'+(t.category||"").replace(/^\S+\s/,"")+" · "+d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear()+
+      '</div></div><span class="tx-amt '+(isInc?'pos':'neg')+'" style="margin-right:8px">'+(isInc?"+":"-")+fmt(t.amount)+
+      '</span><button class="hist-tx-edit" onclick="openEditTxModal('+t.id+')" aria-label="Edit"><i class="ti ti-pencil" style="font-size:15px;color:#2563eb"></i></button></div>' +
     '</div>';
-  }).join("");
+    return groupHdr + row;
+  });
+  el.innerHTML = rows.join("");
   initSwipeToDelete();;
 }
 
@@ -1441,9 +1499,40 @@ function renderHome() {
   document.getElementById("home-inc").textContent=fmt(inc);
   document.getElementById("home-exp").textContent=fmt(exp);
   renderSpendingChart();
+  renderNetWorth();
   const recent=[...arr].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
   const el=document.getElementById("home-tx-list");
   el.innerHTML=recent.length?recent.map(txRowHTML).join(''):'<div class="empty-state">No transactions this month</div>';
+}
+
+function renderNetWorth() {
+  const el = document.getElementById("home-nw-card");
+  if (!el) return;
+  const goalSavings = GOALS.reduce((s,g)=>s+(g.saved||0), 0);
+  const instDebt    = INSTALLMENTS.reduce((s,p)=>s+Math.max(p.total-p.monthly*p.paid,0), 0);
+  const netWorth    = goalSavings - instDebt;
+  const nwColor     = netWorth >= 0 ? "#16a34a" : "#dc2626";
+  el.innerHTML =
+    '<div class="nw-card">' +
+      '<div class="nw-card-hd">' +
+        '<span class="nw-card-title">Net worth snapshot</span>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">' +
+        '<div style="background:#f0fdf4;border-radius:var(--radius-sm);padding:8px 10px">' +
+          '<div style="font-size:9px;color:#166534;margin-bottom:3px">Goal savings</div>' +
+          '<div style="font-size:13px;font-weight:700;color:#16a34a">+'+fmt(goalSavings)+'</div>' +
+        '</div>' +
+        '<div style="background:#fef2f2;border-radius:var(--radius-sm);padding:8px 10px">' +
+          '<div style="font-size:9px;color:#991b1b;margin-bottom:3px">Instalment debt</div>' +
+          '<div style="font-size:13px;font-weight:700;color:#ef4444">−'+fmt(instDebt)+'</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="height:1px;background:var(--slate-100);margin-bottom:8px"></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+        '<span style="font-size:11px;font-weight:600;color:var(--slate-500)">= Net worth</span>' +
+        '<span style="font-size:18px;font-weight:700;color:'+nwColor+'">' + (netWorth>=0?"+":"") + fmt(netWorth) + '</span>' +
+      '</div>' +
+    '</div>';
 }
 
 function renderSpendingChart() {
@@ -1543,7 +1632,7 @@ function renderGoals() {
       '<div class="contrib-log-hd"><span>Savings contributions</span><span>'+contribs.length+' entries</span></div>' +
       (contribs.length ? contribs.slice().reverse().map((c,ci)=>{
         const realIdx = contribs.length - 1 - ci;
-        return '<div class="contrib-log-row"><div><div class="contrib-log-note">'+(c.note||'—')+'</div><div class="contrib-log-date">'+c.date+'</div></div><div style="display:flex;align-items:center"><span class="contrib-log-amt">+'+fmt(c.amount)+'</span><button class="contrib-log-del" onclick="deleteGoalContrib('+idx+','+realIdx+')" aria-label="Delete contribution"><i class="ti ti-x" style="font-size:11px"></i></button></div></div>';
+        return '<div class="contrib-log-row"><div><div class="contrib-log-note">'+(c.note||'—')+'</div><div class="contrib-log-date">'+c.date+'</div></div><div style="display:flex;align-items:center;gap:4px"><span class="contrib-log-amt">+'+fmt(c.amount)+'</span><button class="contrib-log-del" onclick="openEditContribModal('+idx+','+realIdx+')" aria-label="Edit contribution" style="color:#2563eb"><i class="ti ti-pencil" style="font-size:11px"></i></button><button class="contrib-log-del" onclick="deleteGoalContrib('+idx+','+realIdx+')" aria-label="Delete contribution"><i class="ti ti-x" style="font-size:11px"></i></button></div></div>';
       }).join('') : '<div style="font-size:11px;color:var(--slate-400);padding:8px 0;text-align:center">No contributions yet</div>') +
       (contribs.length ? '<div class="contrib-log-total"><span style="color:var(--slate-500)">Total saved</span><span style="color:#16a34a">'+fmt(g.saved)+'</span></div>' : '') +
       (spendLogHtml ? '<div style="height:1px;background:var(--slate-100);margin:10px 0"></div>'+spendLogHtml.replace('<div class="spend-log">', '').replace('</div>', '') : '') +
@@ -1705,6 +1794,55 @@ function renderAnalytics() {
   document.getElementById("an-year-summary").innerHTML='<div class="an-year-summ-box"><div class="an-year-summ-val" style="color:#22c55e">'+fmt(yInc)+'</div><div class="an-year-summ-lbl">Year income</div></div><div class="an-year-summ-box"><div class="an-year-summ-val" style="color:#ef4444">'+fmt(yExp)+'</div><div class="an-year-summ-lbl">Year expenses</div></div><div class="an-year-summ-box"><div class="an-year-summ-val" style="color:'+netColor+'">'+fmt(yNet)+'</div><div class="an-year-summ-lbl">Year net</div></div><div class="an-year-summ-box"><div class="an-year-summ-val">'+yRate+'%</div><div class="an-year-summ-lbl">Year rate</div></div>';
   // Month-over-month comparison (Layout 3 — delta section)
   renderMoM(mo, yr);
+  // Savings rate trend
+  renderSavingsRateTrend();
+}
+
+function renderSavingsRateTrend() {
+  const svgEl  = document.getElementById("rate-chart-svg");
+  const axisEl = document.getElementById("rate-chart-axis");
+  if (!svgEl || !axisEl) return;
+  const now = new Date();
+  const months = [], labels = [], rates = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d);
+    labels.push(MO[d.getMonth()].slice(0,3));
+    const arr = txs.filter(t => {
+      const td = new Date(t.date);
+      return td.getMonth()===d.getMonth() && td.getFullYear()===d.getFullYear() && !t.fromGoal;
+    });
+    const inc = arr.filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0);
+    const exp = arr.filter(t=>t.type==="Expense").reduce((s,t)=>s+t.amount,0);
+    const rate = inc > 0 ? Math.max(0, Math.min(100, Math.round(((inc-exp)/inc)*100))) : null;
+    rates.push(rate);
+  }
+  const hasData = rates.some(r => r !== null);
+  if (!hasData) { svgEl.innerHTML = '<div style="font-size:11px;color:var(--slate-400);text-align:center;padding:12px 0">No data yet</div>'; return; }
+  const W=300, H=64, pad=4;
+  const valid = rates.map((r,i)=>r!==null?i:-1).filter(i=>i>=0);
+  const nonNull = rates.filter(r=>r!==null);
+  const maxR = Math.max(...nonNull, 1);
+  const pts = rates.map((r,i) => {
+    const x = pad + (i/(rates.length-1))*(W-pad*2);
+    const y = r===null ? null : pad + (1 - r/100)*(H-pad*2);
+    return {x, y, r};
+  }).filter(p=>p.y!==null);
+  const lineStr = pts.map((p,i)=>(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  const areaStr = pts.map((p,i)=>(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')
+    + ' L'+pts[pts.length-1].x.toFixed(1)+','+(H-pad)+' L'+pts[0].x.toFixed(1)+','+(H-pad)+' Z';
+  svgEl.innerHTML =
+    '<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block">' +
+      '<defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d9488" stop-opacity="0.2"/><stop offset="100%" stop-color="#0d9488" stop-opacity="0"/></linearGradient></defs>' +
+      '<path d="'+areaStr+'" fill="url(#rg)"/>' +
+      '<path d="'+lineStr+'" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      pts.map(p=>'<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3" fill="#0d9488"/>').join('') +
+      pts.map(p=>'<text x="'+p.x.toFixed(1)+'" y="'+(p.y-7).toFixed(1)+'" text-anchor="middle" font-size="8" fill="#0d9488">'+p.r+'%</text>').join('') +
+    '</svg>';
+  // Show only first, middle, last labels to avoid crowding
+  axisEl.innerHTML = labels.map((l,i) =>
+    (i===0||i===5||i===11) ? '<span>'+l+'</span>' : '<span></span>'
+  ).join('');
 }
 
 function renderMoM(mo, yr) {
@@ -1927,9 +2065,25 @@ function renderInstallments() {
 
   document.getElementById("inst-list").innerHTML=filtered.map(({p,idx})=>{
     const pct=Math.round(p.paid/p.total_mo*100),rem=p.total_mo-p.paid,bal=Math.max(p.total-p.monthly*p.paid,0),isDone=rem<=0;
-    return '<div class="inst-card"><div class="inst-top"><div><div class="inst-name">'+p.icon+' '+p.name+'</div><div class="inst-cat">'+p.cat+'</div></div><span class="inst-badge '+(isDone?'badge-done':'badge-active')+'">'+(isDone?'Paid off':'Active')+'</span></div><div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:4px"><span>'+p.paid+' of '+p.total_mo+' months paid</span><span style="font-weight:600;color:'+p.color+'">'+pct+'%</span></div><div class="inst-track"><div class="inst-fill" style="width:'+pct+'%;background:'+p.color+'"></div></div><div class="inst-stats"><div><div style="font-size:9px;color:#94a3b8">Monthly</div><div class="inst-stat-val">'+fmt(p.monthly)+'</div></div><div style="text-align:center"><div style="font-size:9px;color:#94a3b8">Months left</div><div class="inst-stat-val">'+rem+'</div></div><div style="text-align:right"><div style="font-size:9px;color:#94a3b8">Balance</div><div class="inst-stat-val" style="color:'+(isDone?'#94a3b8':'#ef4444')+'">'+fmt(bal)+'</div></div></div><div class="inst-actions"><button class="inst-action-btn inst-pay-btn" onclick="openInstModal('+idx+')"'+(isDone?' disabled':'')+'>✓ Mark this month paid</button><button class="inst-action-btn inst-edit-btn" onclick="openEditInstModal('+idx+')">✏️</button><button class="inst-action-btn inst-delete-btn" onclick="deleteInst('+idx+')">🗑️</button></div></div>';
+    return '<div class="inst-card"><div class="inst-top"><div><div class="inst-name">'+p.icon+' '+p.name+'</div><div class="inst-cat">'+p.cat+'</div></div><span class="inst-badge '+(isDone?'badge-done':'badge-active')+'">'+(isDone?'Paid off':'Active')+'</span></div><div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:4px"><span>'+p.paid+' of '+p.total_mo+' months paid</span><span style="font-weight:600;color:'+p.color+'">'+pct+'%</span></div><div class="inst-track"><div class="inst-fill" style="width:'+pct+'%;background:'+p.color+'"></div></div><div class="inst-stats"><div><div style="font-size:9px;color:#94a3b8">Monthly</div><div class="inst-stat-val">'+fmt(p.monthly)+'</div></div><div style="text-align:center"><div style="font-size:9px;color:#94a3b8">Months left</div><div class="inst-stat-val">'+rem+'</div></div><div style="text-align:right"><div style="font-size:9px;color:#94a3b8">Balance</div><div class="inst-stat-val" style="color:'+(isDone?'#94a3b8':'#ef4444')+'">'+fmt(bal)+'</div></div></div><div class="inst-actions"><button class="inst-action-btn inst-pay-btn" onclick="openInstModal('+idx+')"'+(isDone?' disabled':'')+'>Mark this month paid</button><button class="inst-action-btn" style="background:#ecfdf5;color:#166534;border-color:#86efac;font-size:10px" onclick="confirmEarlyPayoff('+idx+')"'+(isDone?' disabled':'')+'>Pay off</button><button class="inst-action-btn inst-edit-btn" onclick="openEditInstModal('+idx+')">✏️</button><button class="inst-action-btn inst-delete-btn" onclick="deleteInst('+idx+')">🗑️</button></div></div>';
   }).join("");
 }
+async function confirmEarlyPayoff(idx) {
+  const p = INSTALLMENTS[idx];
+  if (!p) return;
+  const rem = p.total_mo - p.paid;
+  if (rem <= 0) { showToast("Already fully paid off"); return; }
+  if (!confirm('Mark "' + p.icon + ' ' + p.name + '" as fully paid off? ' + rem + ' payment' + (rem!==1?'s':'')+' remaining will be marked as paid.')) return;
+  INSTALLMENTS[idx].paid = p.total_mo;
+  saveInsts(); renderInstallments();
+  showToast(p.name + " marked as fully paid off ✓");
+  if (settings.sheetsUrl) {
+    setSyncStatus("syncing");
+    const ok = await Promise.race([postToSheets("update_installment_paid",{planName:p.name,monthsPaid:p.total_mo}), new Promise(r=>setTimeout(()=>r(false),6000))]);
+    if (ok) { setSyncStatus("ok"); } else { setSyncStatus("error"); showToast("Updated locally — Sheets sync failed"); }
+  }
+}
+
 async function deleteInst(idx) {
   if(!confirm('Delete "'+INSTALLMENTS[idx].name+'"?'))return;
   const inst=INSTALLMENTS[idx]; INSTALLMENTS.splice(idx,1); saveInsts(); renderInstallments();
@@ -2343,6 +2497,43 @@ function toggleContribLog(idx) {
   const isOpen = el.style.maxHeight !== "0px" && el.style.maxHeight !== "";
   el.style.maxHeight = isOpen ? "0" : el.scrollHeight + "px";
   if (btn) btn.classList.toggle("open", !isOpen);
+}
+
+let editContribGoalIdx = -1, editContribIdx = -1;
+
+function openEditContribModal(goalIdx, contribIdx) {
+  editContribGoalIdx = goalIdx;
+  editContribIdx     = contribIdx;
+  const g = GOALS[goalIdx];
+  const c = (g.contributions||[])[contribIdx];
+  if (!c) return;
+  document.getElementById("edit-contrib-sub").textContent = "Editing contribution for " + g.name;
+  document.getElementById("edit-contrib-amount").value = c.amount;
+  document.getElementById("edit-contrib-note").value   = c.note || "";
+  document.getElementById("edit-contrib-date").value   = c.date || "";
+  document.getElementById("modal-edit-contrib").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("edit-contrib-amount").focus(), 150);
+}
+
+function confirmEditContrib() {
+  if (editContribGoalIdx < 0 || editContribIdx < 0) return;
+  const g       = GOALS[editContribGoalIdx];
+  const contribs = g.contributions || [];
+  const old     = contribs[editContribIdx];
+  if (!old) return;
+  const newAmount = parseFloat(document.getElementById("edit-contrib-amount").value) || 0;
+  const newNote   = document.getElementById("edit-contrib-note").value.trim();
+  const newDate   = document.getElementById("edit-contrib-date").value || old.date;
+  if (newAmount <= 0) { showToast("Enter a valid amount"); return; }
+  // Adjust saved total by difference
+  g.saved = Math.max(0, g.saved - old.amount + newAmount);
+  contribs[editContribIdx] = { ...old, amount: newAmount, note: newNote, date: newDate };
+  g.contributions = contribs;
+  saveGoals();
+  closeModal("edit-contrib");
+  editContribGoalIdx = -1; editContribIdx = -1;
+  renderGoals();
+  showToast("Contribution updated ✓");
 }
 
 function deleteGoalContrib(goalIdx, contribIdx) {
