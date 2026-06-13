@@ -332,6 +332,17 @@
   .budget-amounts { display: flex; justify-content: space-between; font-size: 10px; color: var(--slate-400); }
   .budget-spent { font-weight: 600; color: var(--slate-700); }
   .budget-edit-btn { font-size: 10px; font-weight: 600; color: var(--teal); background: var(--teal-light); border: none; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+  .budget-trend-wrap { margin: 12px 20px 0; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius); padding: 12px 14px; }
+  .budget-trend-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .budget-trend-lbl { font-size: 11px; font-weight: 600; color: var(--slate-500); }
+  .budget-trend-mo { display: flex; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 8px; padding: 2px; gap: 2px; }
+  .budget-trend-mo button { padding: 4px 9px; border: none; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; background: transparent; color: var(--slate-400); font-family: inherit; }
+  .budget-trend-mo button.on { background: var(--slate-900); color: var(--white); }
+  .budget-line-row { margin-bottom: 14px; }
+  .budget-line-row:last-child { margin-bottom: 0; }
+  .budget-line-hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .budget-line-name { font-size: 10px; font-weight: 600; color: var(--slate-700); }
+  .budget-line-limit { font-size: 9px; color: var(--slate-400); }
   .budget-add-btn { margin: 12px 20px 0; width: calc(100% - 40px); padding: 13px; background: var(--white); border: 1.5px dashed var(--slate-200); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--slate-400); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
   .budget-add-btn:active { background: var(--slate-50); }
 
@@ -967,6 +978,17 @@
 
   <div class="budget-overview" id="budget-overview"></div>
   <div class="budget-grid" id="budget-grid"></div>
+  <div class="budget-trend-wrap" id="budget-trend-wrap" style="display:none">
+    <div class="budget-trend-hd">
+      <span class="budget-trend-lbl">Spending trend</span>
+      <div class="budget-trend-mo">
+        <button onclick="setBudgetTrendMo(3,this)">3m</button>
+        <button class="on" onclick="setBudgetTrendMo(6,this)">6m</button>
+        <button onclick="setBudgetTrendMo(12,this)">12m</button>
+      </div>
+    </div>
+    <div id="budget-trend-lines"></div>
+  </div>
   <button class="budget-add-btn" onclick="openBudgetAddModal()"><i class="ti ti-plus" style="font-size:16px"></i> Add category budget</button>
   <div class="spacer"></div>
 </div>
@@ -2452,6 +2474,81 @@ function renderBudget() {
       (pct >= 80 ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:' + color + ';background:' + (pct>=100?'#fef2f2':'#fffbeb') + ';padding:5px 8px;border-radius:6px">' + (pct>=100?'⚠️ Over budget!':'⚠️ Approaching limit') + '</div>' : '') +
     '</div>';
   }).join("");
+  renderBudgetTrend();
+}
+
+let budgetTrendMo = 6;
+
+function setBudgetTrendMo(n, btn) {
+  budgetTrendMo = n;
+  btn.parentElement.querySelectorAll("button").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on");
+  renderBudgetTrend();
+}
+
+function renderBudgetTrend() {
+  const wrap = document.getElementById("budget-trend-wrap");
+  const el   = document.getElementById("budget-trend-lines");
+  if (!wrap || !el || !BUDGETS.length) { if(wrap) wrap.style.display="none"; return; }
+  wrap.style.display = "block";
+  const n = budgetTrendMo;
+  const W = 260, H = 56, padT = 10, padB = 14;
+  const chartH = H - padT - padB;
+
+  el.innerHTML = BUDGETS.map(b => {
+    const catName = b.cat.replace(/^\S+\s/, "");
+    const emoji   = b.cat.split(" ")[0];
+    // Collect n months of data
+    const months = [], amounts = [], labels = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d  = new Date(budgetYear, budgetMonth - i, 1);
+      const mo = d.getMonth(), yr = d.getFullYear();
+      labels.push(MO[mo].slice(0,3));
+      amounts.push(txs.filter(t => {
+        const td = new Date(t.date);
+        return td.getMonth()===mo && td.getFullYear()===yr && t.type==="Expense" && !t.fromGoal && (t.category||"").includes(catName);
+      }).reduce((s,t)=>s+t.amount, 0));
+    }
+    const maxAmt = Math.max(...amounts, b.limit, 1);
+    const limitY = padT + (1 - b.limit/maxAmt) * chartH;
+    // Build SVG points
+    const pts = amounts.map((v,i) => {
+      const x = (i/(n-1)) * W;
+      const y = padT + (1 - v/maxAmt) * chartH;
+      return {x, y, v};
+    });
+    const lineStr = pts.map((p,i) => (i===0?'M':'L') + p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+    const areaStr = pts.map((p,i) => (i===0?'M':'L') + p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')
+      + ' L'+W.toFixed(1)+','+(padT+chartH)+' L0,'+(padT+chartH)+' Z';
+    // Color of last point
+    const lastPct = b.limit > 0 ? Math.round(amounts[amounts.length-1]/b.limit*100) : 0;
+    const lineColor = lastPct>=100?"#ef4444":lastPct>=80?"#f59e0b":"#0d9488";
+    // Axis labels — show first, middle, last only
+    const axisLabels = labels.map((l,i) => {
+      const show = i===0 || i===Math.floor((n-1)/2) || i===n-1;
+      const isLast = i===n-1;
+      return '<text x="'+(i/(n-1)*W).toFixed(1)+'" y="'+(H-1)+'" font-size="8" fill="'+(isLast?lineColor:'#94a3b8')+'" font-weight="'+(isLast?'bold':'normal')+'" text-anchor="middle">'+(show?l:'')+'</text>';
+    }).join('');
+    // Current dot
+    const lastPt = pts[pts.length-1];
+    return '<div class="budget-line-row">' +
+      '<div class="budget-line-hd">' +
+        '<span class="budget-line-name">' + emoji + ' ' + catName + '</span>' +
+        '<span class="budget-line-limit">limit ' + fmt(b.limit) + '</span>' +
+      '</div>' +
+      '<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;overflow:visible">' +
+        '<defs><linearGradient id="btg'+b.cat.replace(/\W/g,'')+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+lineColor+'" stop-opacity="0.15"/><stop offset="100%" stop-color="'+lineColor+'" stop-opacity="0"/></linearGradient></defs>' +
+        '<path d="'+areaStr+'" fill="url(#btg'+b.cat.replace(/\W/g,'')+')"/>' +
+        '<line x1="0" y1="'+limitY.toFixed(1)+'" x2="'+W+'" y2="'+limitY.toFixed(1)+'" stroke="#ef4444" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>' +
+        '<text x="2" y="'+(limitY-2).toFixed(1)+'" font-size="7" fill="#ef4444" opacity="0.7">limit</text>' +
+        '<path d="'+lineStr+'" fill="none" stroke="'+lineColor+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
+        pts.map((p,i) => i===n-1 ?
+          '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+lineColor+'"/><circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="1.5" fill="#fff"/>' : ''
+        ).join('') +
+        axisLabels +
+      '</svg>' +
+    '</div>';
+  }).join('<div style="height:1px;background:var(--slate-100);margin:2px 0 14px"></div>');
 }
 
 function openBudgetEditModal(idx) {
