@@ -351,7 +351,6 @@
   .recurring-toggle-lbl { font-size: 12px; font-weight: 600; color: var(--slate-700); }
   .recurring-toggle-sub { font-size: 10px; color: var(--slate-400); margin-top: 1px; }
   /* Export button on analytics */
-  .an-export-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--slate-200); background: var(--white); color: var(--slate-500); font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
   .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
   .modal-overlay.hidden { display: none; }
@@ -588,8 +587,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div class="an-header-title">Analytics</div>
       <div style="display:flex;align-items:center;gap:8px">
-        <button class="an-export-btn" onclick="exportAnalyticsImage()"><i class="ti ti-photo-down" style="font-size:13px"></i> Save</button>
-        <button class="period-today-btn" onclick="analyticsGoToday()" style="padding:6px 10px;font-size:11px">Today</button>
+<button class="period-today-btn" onclick="analyticsGoToday()" style="padding:6px 10px;font-size:11px">Today</button>
         <button class="an-filter-chip" id="an-filter-chip" onclick="toggleAnalyticsDropdown()" aria-label="Select period">
           <i class="ti ti-calendar"></i><span id="an-filter-label">Jun 2026</span><i class="ti ti-chevron-down"></i>
         </button>
@@ -754,7 +752,6 @@
     <div class="settings-label">Data</div>
     <div class="settings-card">
       <button class="settings-btn" onclick="exportData()">Export transactions as JSON</button>
-      <button class="settings-btn" onclick="goTo('analytics');setTimeout(exportAnalyticsImage,400)">Export current month as image</button>
       <button class="settings-btn" onclick="rebuildAnalyticsSheet()">Rebuild Analytics sheet in Google Sheets</button>
       <button class="settings-btn danger" onclick="confirmClearGoals()">Clear all goals</button>
       <button class="settings-btn danger" onclick="confirmClearInsts()">Clear all instalments</button>
@@ -2065,116 +2062,6 @@ function removeRecurring(desc, category) {
 }
 
 // ══ EXPORT ANALYTICS AS IMAGE ════════════════════════════════
-function exportAnalyticsImage() {
-  const mo = analyticsMonth, yr = analyticsYear;
-  const arr = monthTxs(mo, yr);
-  const {inc, exp, net, rate} = calcSummary(arr);
-
-  const catMap = {};
-  arr.filter(t=>t.type==="Expense").forEach(t=>{ catMap[t.category]=(catMap[t.category]||0)+t.amount; });
-  const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const totalExp = cats.reduce((s,[,v])=>s+v,0);
-
-  const W = 960, PAD = 32, rowH = 40;
-  const headerH = 110, statsH = 96, catH = (cats.length||1)*rowH + 52, footH = 48;
-  const H = headerH + statsH + catH + footH;
-  const DPR = 2;
-  const canvas = document.createElement("canvas");
-  canvas.width = W * DPR; canvas.height = H * DPR;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(DPR, DPR);
-
-  const isDark = document.body.classList.contains("dark");
-  const BG     = isDark ? "#0f172a" : "#f1f5f9";
-  const CARD   = isDark ? "#1e293b" : "#ffffff";
-  const TEXT   = isDark ? "#f1f5f9" : "#0f172a";
-  const MUTED  = isDark ? "#94a3b8" : "#64748b";
-  const SUBTLE = isDark ? "#64748b" : "#94a3b8";
-  const BORDER = isDark ? "#334155" : "#e2e8f0";
-  const TEAL   = "#0d9488";
-  const COLORS = ["#6366f1","#0d9488","#f59e0b","#ef4444","#22c55e","#8b5cf6","#ec4899","#f97316"];
-  const thb = n => "\u0e3f" + Number(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-
-  ctx.fillStyle = BG; ctx.fillRect(0,0,W,H);
-
-  // Header card
-  ctx.fillStyle = CARD; roundRect(ctx, PAD, PAD, W-PAD*2, headerH-PAD, 14); ctx.fill();
-  ctx.fillStyle = TEAL; ctx.fillRect(PAD, PAD, 5, headerH-PAD);
-  ctx.fillStyle = TEXT; ctx.font = "700 26px \'Urbanist\',system-ui,sans-serif";
-  ctx.fillText("FinTrack", PAD+18, PAD+38);
-  ctx.fillStyle = MUTED; ctx.font = "15px \'Urbanist\',system-ui,sans-serif";
-  ctx.fillText(MO[mo] + " " + yr + "  \u00b7  Monthly summary", PAD+18, PAD+62);
-
-  // Stats row
-  const stats = [
-    {lbl:"Income",   val:thb(inc), color:"#16a34a"},
-    {lbl:"Expenses", val:thb(exp), color:"#dc2626"},
-    {lbl:"Net",      val:thb(net), color:net>=0?"#16a34a":"#dc2626"},
-    {lbl:"Rate",     val:Math.round(rate*100)+"%", color:TEXT},
-  ];
-  const sw = (W - PAD*2) / 4;
-  stats.forEach(({lbl,val,color},i) => {
-    const x = PAD + i*sw, y = headerH;
-    ctx.fillStyle = CARD; roundRect(ctx, x+3, y+4, sw-6, statsH-8, 10); ctx.fill();
-    ctx.strokeStyle = BORDER; ctx.lineWidth = 0.5; roundRect(ctx, x+3, y+4, sw-6, statsH-8, 10); ctx.stroke();
-    ctx.fillStyle = MUTED; ctx.font = "12px \'Urbanist\',system-ui,sans-serif";
-    ctx.fillText(lbl, x+14, y+24);
-    ctx.fillStyle = color; ctx.font = "700 19px \'Urbanist\',system-ui,sans-serif";
-    if (ctx.measureText(val).width > sw-28) ctx.font = "700 15px \'Urbanist\',system-ui,sans-serif";
-    ctx.fillText(val, x+14, y+56);
-  });
-
-  // Category section
-  const catY = headerH + statsH + 8;
-  const INNER = 16, LABEL_W = 150, AMT_W = 180, BAR_GAP = 12;
-  const barX = PAD + INNER + LABEL_W + BAR_GAP;
-  const amtX = W - PAD - INNER;                          // right-align anchor
-  const barMaxW = amtX - AMT_W - barX;                   // bar ends AMT_W before amtX
-  ctx.fillStyle = CARD; roundRect(ctx, PAD, catY, W-PAD*2, catH, 14); ctx.fill();
-  ctx.strokeStyle = BORDER; ctx.lineWidth = 0.5; roundRect(ctx, PAD, catY, W-PAD*2, catH, 14); ctx.stroke();
-  ctx.fillStyle = TEXT; ctx.font = "700 15px \'Urbanist\',system-ui,sans-serif";
-  ctx.fillText("Expenses by category", PAD+INNER, catY+26);
-
-  cats.forEach(([cat,amt],i) => {
-    const y = catY + 44 + i*rowH;
-    const name = cat.replace(/^\S+\s/,"");
-    const emoji = cat.split(" ")[0];
-    const pct = totalExp > 0 ? amt/totalExp : 0;
-    const color = COLORS[i % COLORS.length];
-    if (i > 0) {
-      ctx.strokeStyle = BORDER; ctx.lineWidth = 0.5;
-      ctx.beginPath(); ctx.moveTo(PAD+INNER, y-6); ctx.lineTo(amtX, y-6); ctx.stroke();
-    }
-    ctx.fillStyle = TEXT; ctx.font = "14px \'Urbanist\',system-ui,sans-serif";
-    ctx.fillText(emoji + " " + name, PAD+INNER, y+16);
-    ctx.fillStyle = BORDER; roundRect(ctx, barX, y+4, barMaxW, 12, 6); ctx.fill();
-    ctx.fillStyle = color; roundRect(ctx, barX, y+4, Math.max(barMaxW*pct, 6), 12, 6); ctx.fill();
-    ctx.fillStyle = TEXT; ctx.font = "700 13px \'Urbanist\',system-ui,sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillText(thb(amt), amtX, y+16);
-    ctx.textAlign = "left";
-  });
-
-  // Footer
-  ctx.fillStyle = SUBTLE; ctx.font = "11px \'Urbanist\',system-ui,sans-serif";
-  ctx.fillText("Generated by FinTrack  \u00b7  " + new Date().toLocaleDateString("en-GB"), PAD+4, H-footH+20);
-
-  const link = document.createElement("a");
-  link.download = "fintrack-" + MO[mo].toLowerCase() + "-" + yr + ".png";
-  link.href = canvas.toDataURL("image/png", 1.0);
-  link.click();
-  showToast("Saved as image \u2713");
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w,y,x+w,y+r,r);
-  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
-  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
-  ctx.closePath();
-}
 
 startup();
 </script>
