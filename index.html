@@ -215,22 +215,29 @@
   .an-donut-item.selected .an-donut-name { color:var(--slate-900); font-weight:700; }
   .an-donut-item.selected .an-donut-arrow { color:#22c55e; }
   .an-donut-item.dimmed { opacity:0.35; }
-  .an-donut-detail { margin:0 20px 12px; background:#f8fafc; border-radius:var(--radius); padding:12px 14px; display:none; }
+  .an-donut-detail { display:none; }
+  .an-donut-detail.visible { display:block; }
+  .an-donut-card { margin:12px 20px 0; background:var(--white); border:0.5px solid var(--slate-200); border-radius:var(--radius); overflow:hidden; }
+  .an-donut-card-header { font-size:10px; font-weight:700; color:var(--slate-400); letter-spacing:0.07em; text-transform:uppercase; padding:12px 14px 0; }
+  .an-detail-inner { padding:12px 14px; }
   .an-donut-detail.visible { display:block; }
   .an-detail-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
   .an-detail-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
   .an-detail-name { font-size:13px; font-weight:600; color:var(--slate-900); flex:1; }
   .an-detail-hint { font-size:10px; color:var(--slate-400); }
-  .an-detail-stats { display:flex; gap:8px; margin-bottom:10px; }
-  .an-detail-stat { flex:1; background:var(--white); border-radius:var(--radius-sm); padding:8px 10px; }
+  .an-detail-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:10px; }
+  .an-detail-stat { background:var(--slate-50); border:0.5px solid var(--slate-200); border-radius:var(--radius-sm); padding:8px 10px; }
   .an-detail-stat-val { font-size:13px; font-weight:700; color:var(--slate-900); }
-  .an-detail-stat-lbl { font-size:9px; color:var(--slate-400); margin-top:2px; }
+  .an-detail-stat-lbl { font-size:9px; color:var(--slate-400); margin-top:3px; }
   .an-detail-txlist { max-height:160px; overflow-y:auto; }
   .an-detail-tx { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--slate-200); font-size:11px; }
   .an-detail-tx:last-child { border-bottom:none; }
   .an-detail-tx-desc { color:var(--slate-700); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-right:8px; }
   .an-detail-tx-date { color:var(--slate-400); font-size:10px; margin-right:8px; flex-shrink:0; }
   .an-detail-tx-amt { color:#ef4444; font-weight:600; flex-shrink:0; }
+  .an-detail-see-all { display:flex; align-items:center; justify-content:space-between; padding:9px 0 2px; margin-top:6px; border-top:1px solid var(--slate-200); cursor:pointer; }
+  .an-detail-see-all-lbl { font-size:11px; font-weight:700; color:#0d9488; }
+  .an-detail-see-all-arr { font-size:11px; color:#0d9488; }
 
   .inst-header { padding: 24px 20px 0; }
   .inst-summary { margin: 12px 20px 0; display: flex; gap: 8px; flex-wrap: wrap; }
@@ -723,9 +730,9 @@
     <div class="card" style="padding:12px 14px"><div style="font-size:9px;color:var(--slate-400);margin-bottom:4px">Net savings</div><div style="font-size:16px;font-weight:700;color:var(--slate-900)" id="an-net">฿0</div></div>
     <div class="card" style="padding:12px 14px"><div style="font-size:9px;color:var(--slate-400);margin-bottom:4px">Savings rate</div><div style="font-size:16px;font-weight:700;color:var(--slate-900)" id="an-rate">0%</div></div>
   </div>
-  <div class="cat-section">
-    <div class="sec-hd"><span class="section-label">Expenses by category</span></div>
-    <div class="an-donut-wrap" style="padding:4px 20px 8px">
+  <div class="an-donut-card">
+    <div class="an-donut-card-header">Spending by category</div>
+    <div class="an-donut-wrap" style="padding:8px 14px 10px">
       <svg id="an-donut-svg" width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0;cursor:pointer" onclick="handleDonutSvgTap(event)">
         <g id="an-donut-arcs"></g>
         <text id="an-donut-center-pct" x="55" y="48" text-anchor="middle" font-size="15" font-weight="700" fill="#0f172a">0%</text>
@@ -734,14 +741,20 @@
       <div class="an-donut-legend" id="an-donut-legend"></div>
     </div>
   </div>
-  <div class="an-donut-detail" id="an-donut-detail">
-    <div class="an-detail-header"><div class="an-detail-dot" id="an-detail-dot"></div><div class="an-detail-name" id="an-detail-name">—</div><span class="an-detail-hint">tap again to close</span></div>
-    <div class="an-detail-stats">
-      <div class="an-detail-stat"><div class="an-detail-stat-val" id="an-detail-amt">฿0</div><div class="an-detail-stat-lbl">Total spent</div></div>
-      <div class="an-detail-stat"><div class="an-detail-stat-val" id="an-detail-pct">0%</div><div class="an-detail-stat-lbl">Of expenses</div></div>
-      <div class="an-detail-stat"><div class="an-detail-stat-val" id="an-detail-count">0</div><div class="an-detail-stat-lbl">Transactions</div></div>
+  <div class="an-donut-detail an-donut-card" id="an-donut-detail" style="margin-top:8px">
+    <div class="an-detail-inner">
+      <div class="an-detail-header"><div class="an-detail-dot" id="an-detail-dot"></div><div class="an-detail-name" id="an-detail-name">—</div><span class="an-detail-hint">tap again to close</span></div>
+      <div class="an-detail-stats">
+        <div class="an-detail-stat"><div class="an-detail-stat-val" id="an-detail-amt">฿0</div><div class="an-detail-stat-lbl">Total spent</div></div>
+        <div class="an-detail-stat"><div class="an-detail-stat-val" id="an-detail-pct">0%</div><div class="an-detail-stat-lbl">Of expenses</div></div>
+        <div class="an-detail-stat"><div class="an-detail-stat-val" id="an-detail-count">0</div><div class="an-detail-stat-lbl">Transactions</div></div>
+      </div>
+      <div class="an-detail-txlist" id="an-detail-txlist"></div>
+      <div class="an-detail-see-all" id="an-detail-see-all" onclick="donutGoToHistory()">
+        <span class="an-detail-see-all-lbl" id="an-detail-see-all-lbl">See all in History</span>
+        <span class="an-detail-see-all-arr">→</span>
+      </div>
     </div>
-    <div class="an-detail-txlist" id="an-detail-txlist"></div>
   </div>
   <div style="margin:12px 20px 0">
     <div class="sec-hd" style="margin-bottom:8px"><span class="section-label" id="an-year-label">Yearly overview</span></div>
@@ -962,7 +975,7 @@
 <!-- HISTORY -->
 <div class="page" id="page-history">
   <div style="padding:24px 20px 0;display:flex;align-items:center;gap:12px">
-    <button onclick="goTo('home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div><div class="meta">All transactions</div><div class="page-title">History</div></div>
   </div>
   <div style="margin:12px 20px 0;display:flex;align-items:center;justify-content:space-between">
@@ -1314,6 +1327,7 @@ function changePin() {
 
 function goTo(page) {
   const currentPage = document.querySelector(".page.active");
+  if (currentPage) _prevPage = currentPage.id.replace("page-", "");
   if (currentPage && currentPage.id === "page-history" && page !== "history") {
     histFilter = "all";
     ["hist-filter-type","hist-filter-year","hist-filter-month","hist-filter-cat","hist-search"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "hist-filter-type" ? "all" : ""; });
@@ -1338,6 +1352,7 @@ function goTo(page) {
 }
 
 let histFilter = "all";
+let _prevPage = "home";
 function onHistTypeChange() { histFilter = document.getElementById("hist-filter-type").value; document.getElementById("hist-filter-cat").value = ""; buildHistCategoryDropdown(); renderHistory(); }
 function toggleHistAdv() { const panel=document.getElementById("hist-adv-panel"),btn=document.getElementById("hist-adv-btn"); const isOpen=panel.classList.toggle("open"); btn.classList.toggle("active",isOpen); if(isOpen)buildHistFilterDropdowns(); }
 function buildHistFilterDropdowns() { buildHistYearDropdown(); buildHistCategoryDropdown(); }
@@ -1814,8 +1829,35 @@ function openDonutDetail(idx) {
   document.getElementById("an-donut-center-pct").textContent=pct+"%"; document.getElementById("an-donut-center-pct").setAttribute("fill",color); document.getElementById("an-donut-center-lbl").textContent=catName.length>9?catName.slice(0,9)+"…":catName; document.getElementById("an-donut-center-lbl").setAttribute("fill","#334155");
   const arcEls=document.getElementById("an-donut-arcs").querySelectorAll("circle"); arcEls.forEach((el,i)=>{el.style.opacity=i===idx?"1":"0.25";});
   document.querySelectorAll(".an-donut-item").forEach((el,i)=>{el.classList.toggle("selected",i===idx);el.classList.toggle("dimmed",i!==idx);});
+  const seeAllLbl = document.getElementById("an-detail-see-all-lbl");
+  if (seeAllLbl) seeAllLbl.textContent = "See all " + catName + " in History";
   document.getElementById("an-donut-detail").classList.add("visible");
 }
+function donutGoToHistory() {
+  const sorted = window._anSorted || [];
+  if (_activeDonutIdx < 0 || !sorted[_activeDonutIdx]) return;
+  const cat = sorted[_activeDonutIdx][0];
+  const mo = analyticsMonth, yr = analyticsYear;
+  closeDonutDetail();
+  // Set history filters: Expense type, this category, analytics month+year
+  histFilter = "Expense";
+  const typeEl = document.getElementById("hist-filter-type");
+  const catEl  = document.getElementById("hist-filter-cat");
+  const moEl   = document.getElementById("hist-filter-month");
+  const yrEl   = document.getElementById("hist-filter-year");
+  if (typeEl) typeEl.value = "Expense";
+  buildHistCategoryDropdown();
+  if (catEl)  catEl.value  = cat;
+  if (moEl)   moEl.value   = String(mo);
+  if (yrEl)   yrEl.value   = String(yr);
+  // Open the advanced filter panel so the pill is visible
+  const panel = document.getElementById("hist-adv-panel");
+  const btn   = document.getElementById("hist-adv-btn");
+  if (panel) panel.classList.add("open");
+  if (btn)   btn.classList.add("active");
+  goTo("history");
+}
+
 function closeDonutDetail() {
   _activeDonutIdx=-1; document.getElementById("an-donut-detail").classList.remove("visible");
   const savedPctEl=document.getElementById("an-donut-center-pct"),savedLblEl=document.getElementById("an-donut-center-lbl");
