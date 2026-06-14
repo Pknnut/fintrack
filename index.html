@@ -437,6 +437,37 @@
   .recurring-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); margin-top: 10px; }
   .recurring-toggle-lbl { font-size: 12px; font-weight: 600; color: var(--slate-700); }
   .recurring-toggle-sub { font-size: 10px; color: var(--slate-400); margin-top: 1px; }
+  .cal-page-bar { background: #0f172a; padding: 12px 16px 10px; display: flex; align-items: flex-end; justify-content: space-between; }
+  .cal-page-nav { display: flex; align-items: center; gap: 8px; }
+  .cal-page-nav-btn { width: 28px; height: 28px; border-radius: 8px; background: #1e293b; border: none; cursor: pointer; font-size: 14px; color: #94a3b8; display: flex; align-items: center; justify-content: center; }
+  .cal-page-month { font-size: 13px; font-weight: 600; color: #fff; min-width: 84px; text-align: center; }
+  .cal-summary { display: flex; gap: 6px; padding: 10px 14px 6px; }
+  .cal-summ-item { flex: 1; background: var(--white); border: 0.5px solid var(--slate-200); border-radius: 10px; padding: 8px 10px; }
+  .cal-summ-lbl { font-size: 9px; color: var(--slate-400); margin-bottom: 2px; }
+  .cal-summ-val { font-size: 13px; font-weight: 700; }
+  .cal-grid-card { background: var(--white); border: 0.5px solid var(--slate-200); border-radius: 12px; margin: 0 12px 8px; overflow: hidden; padding: 8px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+  .cal-dow { font-size: 9px; font-weight: 600; color: var(--slate-400); text-align: center; padding: 2px 0 5px; }
+  .cal-cell { display: flex; flex-direction: column; align-items: center; padding: 3px 1px; border-radius: 7px; cursor: default; min-height: 40px; }
+  .cal-cell.has-tx { cursor: pointer; }
+  .cal-cell.has-tx:hover { background: var(--slate-50); }
+  .cal-cell.selected { background: #f0fdfa; border: 0.5px solid #99f6e4; }
+  .cal-cell-num { font-size: 10px; color: var(--slate-700); width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: 500; }
+  .cal-cell-num.cal-today { background: #0d9488; color: #fff; border-radius: 50%; font-weight: 700; }
+  .cal-cell-dots { display: flex; gap: 2px; margin-top: 2px; justify-content: center; }
+  .cal-cell-dot { width: 4px; height: 4px; border-radius: 50%; }
+  .cal-cell-net { font-size: 8px; font-weight: 600; margin-top: 1px; }
+  .cal-detail { background: var(--white); border: 0.5px solid var(--slate-200); border-radius: 12px; margin: 0 12px 8px; overflow: hidden; }
+  .cal-detail-hd { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 0.5px solid var(--slate-100); }
+  .cal-detail-date { font-size: 14px; font-weight: 700; color: var(--slate-900); }
+  .cal-detail-net { font-size: 13px; font-weight: 700; }
+  .cal-grp-lbl { font-size: 9px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.07em; padding: 8px 14px 4px; }
+  .cal-tx-row { display: flex; align-items: center; gap: 10px; padding: 7px 14px; }
+  .cal-tx-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+  .cal-tx-desc { font-size: 12px; font-weight: 600; color: var(--slate-800); }
+  .cal-tx-cat { font-size: 10px; color: var(--slate-400); }
+  .cal-tx-amt { font-size: 12px; font-weight: 700; margin-left: auto; }
+  .cal-grp-total { display: flex; justify-content: flex-end; padding: 3px 14px 8px; font-size: 10px; font-weight: 600; border-bottom: 0.5px solid var(--slate-100); }
   .rec-page-item { display: flex; align-items: center; padding: 11px 16px; gap: 10px; border-bottom: 0.5px solid var(--slate-100); }
   .rec-page-item:last-child { border-bottom: none; }
   .rec-page-icon { width: 34px; height: 34px; border-radius: 8px; background: #eef2ff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
@@ -633,7 +664,7 @@
     <div class="balance-actions">
       <button class="bal-action c-hist" onclick="goTo('history')"><div class="bal-action-icon"><i class="ti ti-history"></i></div><div class="bal-action-label">History</div></button>
       <button class="bal-action c-budget" onclick="goTo('budget')"><div class="bal-action-icon"><i class="ti ti-wallet"></i></div><div class="bal-action-label">Budget</div></button>
-      <button class="bal-action c-export" onclick="exportData()"><div class="bal-action-icon"><i class="ti ti-file-export"></i></div><div class="bal-action-label">Export</div></button>
+      <button class="bal-action c-export" onclick="goTo('calendar')"><div class="bal-action-icon"><i class="ti ti-calendar"></i></div><div class="bal-action-label">Calendar</div></button>
       <button class="bal-action c-sync" onclick="manualSync()"><div class="bal-action-icon"><i class="ti ti-refresh"></i></div><div class="bal-action-label">Sync</div></button>
     </div>
   </div>
@@ -968,6 +999,40 @@
       <span id="rec-pending-label" style="font-size:12px;color:var(--slate-400)"></span>
       <button class="rec-log-all-btn" id="rec-log-all-btn" onclick="logAllRecurring()">Log all pending</button>
     </div>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- CALENDAR PAGE -->
+<div class="page" id="page-calendar">
+  <div class="cal-page-bar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:#1e293b;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div>
+        <div style="font-size:10px;color:#64748b">Monthly overview</div>
+        <div style="font-size:18px;font-weight:700;color:#fff">Calendar</div>
+      </div>
+    </div>
+    <div class="cal-page-nav">
+      <button class="cal-page-nav-btn" onclick="calChangePage(-1)">‹</button>
+      <span class="cal-page-month" id="cal-page-month-lbl">Jun 2026</span>
+      <button class="cal-page-nav-btn" onclick="calChangePage(1)">›</button>
+    </div>
+  </div>
+  <div class="cal-summary">
+    <div class="cal-summ-item"><div class="cal-summ-lbl">Income</div><div class="cal-summ-val" style="color:#16a34a" id="cal-summ-inc">฿0</div></div>
+    <div class="cal-summ-item"><div class="cal-summ-lbl">Expenses</div><div class="cal-summ-val" style="color:#ef4444" id="cal-summ-exp">฿0</div></div>
+    <div class="cal-summ-item"><div class="cal-summ-lbl">Transactions</div><div class="cal-summ-val" id="cal-summ-count">0</div></div>
+  </div>
+  <div class="cal-grid-card">
+    <div class="cal-grid" id="cal-page-grid"></div>
+  </div>
+  <div class="cal-detail" id="cal-detail" style="display:none">
+    <div class="cal-detail-hd">
+      <span class="cal-detail-date" id="cal-detail-date">—</span>
+      <span class="cal-detail-net" id="cal-detail-net"></span>
+    </div>
+    <div id="cal-detail-body"></div>
   </div>
   <div class="spacer"></div>
 </div>
@@ -1347,6 +1412,7 @@ function goTo(page) {
   if (page==="add")          setupAdd();
   if (page==="settings")     renderSettings();
   if (page==="recurring")    { _recEditIdx = null; renderRecurringPage(); }
+  if (page==="calendar")     renderCalendarPage();
   if (page==="history")      { histFilter="all"; document.getElementById("hist-search").value=""; document.getElementById("hist-adv-panel").classList.remove("open"); document.getElementById("hist-adv-btn").classList.remove("active"); if(document.getElementById("hist-filter-type"))document.getElementById("hist-filter-type").value="all"; buildHistFilterDropdowns(); renderHistory(); }
   if (page==="budget")       { closeBudgetDropdown(); renderBudget(); }
 }
@@ -3132,6 +3198,153 @@ async function logAllRecurring() {
   await bulkLogRecurring(due);
   renderRecurringPage();
   showToast(due.length + " items logged ✓");
+}
+
+// ══ CALENDAR PAGE ════════════════════════════════════════════
+let _calYear = new Date().getFullYear();
+let _calMonth = new Date().getMonth();
+let _calSelectedDate = null;
+
+const MO_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function calChangePage(dir) {
+  _calMonth += dir;
+  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+  if (_calMonth < 0)  { _calMonth = 11; _calYear--; }
+  _calSelectedDate = null;
+  renderCalendarPage();
+}
+
+function renderCalendarPage() {
+  const yr = _calYear, mo = _calMonth;
+  document.getElementById("cal-page-month-lbl").textContent = MO[mo] + " " + yr;
+
+  // Build day → txs map
+  const dayMap = {};
+  txs.forEach(t => {
+    const d = new Date(t.date);
+    if (d.getFullYear() !== yr || d.getMonth() !== mo) return;
+    const key = d.getDate();
+    if (!dayMap[key]) dayMap[key] = [];
+    dayMap[key].push(t);
+  });
+
+  // Summary
+  const monthArr = txs.filter(t => { const d = new Date(t.date); return d.getFullYear()===yr && d.getMonth()===mo; });
+  const sumInc = monthArr.filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0);
+  const sumExp = monthArr.filter(t=>t.type==="Expense").reduce((s,t)=>s+t.amount,0);
+  document.getElementById("cal-summ-inc").textContent = fmt(sumInc);
+  document.getElementById("cal-summ-exp").textContent = fmt(sumExp);
+  document.getElementById("cal-summ-count").textContent = monthArr.length;
+
+  // Grid
+  const grid = document.getElementById("cal-page-grid");
+  grid.innerHTML = "";
+  ["M","T","W","T","F","S","S"].forEach(d => {
+    const el = document.createElement("div"); el.className = "cal-dow"; el.textContent = d; grid.appendChild(el);
+  });
+  const firstDay = new Date(yr, mo, 1).getDay();
+  const offset = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+  const today = new Date();
+  const isThisMonth = today.getFullYear() === yr && today.getMonth() === mo;
+
+  for (let i = 0; i < offset; i++) {
+    const el = document.createElement("div"); el.className = "cal-cell"; grid.appendChild(el);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dayTxs = dayMap[d] || [];
+    const el = document.createElement("div");
+    const isSelected = _calSelectedDate === d;
+    el.className = "cal-cell" + (dayTxs.length ? " has-tx" : "") + (isSelected ? " selected" : "");
+
+    const numEl = document.createElement("span");
+    numEl.className = "cal-cell-num" + (isThisMonth && d === today.getDate() ? " cal-today" : "");
+    numEl.textContent = d;
+    el.appendChild(numEl);
+
+    if (dayTxs.length) {
+      const inc = dayTxs.filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0);
+      const exp = dayTxs.filter(t=>t.type==="Expense").reduce((s,t)=>s+t.amount,0);
+      const net = inc - exp;
+      const dotsEl = document.createElement("div"); dotsEl.className = "cal-cell-dots";
+      if (exp > 0) { const dot = document.createElement("div"); dot.className="cal-cell-dot"; dot.style.background="#ef4444"; dotsEl.appendChild(dot); }
+      if (inc > 0) { const dot = document.createElement("div"); dot.className="cal-cell-dot"; dot.style.background="#16a34a"; dotsEl.appendChild(dot); }
+      el.appendChild(dotsEl);
+      const netEl = document.createElement("div");
+      netEl.className = "cal-cell-net";
+      netEl.style.color = net >= 0 ? "#16a34a" : "#ef4444";
+      netEl.textContent = (net >= 0 ? "+" : "-") + "฿" + Math.round(Math.abs(net));
+      el.appendChild(netEl);
+      el.onclick = () => calSelectDay(d, dayTxs);
+    }
+    grid.appendChild(el);
+  }
+
+  // Restore detail if day still selected
+  if (_calSelectedDate && dayMap[_calSelectedDate]) {
+    calRenderDetail(_calSelectedDate, dayMap[_calSelectedDate]);
+  } else {
+    document.getElementById("cal-detail").style.display = "none";
+  }
+}
+
+function calSelectDay(d, dayTxs) {
+  if (_calSelectedDate === d) {
+    _calSelectedDate = null;
+    document.getElementById("cal-detail").style.display = "none";
+    renderCalendarPage();
+    return;
+  }
+  _calSelectedDate = d;
+  renderCalendarPage();
+  calRenderDetail(d, dayTxs);
+}
+
+function calRenderDetail(d, dayTxs) {
+  const inc = dayTxs.filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0);
+  const exp = dayTxs.filter(t=>t.type==="Expense").reduce((s,t)=>s+t.amount,0);
+  const net = inc - exp;
+  document.getElementById("cal-detail-date").textContent = d + " " + MO[_calMonth] + " " + _calYear;
+  const netEl = document.getElementById("cal-detail-net");
+  netEl.textContent = (net >= 0 ? "+" : "-") + "฿" + Math.abs(net).toLocaleString("th-TH", {minimumFractionDigits:2,maximumFractionDigits:2});
+  netEl.style.color = net >= 0 ? "#16a34a" : "#ef4444";
+
+  const CAT_BG = {"Food & Dining":"#fef3c7","Entertainment":"#eef2ff","Transport":"#f0fdf4","Health":"#fdf4ff","Utilities":"#eff6ff","Shopping":"#fff7ed","Housing":"#f0fdf4","Education":"#f0f9ff","Travel":"#ecfdf5","Income":"#f0fdf4"};
+  const incTxs = dayTxs.filter(t=>t.type==="Income");
+  const expTxs = dayTxs.filter(t=>t.type==="Expense");
+
+  let html = "";
+  if (incTxs.length) {
+    html += '<div class="cal-grp-lbl">Income</div>';
+    incTxs.forEach(t => {
+      const catName = (t.category||"").replace(/^\S+\s/,"");
+      const bg = CAT_BG[catName] || "#f0fdf4";
+      html += '<div class="cal-tx-row">' +
+        '<div class="cal-tx-icon" style="background:' + bg + '">' + (t.category||"").match(/^\S+/)?.[0] + '</div>' +
+        '<div><div class="cal-tx-desc">' + (t.desc||t.description||"") + '</div><div class="cal-tx-cat">' + catName + '</div></div>' +
+        '<span class="cal-tx-amt" style="color:#16a34a">+' + fmt(t.amount) + '</span>' +
+        '</div>';
+    });
+    const incTotal = incTxs.reduce((s,t)=>s+t.amount,0);
+    // total line removed — net shown in header
+  }
+  if (expTxs.length) {
+    html += '<div class="cal-grp-lbl">Expenses</div>';
+    expTxs.forEach(t => {
+      const catName = (t.category||"").replace(/^\S+\s/,"");
+      const bg = CAT_BG[catName] || "#f8fafc";
+      html += '<div class="cal-tx-row">' +
+        '<div class="cal-tx-icon" style="background:' + bg + '">' + (t.category||"").match(/^\S+/)?.[0] + '</div>' +
+        '<div><div class="cal-tx-desc">' + (t.desc||t.description||"") + '</div><div class="cal-tx-cat">' + catName + '</div></div>' +
+        '<span class="cal-tx-amt" style="color:#ef4444">-' + fmt(t.amount) + '</span>' +
+        '</div>';
+    });
+    const expTotal = expTxs.reduce((s,t)=>s+t.amount,0);
+    // total line removed — net shown in header
+  }
+  document.getElementById("cal-detail-body").innerHTML = html;
+  document.getElementById("cal-detail").style.display = "block";
 }
 
 // ══ EXPORT ANALYTICS AS IMAGE ════════════════════════════════
