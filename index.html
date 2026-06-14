@@ -504,6 +504,34 @@
   .rec-empty { text-align: center; padding: 40px 20px; color: var(--slate-400); font-size: 13px; }
   /* Export button on analytics */
 
+  .report-modal-overlay { position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px; }
+  .report-modal-overlay.hidden { display:none; }
+  .report-card { background:#0f172a;border-radius:20px;overflow:hidden;width:100%;max-width:360px; }
+  .report-card-hd { padding:18px 20px 14px;border-bottom:0.5px solid #1e293b;display:flex;align-items:center;justify-content:space-between; }
+  .report-brand { display:flex;align-items:center;gap:8px; }
+  .report-brand-dot { width:10px;height:10px;border-radius:50%;background:#0d9488;flex-shrink:0; }
+  .report-brand-name { font-size:13px;font-weight:700;color:#fff; }
+  .report-period { font-size:12px;color:#64748b; }
+  .report-net { padding:18px 20px 14px;border-bottom:0.5px solid #1e293b; }
+  .report-net-lbl { font-size:10px;color:#64748b;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px; }
+  .report-net-amt { font-size:34px;font-weight:700;letter-spacing:-1px;margin-bottom:2px; }
+  .report-net-sub { font-size:11px;color:#64748b; }
+  .report-stats { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#1e293b;border-bottom:0.5px solid #1e293b; }
+  .report-stat { background:#0f172a;padding:12px 16px; }
+  .report-stat-lbl { font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px; }
+  .report-stat-val { font-size:16px;font-weight:700; }
+  .report-stat-sub { font-size:10px;color:#475569;margin-top:2px; }
+  .report-highlights { padding:14px 20px;border-bottom:0.5px solid #1e293b;display:flex;flex-direction:column;gap:8px; }
+  .report-hl-row { display:flex;align-items:center;justify-content:space-between; }
+  .report-hl-lbl { font-size:11px;color:#64748b;display:flex;align-items:center;gap:6px; }
+  .report-hl-val { font-size:11px;font-weight:600;color:#cbd5e1; }
+  .report-bar-bg { height:4px;background:#1e293b;border-radius:2px;margin-top:8px;overflow:hidden; }
+  .report-bar { height:4px;background:#0d9488;border-radius:2px; }
+  .report-ft { padding:12px 20px;display:flex;align-items:center;justify-content:space-between; }
+  .report-ft-text { font-size:10px;color:#334155; }
+  .report-actions { display:flex;gap:8px; }
+  .report-save-btn { font-size:11px;font-weight:700;background:#0d9488;color:#fff;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;display:flex;align-items:center;gap:5px; }
+  .report-close-btn { font-size:11px;font-weight:700;background:#1e293b;color:#94a3b8;border:none;border-radius:20px;padding:6px 14px;cursor:pointer; }
   .cdd-wrap { position: relative; }
   .cdd-trigger { width: 100%; border: 1.5px solid var(--slate-200); border-radius: var(--radius-sm); padding: 10px 36px 10px 12px; font-size: 13px; font-family: inherit; color: var(--slate-900); background: var(--slate-50); cursor: pointer; display: flex; align-items: center; gap: 8px; position: relative; text-align: left; }
   .cdd-trigger.open { border-color: var(--teal); background: #f0fdfa; }
@@ -565,6 +593,41 @@
 </div>
 
 <!-- MODAL: Edit goal -->
+<div class="report-modal-overlay hidden" id="modal-report">
+  <div>
+    <div class="report-card" id="report-card-inner">
+      <div class="report-card-hd">
+        <div class="report-brand"><div class="report-brand-dot"></div><span class="report-brand-name">FinTrack</span></div>
+        <span class="report-period" id="report-period">—</span>
+      </div>
+      <div class="report-net">
+        <div class="report-net-lbl">Net savings</div>
+        <div class="report-net-amt" id="report-net-amt">฿0</div>
+        <div class="report-net-sub">Income minus expenses this month</div>
+      </div>
+      <div class="report-stats">
+        <div class="report-stat"><div class="report-stat-lbl">Income</div><div class="report-stat-val" style="color:#22c55e" id="report-inc">฿0</div><div class="report-stat-sub" id="report-inc-sub"></div></div>
+        <div class="report-stat"><div class="report-stat-lbl">Expenses</div><div class="report-stat-val" style="color:#ef4444" id="report-exp">฿0</div><div class="report-stat-sub" id="report-exp-sub"></div></div>
+        <div class="report-stat"><div class="report-stat-lbl">Savings rate</div><div class="report-stat-val" style="color:#fff" id="report-rate">0%</div><div class="report-stat-sub">of income saved</div></div>
+        <div class="report-stat"><div class="report-stat-lbl">Top category</div><div class="report-stat-val" style="color:#fff;font-size:13px" id="report-top-cat">—</div><div class="report-stat-sub" id="report-top-cat-sub"></div></div>
+      </div>
+      <div class="report-highlights">
+        <div class="report-hl-row"><span class="report-hl-lbl"><i class="ti ti-trending-up" style="font-size:13px;color:#0d9488" aria-hidden="true"></i> Biggest income</span><span class="report-hl-val" id="report-big-inc">—</span></div>
+        <div class="report-hl-row"><span class="report-hl-lbl"><i class="ti ti-arrow-up" style="font-size:13px;color:#ef4444" aria-hidden="true"></i> Biggest expense</span><span class="report-hl-val" id="report-big-exp">—</span></div>
+        <div class="report-hl-row"><span class="report-hl-lbl"><i class="ti ti-piggy-bank" style="font-size:13px;color:#0d9488" aria-hidden="true"></i> Savings rate</span><span class="report-hl-val" id="report-rate2">0%</span></div>
+        <div class="report-bar-bg"><div class="report-bar" id="report-bar"></div></div>
+      </div>
+      <div class="report-ft">
+        <span class="report-ft-text">FinTrack · pknnut.github.io</span>
+        <div class="report-actions">
+          <button class="report-close-btn" onclick="closeModal('report')">Close</button>
+          <button class="report-save-btn" onclick="saveReportImage()"><i class="ti ti-download" style="font-size:12px" aria-hidden="true"></i> Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modal-add-recurring">
   <div class="modal-sheet" style="padding-bottom:48px">
     <div class="modal-title">Add recurring</div>
@@ -782,6 +845,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div class="an-header-title">Analytics</div>
       <div style="display:flex;align-items:center;gap:8px">
+<button class="period-today-btn" onclick="showMonthlyReport()" style="padding:6px 10px;font-size:11px">Report</button>
 <button class="period-today-btn" onclick="analyticsGoToday()" style="padding:6px 10px;font-size:11px">Today</button>
         <button class="an-filter-chip" id="an-filter-chip" onclick="toggleAnalyticsDropdown()" aria-label="Select period">
           <i class="ti ti-calendar"></i><span id="an-filter-label">Jun 2026</span><i class="ti ti-chevron-down"></i>
@@ -3460,6 +3524,61 @@ function initCalSwipeToDelete() {
   });
 }
 
+// ══ MONTHLY REPORT CARD ══════════════════════════════════════
+function showMonthlyReport() {
+  const mo = analyticsMonth, yr = analyticsYear;
+  const arr = monthTxs(mo, yr).filter(t => !t.fromGoal);
+  const incTxs = arr.filter(t => t.type === "Income");
+  const expTxs = arr.filter(t => t.type === "Expense");
+  const inc = incTxs.reduce((s,t) => s+t.amount, 0);
+  const exp = expTxs.reduce((s,t) => s+t.amount, 0);
+  const net = inc - exp;
+  const rate = inc > 0 ? Math.round((net/inc)*100) : 0;
+
+  // Top category
+  const catMap = {};
+  expTxs.forEach(t => { catMap[t.category] = (catMap[t.category]||0) + t.amount; });
+  const topCat = Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0];
+  const topCatName = topCat ? topCat[0].replace(/^\S+\s/,"") : "—";
+  const topCatPct  = topCat && exp > 0 ? Math.round((topCat[1]/exp)*100) : 0;
+
+  // Biggest transactions
+  const bigInc = incTxs.sort((a,b)=>b.amount-a.amount)[0];
+  const bigExp = expTxs.sort((a,b)=>b.amount-a.amount)[0];
+
+  document.getElementById("report-period").textContent = MO[mo] + " " + yr;
+  const netEl = document.getElementById("report-net-amt");
+  netEl.textContent = (net >= 0 ? "+" : "-") + "฿" + Math.abs(net).toLocaleString("th-TH",{minimumFractionDigits:0,maximumFractionDigits:0});
+  netEl.style.color = net >= 0 ? "#0d9488" : "#ef4444";
+  document.getElementById("report-inc").textContent = fmt(inc);
+  document.getElementById("report-inc-sub").textContent = incTxs.length + " source" + (incTxs.length!==1?"s":"");
+  document.getElementById("report-exp").textContent = fmt(exp);
+  document.getElementById("report-exp-sub").textContent = expTxs.length + " transaction" + (expTxs.length!==1?"s":"");
+  document.getElementById("report-rate").textContent = rate + "%";
+  document.getElementById("report-rate2").textContent = rate + "%";
+  document.getElementById("report-top-cat").textContent = topCatName;
+  document.getElementById("report-top-cat-sub").textContent = topCat ? fmt(topCat[1]) + " · " + topCatPct + "%" : "—";
+  document.getElementById("report-big-inc").textContent = bigInc ? (bigInc.desc||"") + " · " + fmt(bigInc.amount) : "—";
+  document.getElementById("report-big-exp").textContent = bigExp ? (bigExp.desc||"") + " · " + fmt(bigExp.amount) : "—";
+  document.getElementById("report-bar").style.width = Math.min(rate, 100) + "%";
+  openModal("report");
+}
+
+async function saveReportImage() {
+  const card = document.getElementById("report-card-inner");
+  if (!card || typeof html2canvas === "undefined") { showToast("Saving not available"); return; }
+  showToast("Generating image…");
+  try {
+    const canvas = await html2canvas(card, { backgroundColor: "#0f172a", scale: 2, logging: false, useCORS: true });
+    const a = document.createElement("a");
+    const mo = analyticsMonth, yr = analyticsYear;
+    a.download = "fintrack-report-" + MO[mo].toLowerCase() + "-" + yr + ".png";
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+    showToast("Report saved ✓");
+  } catch(e) { showToast("Could not save image"); }
+}
+
 // ══ CUSTOM DROPDOWN (category selects) ═══════════════════════
 // IDs that use the custom dropdown
 const CDD_IDS = ["f-category","edit-category","g-category","eg-category","i-category","ei-category","modal-budget-cat","rec-add-cat"];
@@ -3652,5 +3771,6 @@ function calOnSearch() {
 
 startup();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
