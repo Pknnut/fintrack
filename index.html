@@ -1267,6 +1267,8 @@ const MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","D
 const CAT_COLORS = ["#6366f1","#0d9488","#f59e0b","#ef4444","#22c55e","#8b5cf6","#ec4899","#f97316"];
 
 let txs = JSON.parse(localStorage.getItem("ft_txs") || "[]");
+// Data integrity: strip fromGoal:true from txs that have no goalName (legacy bad data)
+txs = txs.map(t => t.fromGoal && !t.goalName ? {...t, fromGoal: false} : t);
 let settings = JSON.parse(localStorage.getItem("ft_settings") || "{}");
 const _savedGoals = JSON.parse(localStorage.getItem("ft_goals") || "null");
 const _savedInsts = JSON.parse(localStorage.getItem("ft_insts") || "null");
@@ -1482,7 +1484,7 @@ async function fetchFromSheets(silent = false) {
       });
       localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
       const localOnly = txs.filter(t => !t.rowId && unsyncedIds.includes(t.id));
-      txs = [...data.transactions.map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal||false,goalName:t.goalName||""})),...localOnly];
+      txs = [...data.transactions.map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal===true||t.fromGoal==="true"||t.fromGoal===1,goalName:t.goalName||""})),...localOnly];
       saveTxs(); settings.lastPull = new Date().toISOString(); saveSettings();
       if (!silent) { setSyncStatus("ok"); showToast(data.transactions.length + " transactions pulled ✓"); document.getElementById("last-pull-label").textContent = "Last pulled: just now"; }
       renderHome(); renderAnalytics(); return true;
