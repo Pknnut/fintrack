@@ -504,6 +504,20 @@
   .rec-empty { text-align: center; padding: 40px 20px; color: var(--slate-400); font-size: 13px; }
   /* Export button on analytics */
 
+  .cdd-wrap { position: relative; }
+  .cdd-trigger { width: 100%; border: 1.5px solid var(--slate-200); border-radius: var(--radius-sm); padding: 10px 36px 10px 12px; font-size: 13px; font-family: inherit; color: var(--slate-900); background: var(--slate-50); cursor: pointer; display: flex; align-items: center; gap: 8px; position: relative; text-align: left; }
+  .cdd-trigger.open { border-color: var(--teal); background: #f0fdfa; }
+  .cdd-trigger-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--slate-400); font-size: 14px; pointer-events: none; transition: transform 0.15s; }
+  .cdd-trigger.open .cdd-trigger-arrow { transform: translateY(-50%) rotate(180deg); color: var(--teal); }
+  .cdd-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--white); border: 1.5px solid var(--slate-200); border-radius: 10px; overflow: hidden; z-index: 200; max-height: 220px; overflow-y: auto; box-shadow: 0 4px 16px rgba(15,23,42,0.12); display: none; }
+  .cdd-list.open { display: block; }
+  .cdd-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 0.5px solid var(--slate-100); cursor: pointer; }
+  .cdd-item:last-child { border-bottom: none; }
+  .cdd-item:hover { background: var(--slate-50); }
+  .cdd-item.selected { background: #f0fdfa; }
+  .cdd-item-icon { width: 28px; height: 28px; border-radius: 7px; background: var(--slate-100); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .cdd-item-name { font-size: 13px; color: var(--slate-700); flex: 1; }
+  .cdd-item-check { font-size: 13px; color: var(--teal); font-weight: 700; }
   .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
   .modal-overlay.hidden { display: none; }
   .modal-sheet { background: var(--white); border-radius: 20px 20px 0 0; width: 100%; max-width: 430px; padding: 24px 20px 40px; }
@@ -551,6 +565,30 @@
 </div>
 
 <!-- MODAL: Edit goal -->
+<div class="modal-overlay hidden" id="modal-add-recurring">
+  <div class="modal-sheet" style="padding-bottom:48px">
+    <div class="modal-title">Add recurring</div>
+    <div class="modal-sub">This will appear on your recurring list every month</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button id="rec-add-type-expense" onclick="setRecAddType('Expense')" style="flex:1;padding:8px;border-radius:8px;border:2px solid #ef4444;background:#fef2f2;color:#991b1b;font-size:12px;font-weight:700;cursor:pointer">Expense</button>
+      <button id="rec-add-type-income" onclick="setRecAddType('Income')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--slate-200);background:var(--white);color:var(--slate-400);font-size:12px;font-weight:700;cursor:pointer">Income</button>
+    </div>
+    <div style="margin-bottom:10px"><label style="font-size:10px;font-weight:700;color:var(--slate-400);letter-spacing:0.05em">CATEGORY</label>
+      <div class="cdd-wrap" id="cdd-wrap-rec-add-cat"><button type="button" class="cdd-trigger" id="cdd-trigger-rec-add-cat" onclick="cddToggle('rec-add-cat')"><span id="cdd-label-rec-add-cat">Select category</span><i class="ti ti-chevron-down cdd-trigger-arrow" aria-hidden="true"></i></button><div class="cdd-list" id="cdd-list-rec-add-cat"></div></div><select id="rec-add-cat" style="display:none"></select>
+    </div>
+    <div style="margin-bottom:10px"><label style="font-size:10px;font-weight:700;color:var(--slate-400);letter-spacing:0.05em">DESCRIPTION</label>
+      <input id="rec-add-desc" type="text" placeholder="e.g. Netflix, Rent, Gym" style="width:100%;margin-top:4px;border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-family:inherit;background:var(--white);color:var(--slate-900);outline:none">
+    </div>
+    <div style="margin-bottom:16px"><label style="font-size:10px;font-weight:700;color:var(--slate-400);letter-spacing:0.05em">AMOUNT (฿)</label>
+      <input id="rec-add-amount" type="number" placeholder="0.00" style="width:100%;margin-top:4px;border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-family:inherit;background:var(--white);color:var(--slate-900);outline:none">
+    </div>
+    <div style="margin-bottom:16px"><label style="font-size:10px;font-weight:700;color:var(--slate-400);letter-spacing:0.05em">NOTES (optional)</label>
+      <input id="rec-add-notes" type="text" placeholder="Optional note" style="width:100%;margin-top:4px;border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-family:inherit;background:var(--white);color:var(--slate-900);outline:none">
+    </div>
+    <div class="modal-btn-row"><button class="modal-cancel" onclick="closeModal('add-recurring')">Cancel</button><button class="modal-confirm" id="rec-add-confirm-btn" style="background:#0d9488" onclick="confirmAddRecurring()">Add recurring</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modal-edit-goal">
   <div class="modal-sheet" style="padding-bottom:48px">
     <div class="modal-title">Edit goal</div>
@@ -571,12 +609,12 @@
     <div class="modal-title">Edit instalment</div>
     <div class="modal-sub">Update your instalment plan</div>
     <div class="form-field" style="margin-bottom:10px"><label>ITEM NAME</label><input id="ei-name" type="text" placeholder="e.g. 📱 iPhone 16" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit"></div>
-    <div class="form-field" style="margin-bottom:10px"><label>CATEGORY</label><select id="ei-category" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none"></select></div>
+    <div class="form-field" style="margin-bottom:10px"><label>CATEGORY</label><div class="cdd-wrap" id="cdd-wrap-ei-category"><button type="button" class="cdd-trigger" id="cdd-trigger-ei-category" onclick="cddToggle('ei-category')"><span id="cdd-label-ei-category">Select category</span><i class="ti ti-chevron-down cdd-trigger-arrow" aria-hidden="true"></i></button><div class="cdd-list" id="cdd-list-ei-category"></div></div><select id="ei-category" style="display:none"></select></div>
     <div class="form-field" style="margin-bottom:10px"><label>TOTAL AMOUNT (฿)</label><input id="ei-total" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0" style="width:100%;border:none;outline:none;font-size:18px;font-weight:700;color:var(--slate-900);background:none;font-family:inherit"></div>
     <div class="form-field" style="margin-bottom:10px"><label>MONTHLY PAYMENT (฿)</label><input id="ei-monthly" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit"></div>
     <div class="form-field" style="margin-bottom:10px"><label>TOTAL MONTHS</label><input id="ei-total-mo" type="number" inputmode="numeric" pattern="[0-9]*" min="1" placeholder="e.g. 12" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit"></div>
     <div class="form-field" style="margin-bottom:10px"><label>MONTHS ALREADY PAID</label><input id="ei-paid" type="number" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="0" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit"></div>
-    <div class="form-field" style="margin-bottom:14px"><label>CATEGORY</label><select id="eg-category"></select></div>
+    <div class="form-field" style="margin-bottom:14px"><label>CATEGORY</label><div class="cdd-wrap" id="cdd-wrap-eg-category"><button type="button" class="cdd-trigger" id="cdd-trigger-eg-category" onclick="cddToggle('eg-category')"><span id="cdd-label-eg-category">Select category</span><i class="ti ti-chevron-down cdd-trigger-arrow" aria-hidden="true"></i></button><div class="cdd-list" id="cdd-list-eg-category"></div></div><select id="eg-category" style="display:none"></select></div>
     <div class="form-field" style="margin-bottom:14px"><label>COLOR</label><select id="ei-color" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none"><option value="#6366f1">🟣 Indigo</option><option value="#0d9488">🩵 Teal</option><option value="#f59e0b">🟡 Amber</option><option value="#22c55e">🟢 Green</option><option value="#8b5cf6">💜 Purple</option><option value="#ef4444">🔴 Red</option></select></div>
     <div class="modal-btn-row"><button class="modal-cancel" onclick="closeModal('edit-inst')">Cancel</button><button class="modal-confirm" style="background:#6366f1" onclick="confirmEditInst()">Save changes</button></div>
   </div>
@@ -592,7 +630,7 @@
       <button id="edit-btn-income"  onclick="setEditType('Income')"  style="flex:1;padding:9px;text-align:center;border-radius:9px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:none;color:var(--slate-400);transition:all 0.2s">Income</button>
     </div>
     <div class="form-field" style="margin-bottom:10px"><label>AMOUNT (THB)</label><input id="edit-amount" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0" style="width:100%;border:none;outline:none;font-size:22px;font-weight:700;color:var(--slate-900);background:none;font-family:inherit"></div>
-    <div class="form-field" style="margin-bottom:10px"><label>CATEGORY</label><select id="edit-category" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none"></select></div>
+    <div class="form-field" style="margin-bottom:10px"><label>CATEGORY</label><div class="cdd-wrap" id="cdd-wrap-edit-category"><button type="button" class="cdd-trigger" id="cdd-trigger-edit-category" onclick="cddToggle('edit-category')"><span id="cdd-label-edit-category">Select category</span><i class="ti ti-chevron-down cdd-trigger-arrow" aria-hidden="true"></i></button><div class="cdd-list" id="cdd-list-edit-category"></div></div><select id="edit-category" style="display:none"></select></div>
     <div class="form-field" style="margin-bottom:10px"><label>DESCRIPTION</label><input id="edit-desc" type="text" placeholder="e.g. Grab delivery" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit"></div>
     <div class="form-field" style="margin-bottom:10px"><label>DATE</label><div style="display:flex;gap:8px"><select id="edit-date-d" style="flex:1;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select><select id="edit-date-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select><select id="edit-date-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select></div></div>
     <div class="form-field" style="margin-bottom:14px"><label>NOTES (optional)</label><input id="edit-notes" type="text" placeholder="Optional note" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit"></div>
@@ -637,7 +675,7 @@
   <div class="modal-sheet">
     <div class="modal-title">Add budget category</div>
     <div class="modal-sub">Choose a category and set a monthly limit</div>
-    <div class="form-field" style="margin-bottom:10px"><label>CATEGORY</label><select id="modal-budget-cat" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none"></select></div>
+    <div class="form-field" style="margin-bottom:10px"><label>CATEGORY</label><div class="cdd-wrap" id="cdd-wrap-modal-budget-cat"><button type="button" class="cdd-trigger" id="cdd-trigger-modal-budget-cat" onclick="cddToggle('modal-budget-cat')"><span id="cdd-label-modal-budget-cat">Select category</span><i class="ti ti-chevron-down cdd-trigger-arrow" aria-hidden="true"></i></button><div class="cdd-list" id="cdd-list-modal-budget-cat"></div></div><select id="modal-budget-cat" style="display:none"></select></div>
     <input class="modal-input" id="modal-budget-new-amount" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="Monthly limit (฿)">
     <div class="modal-btn-row"><button class="modal-cancel" onclick="closeModal('budget-add')">Cancel</button><button class="modal-confirm" style="background:#0d9488" onclick="confirmAddBudget()">Add budget</button></div>
   </div>
@@ -871,7 +909,7 @@
     <div class="type-toggle"><button class="type-btn active-exp" id="btn-expense" onclick="setType('Expense')">Expense</button><button class="type-btn" id="btn-income" onclick="setType('Income')">Income</button></div>
     <div class="amount-input-wrap"><div class="amount-label">AMOUNT (THB)</div><input class="amount-input" id="f-amount" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"></div>
     <div class="form-section">
-      <div class="form-field"><label>CATEGORY</label><select id="f-category"></select></div>
+      <div class="form-field"><label>CATEGORY</label><div class="cdd-wrap" id="cdd-wrap-f-category"><button type="button" class="cdd-trigger" id="cdd-trigger-f-category" onclick="cddToggle('f-category')"><span id="cdd-label-f-category">Select category</span><i class="ti ti-chevron-down cdd-trigger-arrow" aria-hidden="true"></i></button><div class="cdd-list" id="cdd-list-f-category"></div></div><select id="f-category" style="display:none"></select></div>
       <div class="form-field"><label>DESCRIPTION</label><input id="f-desc" type="text" placeholder="e.g. Grab delivery"></div>
       <div class="form-field"><label>DATE</label><div style="display:flex;gap:8px"><select id="f-date-d" style="flex:1;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select><select id="f-date-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select><select id="f-date-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select></div></div>
       <div class="form-field"><label>NOTES (optional)</label><input id="f-notes" type="text" placeholder="Optional note"></div>
@@ -890,7 +928,7 @@
       <div class="form-field"><label>AMOUNT SAVED SO FAR (฿)</label><input id="g-saved" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"></div>
       <div class="form-field"><label>MONTHLY CONTRIBUTION (฿)</label><input id="g-monthly" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"></div>
       <div class="form-field"><label>TARGET DATE</label><div style="display:flex;gap:8px"><select id="g-due-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select><select id="g-due-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select></div></div>
-      <div class="form-field"><label>CATEGORY</label><select id="g-category"></select></div>
+      <div class="form-field"><label>CATEGORY</label><div class="cdd-wrap" id="cdd-wrap-g-category"><button type="button" class="cdd-trigger" id="cdd-trigger-g-category" onclick="cddToggle('g-category')"><span id="cdd-label-g-category">Select category</span><i class="ti ti-chevron-down cdd-trigger-arrow" aria-hidden="true"></i></button><div class="cdd-list" id="cdd-list-g-category"></div></div><select id="g-category" style="display:none"></select></div>
       <div class="form-field"><label>COLOR</label><select id="g-color"><option value="#22c55e,#ecfdf5">🟢 Green</option><option value="#6366f1,#eef2ff">🟣 Indigo</option><option value="#f59e0b,#fffbeb">🟡 Amber</option><option value="#0d9488,#ccfbf1">🩵 Teal</option><option value="#ef4444,#fef2f2">🔴 Red</option><option value="#8b5cf6,#f5f3ff">💜 Purple</option></select></div>
     </div>
     <button class="submit-btn" id="btn-add-goal" style="background:#22c55e" onclick="submitGoal()">Add Goal</button>
@@ -899,7 +937,7 @@
     <div class="amount-input-wrap"><div class="amount-label">TOTAL AMOUNT (THB)</div><input class="amount-input" id="i-total" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"></div>
     <div class="form-section">
       <div class="form-field"><label>ITEM NAME</label><input id="i-name" type="text" placeholder="e.g. 📱 iPhone 16"></div>
-      <div class="form-field"><label>CATEGORY</label><select id="i-category"></select></div>
+      <div class="form-field"><label>CATEGORY</label><div class="cdd-wrap" id="cdd-wrap-i-category"><button type="button" class="cdd-trigger" id="cdd-trigger-i-category" onclick="cddToggle('i-category')"><span id="cdd-label-i-category">Select category</span><i class="ti ti-chevron-down cdd-trigger-arrow" aria-hidden="true"></i></button><div class="cdd-list" id="cdd-list-i-category"></div></div><select id="i-category" style="display:none"></select></div>
       <div class="form-field"><label>MONTHLY PAYMENT (฿)</label><input id="i-monthly" type="number" inputmode="decimal" pattern="[0-9]*" min="0" placeholder="0"></div>
       <div class="form-field"><label>START DATE</label><div style="display:flex;gap:8px"><select id="i-start-d" style="flex:1;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select><select id="i-start-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select><select id="i-start-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select></div></div>
       <div class="form-field"><label>TOTAL MONTHS</label><input id="i-total-mo" type="number" inputmode="numeric" pattern="[0-9]*" min="1" placeholder="e.g. 12"></div>
@@ -1004,6 +1042,7 @@
   <div style="padding:20px 16px 0;display:flex;align-items:center;gap:12px">
     <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="flex:1"><div class="meta">Monthly</div><div class="page-title">Recurring</div></div>
+    <button onclick="openAddRecurringModal()" style="background:#0d9488;color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">+ Add</button>
   </div>
   <div style="margin:14px 16px 0;background:var(--white);border:0.5px solid var(--slate-200);border-radius:var(--radius);">
     <div id="rec-page-list"></div>
@@ -1546,9 +1585,9 @@ function openEditGoalModal(idx) {
   const colorVal=g.color+","+(g.bg||"#f1f5f9"),cSel=document.getElementById("eg-color");
   for(let i=0;i<cSel.options.length;i++)if(cSel.options[i].value===colorVal){cSel.selectedIndex=i;break;}
   const egCatSel=document.getElementById("eg-category");
-  egCatSel.innerHTML=EXPENSE_CATS.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
+  cddBuildList("eg-category", EXPENSE_CATS);
   const goalCat=GOALS[editGoalIdx].category||"";
-  for(let i=0;i<egCatSel.options.length;i++)if(egCatSel.options[i].value===goalCat){egCatSel.selectedIndex=i;break;}
+  cddSetValue("eg-category", goalCat);
   document.getElementById("modal-edit-goal").classList.remove("hidden"); setTimeout(()=>document.getElementById("eg-name").focus(),150);
 }
 async function confirmEditGoal() {
@@ -1566,8 +1605,8 @@ let editInstIdx = -1;
 function openEditInstModal(idx) {
   editInstIdx=idx; const p=INSTALLMENTS[idx];
   document.getElementById("ei-name").value=(p.icon&&p.icon!=="📦"?p.icon+" ":"")+p.name;
-  document.getElementById("ei-category").innerHTML=EXPENSE_CATS.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
-  const catSel=document.getElementById("ei-category"); for(let i=0;i<catSel.options.length;i++)if(catSel.options[i].value===p.cat){catSel.selectedIndex=i;break;}
+  cddBuildList("ei-category", EXPENSE_CATS);
+  cddSetValue("ei-category", p.cat);
   document.getElementById("ei-total").value=p.total||""; document.getElementById("ei-monthly").value=p.monthly||""; document.getElementById("ei-total-mo").value=p.total_mo||""; document.getElementById("ei-paid").value=p.paid||0;
   const colorSel=document.getElementById("ei-color"); for(let i=0;i<colorSel.options.length;i++)if(colorSel.options[i].value===p.color){colorSel.selectedIndex=i;break;}
   document.getElementById("modal-edit-inst").classList.remove("hidden"); setTimeout(()=>document.getElementById("ei-name").focus(),150);
@@ -1587,13 +1626,13 @@ function setEditType(type) {
   editTxType=type; const expBtn=document.getElementById("edit-btn-expense"),incBtn=document.getElementById("edit-btn-income");
   if(type==="Expense"){expBtn.style.background="var(--white)";expBtn.style.color="var(--red)";expBtn.style.boxShadow="0 1px 4px rgba(0,0,0,0.08)";incBtn.style.background="none";incBtn.style.color="var(--slate-400)";incBtn.style.boxShadow="none";}
   else{incBtn.style.background="var(--white)";incBtn.style.color="var(--green)";incBtn.style.boxShadow="0 1px 4px rgba(0,0,0,0.08)";expBtn.style.background="none";expBtn.style.color="var(--slate-400)";expBtn.style.boxShadow="none";}
-  const cats=type==="Income"?INCOME_CATS:EXPENSE_CATS; document.getElementById("edit-category").innerHTML=cats.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
+  const cats=type==="Income"?INCOME_CATS:EXPENSE_CATS; cddBuildList("edit-category", cats);
 }
 function openEditTxModal(id) {
   const tx=txs.find(t=>t.id===id); if(!tx)return;
   editTxId=id; editTxType=tx.type||"Expense"; setEditType(editTxType);
   document.getElementById("edit-amount").value=tx.amount||"";
-  const catSel=document.getElementById("edit-category"); for(let i=0;i<catSel.options.length;i++){if(catSel.options[i].value===tx.category){catSel.selectedIndex=i;break;}}
+  cddSetValue("edit-category", tx.category);
   document.getElementById("edit-desc").value=tx.desc||tx.description||""; document.getElementById("edit-notes").value=tx.notes||"";
   const now=new Date(),cy=now.getFullYear(); buildDaySelect("edit-date-d",1); buildMonthSelect("edit-date-m",1); buildYearSelect("edit-date-y",cy,3,0);
   if(tx.date){const parts=tx.date.split("-");if(parts.length===3){const y=parseInt(parts[0]),m=parseInt(parts[1]),d=parseInt(parts[2]),dSel=document.getElementById("edit-date-d"),mSel=document.getElementById("edit-date-m"),ySel=document.getElementById("edit-date-y");for(let i=0;i<dSel.options.length;i++)if(parseInt(dSel.options[i].value)===d){dSel.selectedIndex=i;break;}for(let i=0;i<mSel.options.length;i++)if(parseInt(mSel.options[i].value)===m){mSel.selectedIndex=i;break;}for(let i=0;i<ySel.options.length;i++)if(parseInt(ySel.options[i].value)===y){ySel.selectedIndex=i;break;}}}
@@ -2314,7 +2353,7 @@ function setupAdd() {
   ["f-amount","f-desc","f-notes","g-name","g-target","g-saved","g-monthly","i-name","i-total","i-monthly","i-total-mo"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("i-paid").value="0"; updateCats(); updateInstCats();
   const gCatSel=document.getElementById("g-category");
-  if(gCatSel)gCatSel.innerHTML=EXPENSE_CATS.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
+  cddBuildList("g-category", EXPENSE_CATS);
   isRecurring = false;
   const togRec = document.getElementById("toggle-recurring");
   if (togRec) togRec.className = "toggle";
@@ -2322,8 +2361,8 @@ function setupAdd() {
   document.getElementById("add-sync-dot").style.background=hasUrl?"#22c55e":"#cbd5e1";
   document.getElementById("add-sync-label").textContent=hasUrl&&settings.autosync?"Will sync to Google Sheets":"Will save locally only";
 }
-function updateCats() { const cats=currentType==="Income"?INCOME_CATS:EXPENSE_CATS; document.getElementById("f-category").innerHTML=cats.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join(""); }
-function updateInstCats() { document.getElementById("i-category").innerHTML=EXPENSE_CATS.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join(""); }
+function updateCats() { const cats=currentType==="Income"?INCOME_CATS:EXPENSE_CATS; cddBuildList("f-category", cats); }
+function updateInstCats() { cddBuildList("i-category", EXPENSE_CATS); }
 
 function initSwipeToDelete() {
   // Track which row is currently open so tapping elsewhere snaps it back
@@ -2776,7 +2815,7 @@ async function confirmSetBudget() {
 function openBudgetAddModal() {
   const existing=BUDGETS.map(b=>b.cat),available=EXPENSE_CATS.filter(c=>!existing.includes(c.e+" "+c.n));
   if(!available.length){showToast("All categories already have a budget");return;}
-  document.getElementById("modal-budget-cat").innerHTML=available.map(c=>'<option value="'+c.e+' '+c.n+'">'+c.e+' '+c.n+'</option>').join("");
+  cddBuildList("modal-budget-cat", available);
   document.getElementById("modal-budget-new-amount").value="";
   document.getElementById("modal-budget-add").classList.remove("hidden");
   setTimeout(()=>document.getElementById("modal-budget-new-amount").focus(),150);
@@ -3419,6 +3458,147 @@ function initCalSwipeToDelete() {
       renderCalendarPage();
     });
   });
+}
+
+// ══ CUSTOM DROPDOWN (category selects) ═══════════════════════
+// IDs that use the custom dropdown
+const CDD_IDS = ["f-category","edit-category","g-category","eg-category","i-category","ei-category","modal-budget-cat","rec-add-cat"];
+
+function cddBuildList(selectId, cats) {
+  const sel = document.getElementById(selectId);
+  const list = document.getElementById("cdd-list-" + selectId);
+  const label = document.getElementById("cdd-label-" + selectId);
+  if (!sel || !list) return;
+  // Populate hidden select
+  sel.innerHTML = cats.map(c => '<option value="' + c.e + " " + c.n + '">' + c.e + " " + c.n + '</option>').join("");
+  // Populate custom list
+  list.innerHTML = cats.map((c, i) =>
+    '<div class="cdd-item' + (i === 0 ? ' selected' : '') + '" onclick="cddSelect(\'' + selectId + '\',' + i + ')">' +
+      '<div class="cdd-item-icon">' + c.e + '</div>' +
+      '<span class="cdd-item-name">' + c.n + '</span>' +
+      (i === 0 ? '<span class="cdd-item-check">✓</span>' : '') +
+    '</div>'
+  ).join("");
+  // Set initial label
+  if (cats.length) {
+    label.textContent = cats[0].e + " " + cats[0].n;
+    sel.value = cats[0].e + " " + cats[0].n;
+  }
+}
+
+function cddToggle(selectId) {
+  const trigger = document.getElementById("cdd-trigger-" + selectId);
+  const list = document.getElementById("cdd-list-" + selectId);
+  if (!trigger || !list) return;
+  // Close all other open dropdowns first
+  CDD_IDS.forEach(id => {
+    if (id !== selectId) {
+      const t = document.getElementById("cdd-trigger-" + id);
+      const l = document.getElementById("cdd-list-" + id);
+      if (t) t.classList.remove("open");
+      if (l) l.classList.remove("open");
+    }
+  });
+  const isOpen = list.classList.toggle("open");
+  trigger.classList.toggle("open", isOpen);
+}
+
+function cddSelect(selectId, idx) {
+  const sel = document.getElementById(selectId);
+  const list = document.getElementById("cdd-list-" + selectId);
+  const label = document.getElementById("cdd-label-" + selectId);
+  const trigger = document.getElementById("cdd-trigger-" + selectId);
+  if (!sel || !list || !label) return;
+  const items = list.querySelectorAll(".cdd-item");
+  items.forEach((item, i) => {
+    item.classList.toggle("selected", i === idx);
+    const check = item.querySelector(".cdd-item-check");
+    if (check) check.remove();
+    if (i === idx) {
+      const chk = document.createElement("span");
+      chk.className = "cdd-item-check"; chk.textContent = "✓";
+      item.appendChild(chk);
+    }
+  });
+  const opts = sel.options;
+  if (opts[idx]) {
+    sel.value = opts[idx].value;
+    label.textContent = opts[idx].text;
+  }
+  list.classList.remove("open");
+  if (trigger) trigger.classList.remove("open");
+}
+
+function cddSetValue(selectId, value) {
+  const sel = document.getElementById(selectId);
+  const list = document.getElementById("cdd-list-" + selectId);
+  const label = document.getElementById("cdd-label-" + selectId);
+  if (!sel || !list || !label) return;
+  const idx = Array.from(sel.options).findIndex(o => o.value === value);
+  if (idx >= 0) cddSelect(selectId, idx);
+}
+
+// Close all dropdowns when clicking outside
+document.addEventListener("click", e => {
+  const insideAny = CDD_IDS.some(id => {
+    const wrap = document.getElementById("cdd-wrap-" + id);
+    return wrap && wrap.contains(e.target);
+  });
+  if (!insideAny) {
+    CDD_IDS.forEach(id => {
+      const t = document.getElementById("cdd-trigger-" + id);
+      const l = document.getElementById("cdd-list-" + id);
+      if (t) t.classList.remove("open");
+      if (l) l.classList.remove("open");
+    });
+  }
+});
+
+// ══ ADD RECURRING MODAL ═════════════════════════════════════
+let _recAddType = "Expense";
+
+function openAddRecurringModal() {
+  _recAddType = "Expense";
+  setRecAddType("Expense");
+  document.getElementById("rec-add-desc").value = "";
+  document.getElementById("rec-add-amount").value = "";
+  document.getElementById("rec-add-notes").value = "";
+  openModal("add-recurring");
+}
+
+function setRecAddType(type) {
+  _recAddType = type;
+  const expBtn = document.getElementById("rec-add-type-expense");
+  const incBtn = document.getElementById("rec-add-type-income");
+  const confirmBtn = document.getElementById("rec-add-confirm-btn");
+  const cats = type === "Income" ? INCOME_CATS : EXPENSE_CATS;
+  cddBuildList("rec-add-cat", cats);
+  if (type === "Expense") {
+    expBtn.style.border = "2px solid #ef4444"; expBtn.style.background = "#fef2f2"; expBtn.style.color = "#991b1b";
+    incBtn.style.border = "1.5px solid var(--slate-200)"; incBtn.style.background = "var(--white)"; incBtn.style.color = "var(--slate-400)";
+    confirmBtn.style.background = "#0d9488";
+  } else {
+    incBtn.style.border = "2px solid #16a34a"; incBtn.style.background = "#f0fdf4"; incBtn.style.color = "#166534";
+    expBtn.style.border = "1.5px solid var(--slate-200)"; expBtn.style.background = "var(--white)"; expBtn.style.color = "var(--slate-400)";
+    confirmBtn.style.background = "#16a34a";
+  }
+}
+
+function confirmAddRecurring() {
+  const desc   = document.getElementById("rec-add-desc").value.trim();
+  const amount = parseFloat(document.getElementById("rec-add-amount").value);
+  const cat    = document.getElementById("rec-add-cat").value;
+  const notes  = document.getElementById("rec-add-notes").value.trim();
+  if (!desc)            { showToast("Enter a description"); return; }
+  if (!amount || amount <= 0) { showToast("Enter a valid amount"); return; }
+  const entry = { desc, category: cat, amount, type: _recAddType, notes };
+  const existing = RECURRING.findIndex(r => r.desc === desc && r.category === cat);
+  if (existing >= 0) RECURRING[existing] = entry; else RECURRING.push(entry);
+  saveRecurring();
+  closeModal("add-recurring");
+  renderRecurringPage();
+  showToast("Added to recurring ✓");
+  if (settings.sheetsUrl && settings.autosync) postToSheets("save_recurring", { recurring: RECURRING });
 }
 
 // ══ CALENDAR SEARCH ══════════════════════════════════════════
