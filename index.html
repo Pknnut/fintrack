@@ -448,10 +448,10 @@
   .recurring-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); margin-top: 10px; }
   .recurring-toggle-lbl { font-size: 12px; font-weight: 600; color: var(--slate-700); }
   .recurring-toggle-sub { font-size: 10px; color: var(--slate-400); margin-top: 1px; }
-  .cal-page-bar { background: #0f172a; padding: 12px 16px 10px; display: flex; align-items: flex-end; justify-content: space-between; }
+  .cal-page-bar { padding: 16px 16px 0; display: flex; align-items: center; justify-content: space-between; }
   .cal-page-nav { display: flex; align-items: center; gap: 8px; }
-  .cal-page-nav-btn { width: 28px; height: 28px; border-radius: 8px; background: #1e293b; border: none; cursor: pointer; font-size: 14px; color: #94a3b8; display: flex; align-items: center; justify-content: center; }
-  .cal-page-month { font-size: 13px; font-weight: 600; color: #fff; min-width: 84px; text-align: center; }
+  .cal-page-nav-btn { width: 28px; height: 28px; border-radius: 8px; background: var(--slate-100); border: 0.5px solid var(--slate-200); cursor: pointer; font-size: 14px; color: var(--slate-500); display: flex; align-items: center; justify-content: center; }
+  .cal-page-month { font-size: 13px; font-weight: 600; color: var(--slate-900); min-width: 84px; text-align: center; }
   .cal-summary { display: flex; gap: 6px; padding: 10px 14px 6px; }
   .cal-summ-item { flex: 1; background: var(--white); border: 0.5px solid var(--slate-200); border-radius: 10px; padding: 8px 10px; }
   .cal-summ-lbl { font-size: 9px; color: var(--slate-400); margin-bottom: 2px; }
@@ -469,6 +469,9 @@
   .cal-cell-dot { width: 4px; height: 4px; border-radius: 50%; }
   .cal-cell-net { font-size: 8px; font-weight: 600; margin-top: 1px; }
   .cal-detail { background: var(--white); border: 0.5px solid var(--slate-200); border-radius: 12px; margin: 0 12px 8px; overflow: hidden; }
+  .cal-swipe-container { position: relative; overflow: hidden; }
+  .cal-swipe-container .swipe-del-bg { z-index: 0; border-radius: 0; }
+  .cal-swipe-container .hist-tx-row { position: relative; z-index: 1; background: var(--white); }
   .cal-detail-hd { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 0.5px solid var(--slate-100); }
   .cal-detail-date { font-size: 14px; font-weight: 700; color: var(--slate-900); }
   .cal-detail-net { font-size: 13px; font-weight: 700; }
@@ -506,32 +509,36 @@
 
   .report-modal-overlay { position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px; }
   .report-modal-overlay.hidden { display:none; }
-  .report-card { background:#0f172a;border-radius:20px;overflow:hidden;width:100%;max-width:360px; }
-  .report-card-hd { padding:18px 20px 14px;border-bottom:0.5px solid #1e293b;display:flex;align-items:center;justify-content:space-between; }
+  .report-card { background:var(--rc-bg);border-radius:20px;overflow:hidden;width:100%;max-width:360px; }
+  .report-card-hd { padding:18px 20px 14px;border-bottom:0.5px solid var(--rc-border);display:flex;align-items:center;justify-content:space-between; }
   .report-brand { display:flex;align-items:center;gap:8px; }
   .report-brand-dot { width:10px;height:10px;border-radius:50%;background:#0d9488;flex-shrink:0; }
-  .report-brand-name { font-size:13px;font-weight:700;color:#fff; }
-  .report-period { font-size:12px;color:#64748b; }
-  .report-net { padding:18px 20px 14px;border-bottom:0.5px solid #1e293b; }
-  .report-net-lbl { font-size:10px;color:#64748b;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px; }
+  .report-brand-name { font-size:13px;font-weight:700;color:var(--rc-text); }
+  .report-period { font-size:12px;color:var(--rc-muted); }
+  .report-net { padding:18px 20px 14px;border-bottom:0.5px solid var(--rc-border); }
+  .report-net-lbl { font-size:10px;color:var(--rc-muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px; }
   .report-net-amt { font-size:34px;font-weight:700;letter-spacing:-1px;margin-bottom:2px; }
-  .report-net-sub { font-size:11px;color:#64748b; }
-  .report-stats { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#1e293b;border-bottom:0.5px solid #1e293b; }
-  .report-stat { background:#0f172a;padding:12px 16px; }
-  .report-stat-lbl { font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px; }
+  .report-net-sub { font-size:11px;color:var(--rc-muted); }
+  .report-stats { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--rc-border);border-bottom:0.5px solid var(--rc-border); }
+  .report-stat { background:var(--rc-bg);padding:12px 16px; }
+  .report-stat-lbl { font-size:9px;color:var(--rc-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px; }
   .report-stat-val { font-size:16px;font-weight:700; }
-  .report-stat-sub { font-size:10px;color:#475569;margin-top:2px; }
-  .report-highlights { padding:14px 20px;border-bottom:0.5px solid #1e293b;display:flex;flex-direction:column;gap:8px; }
+  .report-stat-sub { font-size:10px;color:var(--rc-sub);margin-top:2px; }
+  .report-highlights { padding:14px 20px;border-bottom:0.5px solid var(--rc-border);display:flex;flex-direction:column;gap:8px; }
   .report-hl-row { display:flex;align-items:center;justify-content:space-between; }
-  .report-hl-lbl { font-size:11px;color:#64748b;display:flex;align-items:center;gap:6px; }
-  .report-hl-val { font-size:11px;font-weight:600;color:#cbd5e1; }
-  .report-bar-bg { height:4px;background:#1e293b;border-radius:2px;margin-top:8px;overflow:hidden; }
+  .report-hl-lbl { font-size:11px;color:var(--rc-muted);display:flex;align-items:center;gap:6px; }
+  .report-hl-val { font-size:11px;font-weight:600;color:var(--rc-val); }
+  .report-bar-bg { height:4px;background:var(--rc-border);border-radius:2px;margin-top:8px;overflow:hidden; }
   .report-bar { height:4px;background:#0d9488;border-radius:2px; }
   .report-ft { padding:12px 20px;display:flex;align-items:center;justify-content:space-between; }
-  .report-ft-text { font-size:10px;color:#334155; }
+  .report-ft-text { font-size:10px;color:var(--rc-sub); }
   .report-actions { display:flex;gap:8px; }
   .report-save-btn { font-size:11px;font-weight:700;background:#0d9488;color:#fff;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;display:flex;align-items:center;gap:5px; }
-  .report-close-btn { font-size:11px;font-weight:700;background:#1e293b;color:#94a3b8;border:none;border-radius:20px;padding:6px 14px;cursor:pointer; }
+  .report-close-btn { font-size:11px;font-weight:700;background:var(--rc-border);color:var(--rc-muted);border:none;border-radius:20px;padding:6px 14px;cursor:pointer; }
+  /* Report card theme — dark */
+  .report-card.rc-dark { --rc-bg:#0f172a;--rc-border:#1e293b;--rc-text:#fff;--rc-muted:#64748b;--rc-sub:#475569;--rc-val:#cbd5e1; }
+  /* Report card theme — light */
+  .report-card.rc-light { --rc-bg:#ffffff;--rc-border:#e2e8f0;--rc-text:#0f172a;--rc-muted:#94a3b8;--rc-sub:#64748b;--rc-val:#334155; }
   .cdd-wrap { position: relative; }
   .cdd-trigger { width: 100%; border: 1.5px solid var(--slate-200); border-radius: var(--radius-sm); padding: 10px 36px 10px 12px; font-size: 13px; font-family: inherit; color: var(--slate-900); background: var(--slate-50); cursor: pointer; display: flex; align-items: center; gap: 8px; position: relative; text-align: left; }
   .cdd-trigger.open { border-color: var(--teal); background: #f0fdfa; }
@@ -1120,14 +1127,12 @@
 
 <!-- CALENDAR PAGE -->
 <div class="page" id="page-calendar">
-  <div class="cal-page-bar">
-    <div style="display:flex;align-items:center;gap:10px">
-      <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:#1e293b;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <div>
-        <div style="font-size:10px;color:#64748b">Monthly overview</div>
-        <div style="font-size:18px;font-weight:700;color:#fff">Calendar</div>
+  <div style="padding:16px 16px 0;display:flex;align-items:center;gap:12px">
+      <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div style="flex:1">
+        <div class="meta">Monthly overview</div>
+        <div class="page-title">Calendar</div>
       </div>
-    </div>
     <div class="cal-page-nav">
       <button class="cal-page-nav-btn" onclick="calChangePage(-1)">‹</button>
       <span class="cal-page-month" id="cal-page-month-lbl">Jun 2026</span>
@@ -1193,7 +1198,7 @@
 
 <!-- BUDGET PAGE — dropdown filter replaces ‹ › nav -->
 <div class="page" id="page-budget">
-  <div class="budget-header"><div class="meta">Monthly limits</div><div class="page-title">Budget</div></div>
+  <div class="budget-header" style="display:flex;align-items:center;gap:12px"><button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><div><div class="meta">Monthly limits</div><div class="page-title">Budget</div></div></div>
 
   <!-- Filter row: viewing label + Today + chip -->
   <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 20px 0">
@@ -1370,6 +1375,10 @@ function openInstModal(idx) {
     '<div class="modal-detail-row"><span>Months left after</span><strong>' + Math.max(p.total_mo-newPaid,0) + '</strong></div>' +
     '<div class="modal-detail-row"><span>Balance after</span><strong style="color:#ef4444">' + fmt(Math.max(p.total-p.monthly*newPaid,0)) + '</strong></div>';
   document.getElementById("modal-inst").classList.remove("hidden");
+}
+function openModal(type) {
+  const el = document.getElementById("modal-" + type);
+  if (el) el.classList.remove("hidden");
 }
 function closeModal(type) {
   document.getElementById("modal-" + type).classList.add("hidden");
@@ -2057,7 +2066,8 @@ function renderAnalytics() {
   const mo=analyticsMonth,yr=analyticsYear,allArr=monthTxs(mo,yr);
   // Separate goal spends from regular transactions
   const arr = allArr.filter(t => !t.fromGoal);
-  const goalSpendArr = allArr.filter(t => t.fromGoal);
+  // Only Expense fromGoal txs are "spend from goal" — Income fromGoal are contributions, exclude them
+  const goalSpendArr = allArr.filter(t => t.fromGoal && t.type === "Expense");
   const {inc,exp,net,rate}=calcSummary(arr);
   // Render goal-spend section
   const gsSec = document.getElementById("goal-spend-section");
@@ -3582,6 +3592,11 @@ function showMonthlyReport() {
   const bigInc = incTxs.sort((a,b)=>b.amount-a.amount)[0];
   const bigExp = expTxs.sort((a,b)=>b.amount-a.amount)[0];
 
+  const card = document.getElementById("report-card-inner");
+  if (card) {
+    card.classList.remove("rc-dark", "rc-light");
+    card.classList.add(settings.darkMode ? "rc-dark" : "rc-light");
+  }
   document.getElementById("report-period").textContent = MO[mo] + " " + yr;
   const netEl = document.getElementById("report-net-amt");
   netEl.textContent = (net >= 0 ? "+" : "-") + "฿" + Math.abs(net).toLocaleString("th-TH",{minimumFractionDigits:0,maximumFractionDigits:0});
