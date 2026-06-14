@@ -1020,6 +1020,12 @@
       <button class="cal-page-nav-btn" onclick="calChangePage(1)">›</button>
     </div>
   </div>
+  <div style="margin:8px 12px 0;position:relative">
+    <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:#94a3b8;pointer-events:none" aria-hidden="true"></i>
+    <input id="cal-search" type="text" placeholder="Search all transactions…" oninput="calOnSearch()" style="width:100%;border:0.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:9px 12px 9px 32px;font-size:13px;font-family:inherit;outline:none;background:var(--white);color:var(--slate-900)">
+  </div>
+  <div id="cal-search-results" style="display:none;margin:8px 12px 0;background:var(--white);border:0.5px solid var(--slate-200);border-radius:var(--radius);overflow:hidden"></div>
+  <div id="cal-main-content">
   <div class="cal-summary">
     <div class="cal-summ-item"><div class="cal-summ-lbl">Income</div><div class="cal-summ-val" style="color:#16a34a" id="cal-summ-inc">฿0</div></div>
     <div class="cal-summ-item"><div class="cal-summ-lbl">Expenses</div><div class="cal-summ-val" style="color:#ef4444" id="cal-summ-exp">฿0</div></div>
@@ -1034,6 +1040,7 @@
       <span class="cal-detail-net" id="cal-detail-net"></span>
     </div>
     <div id="cal-detail-body"></div>
+  </div>
   </div>
   <div class="spacer"></div>
 </div>
@@ -1413,7 +1420,7 @@ function goTo(page) {
   if (page==="add")          setupAdd();
   if (page==="settings")     renderSettings();
   if (page==="recurring")    { _recEditIdx = null; renderRecurringPage(); }
-  if (page==="calendar")     renderCalendarPage();
+  if (page==="calendar")     { const cs=document.getElementById("cal-search"); if(cs)cs.value=""; const cr=document.getElementById("cal-search-results"); if(cr)cr.style.display="none"; const cm=document.getElementById("cal-main-content"); if(cm)cm.style.display="block"; renderCalendarPage(); }
   if (page==="history")      { histFilter="all"; document.getElementById("hist-search").value=""; document.getElementById("hist-adv-panel").classList.remove("open"); document.getElementById("hist-adv-btn").classList.remove("active"); if(document.getElementById("hist-filter-type"))document.getElementById("hist-filter-type").value="all"; buildHistFilterDropdowns(); renderHistory(); }
   if (page==="budget")       { closeBudgetDropdown(); renderBudget(); }
 }
@@ -3335,37 +3342,119 @@ function calRenderDetail(d, dayTxs) {
   const incTxs = dayTxs.filter(t=>t.type==="Income");
   const expTxs = dayTxs.filter(t=>t.type==="Expense");
 
+  function txSwipeRow(t, isInc) {
+    const catName = (t.category||"").replace(/^\S+\s/,"");
+    const bg = CAT_BG[catName] || (isInc ? "#f0fdf4" : "#f8fafc");
+    return '<div class="swipe-container cal-swipe-container" data-id="' + t.id + '" style="margin-bottom:0">' +
+      '<div class="swipe-del-bg" style="border-radius:0"><i class="ti ti-trash" style="font-size:20px;color:#ef4444"></i></div>' +
+      '<div class="cal-tx-row hist-tx-row" style="border-radius:0;border:none;margin-bottom:0;background:transparent">' +
+        '<div class="cal-tx-icon" style="background:' + bg + '">' + (t.category||"").match(/^\S+/)?.[0] + '</div>' +
+        '<div style="flex:1;min-width:0"><div class="cal-tx-desc">' + (t.desc||t.description||"") + '</div><div class="cal-tx-cat">' + catName + '</div></div>' +
+        '<span class="cal-tx-amt" style="color:' + (isInc?"#16a34a":"#ef4444") + '">' + (isInc?"+":"-") + fmt(t.amount) + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
   let html = "";
   if (incTxs.length) {
     html += '<div class="cal-grp-lbl">Income</div>';
-    incTxs.forEach(t => {
-      const catName = (t.category||"").replace(/^\S+\s/,"");
-      const bg = CAT_BG[catName] || "#f0fdf4";
-      html += '<div class="cal-tx-row">' +
-        '<div class="cal-tx-icon" style="background:' + bg + '">' + (t.category||"").match(/^\S+/)?.[0] + '</div>' +
-        '<div><div class="cal-tx-desc">' + (t.desc||t.description||"") + '</div><div class="cal-tx-cat">' + catName + '</div></div>' +
-        '<span class="cal-tx-amt" style="color:#16a34a">+' + fmt(t.amount) + '</span>' +
-        '</div>';
-    });
-    const incTotal = incTxs.reduce((s,t)=>s+t.amount,0);
-    // total line removed — net shown in header
+    incTxs.forEach(t => { html += txSwipeRow(t, true); });
   }
   if (expTxs.length) {
     html += '<div class="cal-grp-lbl">Expenses</div>';
-    expTxs.forEach(t => {
-      const catName = (t.category||"").replace(/^\S+\s/,"");
-      const bg = CAT_BG[catName] || "#f8fafc";
-      html += '<div class="cal-tx-row">' +
-        '<div class="cal-tx-icon" style="background:' + bg + '">' + (t.category||"").match(/^\S+/)?.[0] + '</div>' +
-        '<div><div class="cal-tx-desc">' + (t.desc||t.description||"") + '</div><div class="cal-tx-cat">' + catName + '</div></div>' +
-        '<span class="cal-tx-amt" style="color:#ef4444">-' + fmt(t.amount) + '</span>' +
-        '</div>';
-    });
-    const expTotal = expTxs.reduce((s,t)=>s+t.amount,0);
-    // total line removed — net shown in header
+    expTxs.forEach(t => { html += txSwipeRow(t, false); });
   }
   document.getElementById("cal-detail-body").innerHTML = html;
   document.getElementById("cal-detail").style.display = "block";
+  initCalSwipeToDelete();
+}
+
+function initCalSwipeToDelete() {
+  let openRow = null;
+  document.querySelectorAll(".cal-swipe-container").forEach(container => {
+    const row = container.querySelector(".hist-tx-row");
+    const bg  = container.querySelector(".swipe-del-bg");
+    if (!row || !bg) return;
+    const id = parseInt(container.dataset.id);
+    let startX=0, currentX=0, isDragging=false;
+    const THRESHOLD = 72;
+    row.addEventListener("touchstart", e => {
+      if (openRow && openRow !== row) { openRow.classList.remove("no-transition"); openRow.style.transform=""; openRow=null; }
+      startX = e.touches[0].clientX;
+      currentX = row.style.transform ? -THRESHOLD : 0;
+      isDragging = true;
+      row.classList.add("no-transition");
+    }, {passive:true});
+    row.addEventListener("touchmove", e => {
+      if (!isDragging) return;
+      const dx = e.touches[0].clientX - startX;
+      const newX = currentX + dx;
+      if (newX > 0) return;
+      row.style.transform = "translateX(" + Math.max(newX, -THRESHOLD-16) + "px)";
+    }, {passive:true});
+    row.addEventListener("touchend", () => {
+      isDragging = false;
+      row.classList.remove("no-transition");
+      const finalX = parseFloat(row.style.transform.replace("translateX(","")) || 0;
+      if (finalX < -THRESHOLD/2) { row.style.transform="translateX(-"+THRESHOLD+"px)"; openRow=row; }
+      else { row.style.transform=""; openRow=null; }
+    });
+    bg.addEventListener("click", () => {
+      row.style.transform=""; openRow=null;
+      deleteTx(id);
+      const remaining = txs.filter(t => { const dt=new Date(t.date); return dt.getFullYear()===_calYear && dt.getMonth()===_calMonth && dt.getDate()===_calSelectedDate; });
+      if (remaining.length) calRenderDetail(_calSelectedDate, remaining);
+      else { document.getElementById("cal-detail").style.display="none"; _calSelectedDate=null; }
+      renderCalendarPage();
+    });
+  });
+}
+
+// ══ CALENDAR SEARCH ══════════════════════════════════════════
+function calOnSearch() {
+  const q = (document.getElementById("cal-search").value || "").toLowerCase().trim();
+  const resultsEl = document.getElementById("cal-search-results");
+  const mainEl = document.getElementById("cal-main-content");
+  if (!q) {
+    resultsEl.style.display = "none";
+    mainEl.style.display = "block";
+    return;
+  }
+  mainEl.style.display = "none";
+  resultsEl.style.display = "block";
+  const matched = txs.filter(t => {
+    const desc = (t.desc || t.description || "").toLowerCase();
+    const cat  = (t.category || "").toLowerCase();
+    const notes = (t.notes || "").toLowerCase();
+    return desc.includes(q) || cat.includes(q) || notes.includes(q);
+  }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (!matched.length) {
+    resultsEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:13px;color:var(--slate-400)">No transactions found</div>';
+    return;
+  }
+
+  const CAT_BG = {"Food & Dining":"#fef3c7","Entertainment":"#eef2ff","Transport":"#f0fdf4","Health":"#fdf4ff","Utilities":"#eff6ff","Shopping":"#fff7ed","Housing":"#f0fdf4","Education":"#f0f9ff","Travel":"#ecfdf5","Income":"#f0fdf4"};
+  let lastDate = "";
+  let html = '<div style="padding:8px 14px 4px;font-size:11px;color:var(--slate-400)">' + matched.length + ' result' + (matched.length!==1?"s":"") + ' for "' + q + '"</div>';
+  matched.forEach(t => {
+    const dateStr = t.date || "";
+    if (dateStr !== lastDate) {
+      const d = new Date(dateStr);
+      const label = d.getDate() + " " + MO[d.getMonth()] + " " + d.getFullYear();
+      html += '<div style="font-size:10px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:0.06em;padding:8px 14px 2px">' + label + '</div>';
+      lastDate = dateStr;
+    }
+    const catName = (t.category || "").replace(/^\S+\s/, "");
+    const bg = CAT_BG[catName] || "#f8fafc";
+    const isInc = t.type === "Income";
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:0.5px solid var(--slate-100)">' +
+      '<div style="width:28px;height:28px;border-radius:8px;background:' + bg + ';display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">' + (t.category||"").match(/^\S+/)?.[0] + '</div>' +
+      '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--slate-800)">' + (t.desc||t.description||"") + '</div><div style="font-size:10px;color:var(--slate-400)">' + catName + '</div></div>' +
+      '<span style="font-size:12px;font-weight:700;color:' + (isInc?"#16a34a":"#ef4444") + '">' + (isInc?"+":"-") + fmt(t.amount) + '</span>' +
+    '</div>';
+  });
+  resultsEl.innerHTML = html;
 }
 
 // ══ EXPORT ANALYTICS AS IMAGE ════════════════════════════════
