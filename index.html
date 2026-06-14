@@ -978,6 +978,7 @@
     <div class="settings-label">Data</div>
     <div class="settings-card">
       <button class="settings-btn" onclick="exportData()">Export transactions as JSON</button>
+      <button class="settings-btn" onclick="exportCSV()">Export transactions as CSV</button>
       <button class="settings-btn" onclick="rebuildAnalyticsSheet()">Rebuild Analytics sheet in Google Sheets</button>
       <button class="settings-btn danger" onclick="confirmClearGoals()">Clear all goals</button>
       <button class="settings-btn danger" onclick="confirmClearInsts()">Clear all instalments</button>
@@ -2477,6 +2478,26 @@ async function requestNotifPermission() {
 function exportData() {
   const blob=new Blob([JSON.stringify({transactions:txs,exportedAt:new Date().toISOString()},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="fintrack_export.json";a.click();
+}
+function exportCSV() {
+  const headers = ["Date","Type","Category","Description","Amount","Notes","From Goal","Goal Name"];
+  const rows = txs.map(t => [
+    t.date || "",
+    t.type || "",
+    (t.category || "").replace(/^\S+\s/, ""),
+    (t.desc || t.description || "").replace(/"/g, '""'),
+    t.amount || 0,
+    (t.notes || "").replace(/"/g, '""'),
+    t.fromGoal ? "Yes" : "No",
+    (t.goalName || "").replace(/"/g, '""')
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => '"' + v + '"').join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  const now = new Date();
+  const fname = "fintrack_" + now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + ".csv";
+  a.href = URL.createObjectURL(blob); a.download = fname; a.click();
+  showToast("CSV exported ✓");
 }
 function confirmClearGoals() { if(confirm("Delete all goals? This does not affect Google Sheets.")){GOALS.length=0;localStorage.removeItem("ft_goals");showToast("Goals cleared");goTo("goals");} }
 function confirmClearInsts() { if(confirm("Delete all instalments? This does not affect Google Sheets.")){INSTALLMENTS.length=0;localStorage.removeItem("ft_insts");showToast("Instalments cleared");goTo("installments");} }
