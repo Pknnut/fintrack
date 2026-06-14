@@ -1083,7 +1083,7 @@
       <div class="settings-row"><div><div class="settings-row-label">Installment due alerts</div><div class="settings-row-sub">Remind me when a payment is due</div></div><button class="toggle" id="toggle-notif" onclick="toggleSetting('notif')"></button></div>
       <div class="settings-row"><div><div class="settings-row-label">Budget alerts</div><div class="settings-row-sub">Warn when a category hits 80% or 100%</div></div><button class="toggle" id="toggle-notif-budget" onclick="toggleSetting('notifBudget')"></button></div>
       <div class="settings-row"><div><div class="settings-row-label">Expense log reminder</div><div class="settings-row-sub">Remind if no transactions for 2+ days</div></div><button class="toggle" id="toggle-notif-log" onclick="toggleSetting('notifLog')"></button></div>
-      <div class="settings-row"><div><div class="settings-row-label">Goal savings reminder</div><div class="settings-row-sub">Remind if no contribution this month</div></div><button class="toggle" id="toggle-notif-goal" onclick="toggleSetting('notifGoal')"></button></div>
+      <div class="settings-row"><div><div class="settings-row-label">Goal progress alerts</div><div class="settings-row-sub">Notify at 50%, 75%, 100% and if no contribution this month</div></div><button class="toggle" id="toggle-notif-goal" onclick="toggleSetting('notifGoal')"></button></div>
       <div class="settings-row" onclick="requestNotifPermission()"><div><div class="settings-row-label">Enable browser notifications</div><div class="settings-row-sub" id="notif-status">Permission not granted</div></div><div class="settings-row-right">→</div></div>
     </div>
   </div>
@@ -3084,21 +3084,57 @@ function checkInAppNotifications() {
     }
   }
 
-  // Goal savings reminder
+  // Goal savings reminder + progress milestones
   if (settings.notifGoal && GOALS.length) {
     GOALS.forEach(g => {
-      if (g.saved >= g.target) return;
-      const id = "goal_" + g.name;
-      if (dismissed.includes(id)) return;
-      const contribs = g.contributions || [];
-      const addedThisMonth = contribs.some(c => {
-        const d = new Date(c.date);
-        return d.getMonth()===curMo && d.getFullYear()===curYr;
-      });
-      if (!addedThisMonth) {
-        banners.push({id, type:"info", icon:"ti-flag", iconBg:"#9FE1CB",
-          title:"Goal reminder — " + g.name,
-          sub:"No savings added this month yet. Monthly target: " + fmt(g.monthly || 0) + "."});
+      const pct = g.target > 0 ? Math.round((g.saved / g.target) * 100) : 0;
+
+      // 100% — goal reached
+      if (pct >= 100) {
+        const id = "goal_done_" + g.name;
+        if (!dismissed.includes(id)) {
+          banners.push({id, type:"alert", icon:"ti-trophy", iconBg:"#9FE1CB",
+            title:"Goal reached! — " + g.name,
+            sub:"You've hit your target of " + fmt(g.target) + ". Well done!"});
+        }
+        return;
+      }
+
+      // 75% milestone
+      if (pct >= 75) {
+        const id = "goal_75_" + g.name;
+        if (!dismissed.includes(id)) {
+          banners.push({id, type:"info", icon:"ti-flag", iconBg:"#9FE1CB",
+            title:"75% there — " + g.name,
+            sub:fmt(g.saved) + " of " + fmt(g.target) + " saved. " + fmt(g.target - g.saved) + " to go!"});
+        }
+      }
+
+      // 50% milestone
+      else if (pct >= 50) {
+        const id = "goal_50_" + g.name;
+        if (!dismissed.includes(id)) {
+          banners.push({id, type:"info", icon:"ti-flag", iconBg:"#9FE1CB",
+            title:"Halfway there — " + g.name,
+            sub:fmt(g.saved) + " of " + fmt(g.target) + " saved. Keep it up!"});
+        }
+      }
+
+      // No contribution this month reminder
+      else {
+        const id = "goal_" + g.name;
+        if (!dismissed.includes(id)) {
+          const contribs = g.contributions || [];
+          const addedThisMonth = contribs.some(c => {
+            const d = new Date(c.date);
+            return d.getMonth()===curMo && d.getFullYear()===curYr;
+          });
+          if (!addedThisMonth) {
+            banners.push({id, type:"info", icon:"ti-flag", iconBg:"#9FE1CB",
+              title:"Goal reminder — " + g.name,
+              sub:"No savings added this month yet. Monthly target: " + fmt(g.monthly || 0) + "."});
+          }
+        }
       }
     });
   }
