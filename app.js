@@ -1598,10 +1598,36 @@ async function confirmEarlyPayoff(idx) {
 }
 
 async function deleteInst(idx) {
-  if(!(await appConfirm({title:'Delete "'+INSTALLMENTS[idx].name+'"?', okText:"Delete", danger:true})))return;
-  const inst=INSTALLMENTS[idx]; INSTALLMENTS.splice(idx,1); saveInsts(); renderInstallments();
-  if(inst&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_installment",{name:inst.name}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){setSyncStatus("ok");showToast("Instalment deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — Sheets sync failed");}}
-  else showToast("Instalment deleted");
+  const inst = INSTALLMENTS[idx];
+  if(!(await appConfirm({title:'Delete "'+inst.name+'"?', okText:"Delete", danger:true})))return;
+  // Check for linked Mark-as-paid transactions (fromInst, matched by instId — see confirmMarkPaid)
+  const linkedTxs = txs.filter(t => t.fromInst && t.instId === inst.id);
+  let deleteLinked = false;
+  if (linkedTxs.length > 0) {
+    deleteLinked = await appConfirm({
+      title: "Delete linked transactions?",
+      message: linkedTxs.length + ' transaction' + (linkedTxs.length > 1 ? 's' : '') +
+        ' from "' + inst.name + '" exist in History (total: ' + fmt(linkedTxs.reduce((s,t)=>s+t.amount,0)) + ').',
+      okText: "Delete them",
+      cancelText: "Keep them",
+      danger: true
+    });
+  }
+  if (deleteLinked) {
+    for (const t of linkedTxs) {
+      txs = txs.filter(x => x.id !== t.id);
+      unsyncedIds = unsyncedIds.filter(uid => uid !== t.id);
+      if (t.rowId && settings.sheetsUrl) {
+        await Promise.race([postToSheets("delete_transaction", {rowId:t.rowId, data:{date:t.date,desc:t.desc||"",amount:t.amount}}), new Promise(r=>setTimeout(()=>r(false),4000))]);
+      }
+    }
+    localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
+    saveTxs();
+  }
+  INSTALLMENTS.splice(idx,1); saveInsts(); renderInstallments(); renderHome();
+  const linkedNote = deleteLinked ? " + " + linkedTxs.length + " transaction(s) removed" : "";
+  if(inst&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_installment",{name:inst.name}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){setSyncStatus("ok");showToast("Instalment deleted"+linkedNote+" + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — Sheets sync failed");}}
+  else showToast("Instalment deleted"+linkedNote);
 }
 
 // ══ ADD FORM ══════════════════════════════════════════════════
