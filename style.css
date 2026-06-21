@@ -39,6 +39,7 @@
   body.dark .rec-page-icon.income { background: #134e4a; }
   body.dark .goals-filter-tag, body.dark .hist-filter-tag { background: #134e4a; border-color: #0f766e; color: #5eead4; }
   body.dark .goal-pill-tag { background: #422006; color: #fde68a; }
+  body.dark .inst-pill-tag { background: #1e3a5f; color: #93c5fd; }
   body.dark .rec-status-pending { background: #422006; color: #fcd34d; border-color: #92400e; }
   body.dark .rec-log-btn { background: #1e1b4b; color: #818cf8; }
   body.dark .rec-log-all-bar { background: #1e293b; border-top-color: #334155; }
@@ -202,6 +203,7 @@
   .contrib-log-del { background: none; border: none; color: var(--slate-300); cursor: pointer; font-size: 13px; padding: 0 0 0 6px; line-height: 1; }
   .contrib-log-total { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--slate-200); }
   .goal-pill-tag { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:20px; background:#fef3c7; color:#92400e; font-size:9px; font-weight:600; margin-left:4px; }
+  .inst-pill-tag { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:20px; background:#dbeafe; color:#1e40af; font-size:9px; font-weight:600; margin-left:4px; }
   .spend-log { border-top:1px solid var(--slate-100); margin-top:10px; padding-top:10px; }
   .spend-log-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:10px; font-weight:600; color:var(--slate-400); }
   .spend-log-bal { color:var(--amber-strong); }

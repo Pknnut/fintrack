@@ -95,16 +95,31 @@ async function fetchRecurringFromSheets(silent = false) {
 // Matched against this month's real transactions by description, exactly like
 // Recurring, so a bill drops out of the pending total the moment you log the real
 // payment — it's never subtracted twice.
+// Shared by Recurring and Estimated Bills: both need to know "has a transaction
+// matching this description already been logged this month?" Building one Set per
+// render and matching by (type|desc) — not just desc — means an Income item named
+// "Bonus" can no longer be marked "logged" by an unrelated Expense also named "Bonus".
+function buildLoggedKeysThisMonth() {
+  const now = new Date();
+  const mo = now.getMonth(), yr = now.getFullYear();
+  const keys = new Set();
+  txs.forEach(t => {
+    const d = parseDate(t.date);
+    if (d.getMonth() === mo && d.getFullYear() === yr) {
+      keys.add((t.type || "Expense") + "|" + (t.desc || t.description || "").toLowerCase());
+    }
+  });
+  return keys;
+}
+function isLoggedThisMonth(loggedKeys, desc, type) {
+  return loggedKeys.has((type || "Expense") + "|" + (desc || "").toLowerCase());
+}
+
 let ESTIMATED_BILLS = JSON.parse(localStorage.getItem("ft_estbills") || "[]");
 function saveEstBills() { localStorage.setItem("ft_estbills", JSON.stringify(ESTIMATED_BILLS)); }
 function getPendingEstBills() {
-  const now = new Date();
-  const currentMo = now.getMonth(), currentYr = now.getFullYear();
-  const thisMonthDescs = new Set(
-    txs.filter(t => { const d = parseDate(t.date); return d.getMonth()===currentMo && d.getFullYear()===currentYr && t.type==="Expense"; })
-       .map(t => (t.desc||t.description||"").toLowerCase())
-  );
-  return ESTIMATED_BILLS.filter(b => !thisMonthDescs.has((b.desc||"").toLowerCase()));
+  const loggedKeys = buildLoggedKeysThisMonth();
+  return ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, "Expense"));
 }
 function estBillsPendingTotal() { return getPendingEstBills().reduce((s,b)=>s+(b.amount||0), 0); }
 
@@ -492,7 +507,7 @@ function histSingleRow(t, isSplitMember) {
   return '<div class="swipe-container" data-id="'+t.id+'">' +
     '<div class="swipe-del-bg"><i class="ti ti-trash" style="font-size:20px;color:var(--red)"></i></div>' +
     '<div class="hist-tx-row" data-id="'+t.id+'"><div class="tx-icon">'+(t.category||"").split(" ")[0]+'</div><div style="flex:1;min-width:0"><div class="tx-name">'+desc+
-    (isGoalSpend(t)?'<span class="goal-pill-tag">'+goalSpendName(t)+'</span>':'')+(isSplitMember?'<span class="split-pill">Split</span>':'')+
+    (isGoalSpend(t)?'<span class="goal-pill-tag">'+goalSpendName(t)+'</span>':'')+(t.fromInst?'<span class="inst-pill-tag">'+instSpendName(t)+'</span>':'')+(isSplitMember?'<span class="split-pill">Split</span>':'')+
     '</div><div class="tx-sub">'+(t.category||"").replace(/^\S+\s/,"")+" · "+d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear()+
     '</div></div><span class="tx-amt '+(isInc?'pos':'neg')+'" style="margin-right:8px">'+(isInc?"+":"-")+fmt(t.amount)+
     '</span><button class="hist-tx-edit" onclick="openEditTxModal('+t.id+')" aria-label="Edit">'+EDIT_PENCIL+'</button></div>' +
@@ -798,15 +813,10 @@ function renderEstBillsHomeCard() {
       '</div>';
     return;
   }
-  const now = new Date();
-  const currentMo = now.getMonth(), currentYr = now.getFullYear();
-  const thisMonthDescs = new Set(
-    txs.filter(t => { const d = parseDate(t.date); return d.getMonth()===currentMo && d.getFullYear()===currentYr && t.type==="Expense"; })
-       .map(t => (t.desc||t.description||"").toLowerCase())
-  );
+  const loggedKeys = buildLoggedKeysThisMonth();
   const sorted = [...ESTIMATED_BILLS].sort((a,b) => {
-    const aLogged = thisMonthDescs.has((a.desc||"").toLowerCase());
-    const bLogged = thisMonthDescs.has((b.desc||"").toLowerCase());
+    const aLogged = isLoggedThisMonth(loggedKeys, a.desc, "Expense");
+    const bLogged = isLoggedThisMonth(loggedKeys, b.desc, "Expense");
     return aLogged === bLogged ? 0 : aLogged ? 1 : -1; // pending first
   });
   const preview = sorted.slice(0, 3);
@@ -1134,6 +1144,12 @@ function isGoalSpend(t) {
 function goalSpendName(t) {
   if (t.goalId != null) { const g = GOALS.find(g => g.id === t.goalId); if (g) return g.name; }
   return t.goalName || "Goal";
+}
+// Current display name for an instalment-paid transaction — looked up by id (set in
+// confirmMarkPaid/confirmEarlyPayoff), mirrors goalSpendName so it survives plan renames.
+function instSpendName(t) {
+  const p = INSTALLMENTS.find(p => p.id === t.instId);
+  return p ? p.name : "Instalment";
 }
 function renderAnalytics() {
   const mo=analyticsMonth,yr=analyticsYear,allArr=monthTxs(mo,yr);
@@ -2612,13 +2628,8 @@ function toggleRecurring() {
 }
 
 function getPendingRecurring() {
-  const now = new Date();
-  const currentMo = now.getMonth(), currentYr = now.getFullYear();
-  const thisMonthDescs = new Set(
-    txs.filter(t => { const d = parseDate(t.date); return d.getMonth()===currentMo && d.getFullYear()===currentYr; })
-       .map(t => (t.desc||t.description||"").toLowerCase())
-  );
-  return RECURRING.filter(r => !thisMonthDescs.has((r.desc||"").toLowerCase()));
+  const loggedKeys = buildLoggedKeysThisMonth();
+  return RECURRING.filter(r => !isLoggedThisMonth(loggedKeys, r.desc, r.type));
 }
 
 function checkRecurringSuggestions() {
@@ -2708,18 +2719,13 @@ function renderRecurringPage() {
     if (logAllBtn) logAllBtn.disabled = true;
     return;
   }
-  const now = new Date();
-  const currentMo = now.getMonth(), currentYr = now.getFullYear();
-  const thisMonthDescs = new Set(
-    txs.filter(t => { const d = parseDate(t.date); return d.getMonth()===currentMo && d.getFullYear()===currentYr; })
-       .map(t => (t.desc||t.description||"").toLowerCase())
-  );
-  const pending = RECURRING.filter(r => !thisMonthDescs.has((r.desc||"").toLowerCase()));
+  const loggedKeys = buildLoggedKeysThisMonth();
+  const pending = RECURRING.filter(r => !isLoggedThisMonth(loggedKeys, r.desc, r.type));
   const pendingTotal = pending.reduce((s, r) => s + (r.amount||0), 0);
   if (pendingLabel) pendingLabel.textContent = pending.length ? pending.length + " pending · " + fmt(pendingTotal) : "All logged this month ✓";
   if (logAllBtn) logAllBtn.disabled = pending.length === 0;
   list.innerHTML = RECURRING.map((r, idx) => {
-    const isLogged = thisMonthDescs.has((r.desc||"").toLowerCase());
+    const isLogged = isLoggedThisMonth(loggedKeys, r.desc, r.type);
     const isIncome = (r.type||"Expense") === "Income";
     const isEditing = (_recEditIdx === idx);
     const iconMap = {"Income":"💰","Entertainment":"🎬","Food & Dining":"🍜","Transport":"🚗","Health":"💊","Utilities":"💡","Shopping":"🛍️","Housing":"🏠","Education":"📚","Travel":"✈️"};
@@ -2846,18 +2852,13 @@ function renderEstBillsPage() {
     if (totalVal) totalVal.textContent = fmt(0);
     return;
   }
-  const now = new Date();
-  const currentMo = now.getMonth(), currentYr = now.getFullYear();
-  const thisMonthDescs = new Set(
-    txs.filter(t => { const d = parseDate(t.date); return d.getMonth()===currentMo && d.getFullYear()===currentYr && t.type==="Expense"; })
-       .map(t => (t.desc||t.description||"").toLowerCase())
-  );
-  const pending = ESTIMATED_BILLS.filter(b => !thisMonthDescs.has((b.desc||"").toLowerCase()));
+  const loggedKeys = buildLoggedKeysThisMonth();
+  const pending = ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, "Expense"));
   const pendingTotal = pending.reduce((s,b)=>s+(b.amount||0), 0);
   if (totalVal) totalVal.textContent = fmt(pendingTotal);
   if (pendingLabel) pendingLabel.textContent = pending.length + " of " + ESTIMATED_BILLS.length + " still pending this month";
   list.innerHTML = ESTIMATED_BILLS.map((b, idx) => {
-    const isLogged = thisMonthDescs.has((b.desc||"").toLowerCase());
+    const isLogged = isLoggedThisMonth(loggedKeys, b.desc, "Expense");
     const isEditing = (_estEditIdx === idx);
     const icon = (b.category||"").match(/^\S+/)?.[0] || "🔄";
     const catName = (b.category||"").replace(/^\S+\s/, "");

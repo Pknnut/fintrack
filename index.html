@@ -143,7 +143,7 @@
     <div class="form-field" style="margin-bottom:10px"><label>MONTHS ALREADY PAID</label><input id="ei-paid" type="text" inputmode="none" min="0" placeholder="0" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit"></div>
     <div class="form-field" style="margin-bottom:14px"><label>START DATE</label><div style="display:flex;gap:8px"><select id="ei-start-d" style="flex:1;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select><select id="ei-start-m" style="flex:1.4;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select><select id="ei-start-y" style="flex:1.2;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none;-webkit-appearance:none"></select></div></div>
     <div class="form-field" style="margin-bottom:14px"><label>COLOR</label><select id="ei-color" style="width:100%;border:none;outline:none;font-size:13px;font-weight:500;color:var(--slate-900);background:none;font-family:inherit;appearance:none"><option value="#6366f1">🟣 Indigo</option><option value="#0d9488">🩵 Teal</option><option value="#f59e0b">🟡 Amber</option><option value="#22c55e">🟢 Green</option><option value="#8b5cf6">💜 Purple</option><option value="#ef4444">🔴 Red</option></select></div>
-    <div class="modal-btn-row"><button class="modal-cancel" onclick="closeModal('edit-inst')">Cancel</button><button class="modal-confirm" style="background:#6366f1" onclick="confirmEditInst()">Save changes</button></div>
+    <div class="modal-btn-row"><button class="modal-cancel" onclick="closeModal('edit-inst')">Cancel</button><button class="modal-confirm" style="background:var(--indigo)" onclick="confirmEditInst()">Save changes</button></div>
   </div>
 </div>
 
@@ -257,9 +257,9 @@
       <div><div class="greeting">Here's your financial snapshot for today,</div><div style="font-size:15px;font-weight:700;color:var(--slate-900)">Nut 👋</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <button class="notif-btn" id="refresh-btn" onclick="refreshApp()" title="Refresh"><i class="ti ti-refresh" style="font-size:17px;color:#64748b"></i></button>
-      <button class="privacy-btn" id="privacy-btn" onclick="togglePrivacy()" title="Hide amounts"><i class="ti ti-eye" id="privacy-icon" style="font-size:17px;color:#64748b"></i></button>
-      <button class="notif-btn" onclick="goTo('settings')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="notif-btn" id="refresh-btn" onclick="refreshApp()" title="Refresh"><i class="ti ti-refresh" style="font-size:17px;color:var(--slate-500)"></i></button>
+      <button class="privacy-btn" id="privacy-btn" onclick="togglePrivacy()" title="Hide amounts"><i class="ti ti-eye" id="privacy-icon" style="font-size:17px;color:var(--slate-500)"></i></button>
+      <button class="notif-btn" onclick="goTo('settings')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </div>
   <div class="balance-card">
@@ -309,9 +309,9 @@
       <div class="chart-amount" id="chart-amount">฿0</div>
       <div class="chart-sub">Total spent this week</div>
       <svg width="100%" height="64" viewBox="0 0 300 64" preserveAspectRatio="none">
-        <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6366f1" stop-opacity="0.15"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></linearGradient></defs>
+        <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--indigo)" stop-opacity="0.15"/><stop offset="100%" stop-color="var(--indigo)" stop-opacity="0"/></linearGradient></defs>
         <polygon id="chart-area" fill="url(#cg)"/>
-        <polyline id="chart-line" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline id="chart-line" fill="none" stroke="var(--indigo)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
       </svg>
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--slate-400);margin-top:4px"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
     </div>
@@ -335,7 +335,7 @@
   <div class="goals-header">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:12px">
-        <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div><div class="meta">Overview</div><div class="page-title">Your Goals</div></div>
       </div>
       <button class="goals-filter-btn" id="goals-filter-btn" onclick="toggleGoalsFilter()"><i class="ti ti-adjustments-horizontal" style="font-size:13px"></i><span id="goals-filter-btn-label">Filter</span></button>
@@ -364,7 +364,7 @@
   <div class="an-header-block">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:12px">
-        <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div><div class="an-header-meta">Monthly view</div><div class="an-header-title">Analytics</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
@@ -451,7 +451,7 @@
 
 <!-- INSTALLMENTS -->
 <div class="page" id="page-installments">
-  <div class="inst-header" style="display:flex;align-items:center;gap:12px"><button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><div style="flex:1"><div class="meta">Active plans</div><div class="page-title">Instalments</div></div><button class="period-today-btn" onclick="openSnowballPlanner()" style="padding:6px 10px;font-size:11px;display:flex;align-items:center;gap:4px;white-space:nowrap">❄️ Debt-free plan</button></div>
+  <div class="inst-header" style="display:flex;align-items:center;gap:12px"><button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><div style="flex:1"><div class="meta">Active plans</div><div class="page-title">Instalments</div></div><button class="period-today-btn" onclick="openSnowballPlanner()" style="padding:6px 10px;font-size:11px;display:flex;align-items:center;gap:4px;white-space:nowrap">❄️ Debt-free plan</button></div>
   <div class="inst-summary">
     <div class="gsumm"><div class="gsumm-lbl">Monthly burden</div><div class="gsumm-val" id="inst-monthly">฿0</div></div>
     <div class="gsumm"><div class="gsumm-lbl">Remaining debt</div><div class="gsumm-val" id="inst-balance">฿0</div></div>
@@ -526,7 +526,7 @@
       <div class="form-field"><label>MONTHS ALREADY PAID</label><input id="i-paid" type="text" inputmode="none" min="0" placeholder="0 if new"></div>
       <div class="form-field"><label>COLOR</label><select id="i-color"><option value="#6366f1">🟣 Indigo</option><option value="#0d9488">🩵 Teal</option><option value="#f59e0b">🟡 Amber</option><option value="#22c55e">🟢 Green</option><option value="#8b5cf6">💜 Purple</option><option value="#ef4444">🔴 Red</option></select></div>
     </div>
-    <button class="submit-btn" id="btn-add-inst" style="background:#6366f1" onclick="submitInst()">Add Instalment</button>
+    <button class="submit-btn" id="btn-add-inst" style="background:var(--indigo)" onclick="submitInst()">Add Instalment</button>
   </div>
   <div class="spacer"></div>
 </div>
@@ -561,7 +561,7 @@
 
 <!-- SETTINGS -->
 <div class="page" id="page-settings">
-  <div class="settings-header" style="display:flex;align-items:center;gap:12px"><button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><div><div class="meta">Preferences</div><div class="page-title">Settings</div></div></div>
+  <div class="settings-header" style="display:flex;align-items:center;gap:12px"><button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><div><div class="meta">Preferences</div><div class="page-title">Settings</div></div></div>
   <div class="settings-section">
     <div class="settings-label">Google Sheets sync</div>
     <div class="settings-card">
@@ -624,7 +624,7 @@
 <!-- RECURRING PAGE -->
 <div class="page" id="page-recurring">
   <div style="padding:20px 16px 0;display:flex;align-items:center;gap:12px">
-    <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="flex:1"><div class="meta">Monthly</div><div class="page-title">Recurring</div></div>
     <button onclick="openAddRecurringModal()" style="background:#0d9488;color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">+ Add</button>
   </div>
@@ -641,7 +641,7 @@
 <!-- ESTIMATED BILLS PAGE -->
 <div class="page" id="page-estbills">
   <div style="padding:20px 16px 0;display:flex;align-items:center;gap:12px">
-    <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="flex:1"><div class="meta">This month's forecast</div><div class="page-title">Estimated bills</div></div>
     <button onclick="openAddEstBillModal()" style="background:#0d9488;color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">+ Add</button>
   </div>
@@ -664,7 +664,7 @@
 <!-- CALENDAR PAGE -->
 <div class="page" id="page-calendar">
   <div style="padding:16px 16px 0;display:flex;align-items:center;gap:12px">
-      <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
       <div style="flex:1">
         <div class="meta">Monthly overview</div>
         <div class="page-title">Calendar</div>
@@ -705,7 +705,7 @@
 <!-- HISTORY -->
 <div class="page" id="page-history">
   <div style="padding:24px 20px 0;display:flex;align-items:center;gap:12px">
-    <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div><div class="meta">All transactions</div><div class="page-title">History</div></div>
   </div>
   <div style="margin:12px 20px 0;display:flex;align-items:center;justify-content:space-between">
@@ -736,7 +736,7 @@
 
 <!-- BUDGET PAGE — dropdown filter replaces ‹ › nav -->
 <div class="page" id="page-budget">
-  <div class="budget-header" style="display:flex;align-items:center;gap:12px"><button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><div><div class="meta">Monthly limits</div><div class="page-title">Budget</div></div></div>
+  <div class="budget-header" style="display:flex;align-items:center;gap:12px"><button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><div><div class="meta">Monthly limits</div><div class="page-title">Budget</div></div></div>
 
   <!-- Filter row: viewing label + Today + chip -->
   <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 20px 0">
