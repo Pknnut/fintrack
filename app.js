@@ -187,6 +187,11 @@ function openInstModal(idx) {
     '<div class="modal-detail-row"><span>Amount</span><strong>' + fmt(p.monthly) + '</strong></div>' +
     '<div class="modal-detail-row"><span>Months left after</span><strong>' + Math.max(p.total_mo-newPaid,0) + '</strong></div>' +
     '<div class="modal-detail-row"><span>Balance after</span><strong style="color:var(--red)">' + fmt(Math.max(p.total-p.monthly*newPaid,0)) + '</strong></div>';
+  const linkNote = document.getElementById("modal-inst-link-note");
+  if (linkNote) linkNote.innerHTML =
+    '<i class="ti ti-link" style="font-size:15px;color:var(--green-text);margin-top:1px" aria-hidden="true"></i>' +
+    '<div><p style="font-size:11px;font-weight:600;color:var(--green-text);margin:0 0 2px">Also logs an expense transaction</p>' +
+    '<p style="font-size:10px;color:var(--green-text);margin:0">' + fmt(p.monthly) + ' · ' + p.cat.replace(/^\S+\s/,"") + ' · today — shows up in History, Analytics and Budget automatically.</p></div>';
   document.getElementById("modal-inst").classList.remove("hidden");
 }
 function openModal(type) {
@@ -1513,7 +1518,7 @@ async function confirmEarlyPayoff(idx) {
   if (!p) return;
   const rem = p.total_mo - p.paid;
   if (rem <= 0) { showToast("Already fully paid off"); return; }
-  if (!(await appConfirm({title:'Mark "' + p.icon + ' ' + p.name + '" as paid off?', message:rem + ' payment' + (rem!==1?'s':'') + ' remaining will be marked as paid.', okText:"Mark paid"}))) return;
+  if (!(await appConfirm({title:'Mark "' + p.icon + ' ' + p.name + '" as paid off?', message:rem + ' payment' + (rem!==1?'s':'') + ' remaining will be marked as paid.\n\nThis also logs one expense transaction for the remaining balance.', okText:"Mark paid"}))) return;
   const bal = Math.max(p.total - p.monthly * p.paid, 0);
   const now = new Date();
   INSTALLMENTS[idx].paid = p.total_mo;

@@ -508,6 +508,7 @@ function _tkbIsTarget(el) {
 function tkbMarkInputs() {
   document.querySelectorAll('input[type="text"], input[type="search"], input[type="url"]').forEach(el => {
     if (el.getAttribute("inputmode") === "none") return; // numeric field → handled by the keypad
+    if (el.type === "url") return;                       // URL fields are pasted, not typed — keep the native keyboard
     el.setAttribute("readonly", "");                     // stops the native keyboard on iOS
     el.dataset.tkb = "1";
     el.style.cursor = "pointer";
