@@ -697,6 +697,7 @@ function renderHome() {
   document.getElementById("home-exp").textContent=fmt(exp);
   renderSpendingChart();
   renderNetWorth();
+  renderEstBillsHomeCard();
   renderSafeToSpend();
   // Recent list still shows every transaction (goal-spends included — they appear in History too).
   const recent=[...arr].sort((a,b)=>parseDate(b.date)-parseDate(a.date)).slice(0,5);
@@ -780,6 +781,56 @@ function renderSafeToSpend() {
   }
 
   card.style.display = "";
+}
+
+// Estimated bills get their own card on Home — same tier as Net Worth below —
+// so the feature is visible without ever opening Settings. Shows the pending
+// total plus a short preview list; "Manage" opens the full page.
+function renderEstBillsHomeCard() {
+  const el = document.getElementById("home-estbills-card");
+  if (!el) return;
+  if (!ESTIMATED_BILLS.length) {
+    el.innerHTML =
+      '<div class="nw-card">' +
+        '<div class="nw-card-hd"><span class="nw-card-title">Estimated bills</span></div>' +
+        '<p style="font-size:11px;color:var(--slate-400);margin:0 0 10px;line-height:1.5">Add bills you know are coming — like electric or credit card — to forecast them before the real amount arrives.</p>' +
+        '<button onclick="openAddEstBillModal()" style="width:100%;padding:9px;border:1.5px dashed var(--slate-200);border-radius:var(--radius-sm);background:none;color:var(--slate-400);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer">+ Add bill</button>' +
+      '</div>';
+    return;
+  }
+  const now = new Date();
+  const currentMo = now.getMonth(), currentYr = now.getFullYear();
+  const thisMonthDescs = new Set(
+    txs.filter(t => { const d = parseDate(t.date); return d.getMonth()===currentMo && d.getFullYear()===currentYr && t.type==="Expense"; })
+       .map(t => (t.desc||t.description||"").toLowerCase())
+  );
+  const sorted = [...ESTIMATED_BILLS].sort((a,b) => {
+    const aLogged = thisMonthDescs.has((a.desc||"").toLowerCase());
+    const bLogged = thisMonthDescs.has((b.desc||"").toLowerCase());
+    return aLogged === bLogged ? 0 : aLogged ? 1 : -1; // pending first
+  });
+  const preview = sorted.slice(0, 3);
+  const extra = sorted.length - preview.length;
+  const rowsHtml = preview.map(b => {
+    const icon = (b.category||"").match(/^\S+/)?.[0] || "🔄";
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:0.5px solid var(--slate-100);font-size:12px">' +
+      '<span style="color:var(--slate-700)">' + icon + ' ' + (b.desc||"") + '</span>' +
+      '<span style="font-weight:600;color:var(--slate-900)">' + fmt(b.amount) + '</span>' +
+    '</div>';
+  }).join("") + (extra > 0 ? '<div style="font-size:10px;color:var(--slate-400);padding:5px 0 0">+' + extra + ' more</div>' : '');
+  el.innerHTML =
+    '<div class="nw-card">' +
+      '<div class="nw-card-hd">' +
+        '<span class="nw-card-title">Estimated bills</span>' +
+        '<span style="font-size:11px;font-weight:600;color:var(--teal);cursor:pointer" onclick="goTo(\'estbills\')">Manage →</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">' +
+        '<span style="font-size:9px;color:var(--slate-400)">Pending this month</span>' +
+        '<span style="font-size:18px;font-weight:700;color:var(--slate-900)">' + fmt(estBillsPendingTotal()) + '</span>' +
+      '</div>' +
+      rowsHtml +
+      '<button onclick="openAddEstBillModal()" style="width:100%;margin-top:8px;padding:8px;border:1.5px dashed var(--slate-200);border-radius:var(--radius-sm);background:none;color:var(--slate-400);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer">+ Add bill</button>' +
+    '</div>';
 }
 
 function renderNetWorth() {
