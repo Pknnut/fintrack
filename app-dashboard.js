@@ -187,7 +187,8 @@ function renderForecastPage() {
   const months = calcForecastMonths(forecastHorizon);
 
   const hintEl = document.getElementById("forecast-hint");
-  if (hintEl) hintEl.style.display = RECURRING.some(r => (r.type||"Expense")==="Income") ? "none" : "block";
+  const hasIncomeSource = RECURRING.some(r => (r.type||"Expense")==="Income") || estBillsRepeatingIncomeTotal() > 0;
+  if (hintEl) hintEl.style.display = hasIncomeSource ? "none" : "block";
 
   const avgNet = months.reduce((s,m)=>s+m.net, 0) / months.length;
   const avgEl = document.getElementById("forecast-avg-net");
