@@ -1,7 +1,7 @@
 // FinTrack — Core: constants, state, save/sync helpers, modals, startup, PIN, navigation, History, date utils.
 // Loaded FIRST — declares the state every other app-*.js file reads (txs, GOALS, INSTALLMENTS, settings, etc).
-const INCOME_CATS = [{e:"💼",n:"Salary"},{e:"💰",n:"Freelance"},{e:"📈",n:"Trading / Investing"},{e:"🏠",n:"Rental Income"},{e:"🎁",n:"Bonus"},{e:"💵",n:"Other Income"}];
-const EXPENSE_CATS = [{e:"🏠",n:"Rent / Mortgage"},{e:"🍜",n:"Food & Dining"},{e:"🚇",n:"BTS / MRT"},{e:"🚗",n:"Grab / Transport"},{e:"⛽",n:"Gasoline"},{e:"⚡",n:"Electricity"},{e:"💧",n:"Water"},{e:"📱",n:"Phone / Internet"},{e:"🛒",n:"Groceries"},{e:"🏥",n:"Health / Medical"},{e:"👕",n:"Shopping"},{e:"🎬",n:"Entertainment"},{e:"✈️",n:"Travel"},{e:"📚",n:"Education"},{e:"💳",n:"Credit Card"},{e:"🏦",n:"Loan Repayment"},{e:"💊",n:"Pharmacy"},{e:"🛡️",n:"Insurance"},{e:"📦",n:"Other Expense"}];
+const INCOME_CATS = [{e:"💼",n:"Salary"},{e:"💰",n:"Freelance"},{e:"📈",n:"Trading / Investing"},{e:"🏠",n:"Rental Income"},{e:"🎁",n:"Bonus"},{e:"💵",n:"Other Income"},{e:"🏦",n:"Interest Income"},{e:"💸",n:"Refund / Cashback"},{e:"🎉",n:"Gift Received"}];
+const EXPENSE_CATS = [{e:"🏠",n:"Rent / Mortgage"},{e:"🍜",n:"Food & Dining"},{e:"🚇",n:"BTS / MRT"},{e:"🚗",n:"Grab / Transport"},{e:"⛽",n:"Gasoline"},{e:"⚡",n:"Electricity"},{e:"💧",n:"Water"},{e:"📱",n:"Phone / Internet"},{e:"🛒",n:"Groceries"},{e:"🏥",n:"Health / Medical"},{e:"👕",n:"Shopping"},{e:"🎬",n:"Entertainment"},{e:"✈️",n:"Travel"},{e:"📚",n:"Education"},{e:"💳",n:"Credit Card"},{e:"🏦",n:"Loan Repayment"},{e:"💊",n:"Pharmacy"},{e:"🛡️",n:"Insurance"},{e:"📦",n:"Other Expense"},{e:"👨‍👩‍👧",n:"Family Support"},{e:"📺",n:"Subscriptions"},{e:"🥊",n:"Fitness & Sports"},{e:"🎀",n:"Gifts & Donations"},{e:"🔧",n:"Home Maintenance"},{e:"💇",n:"Personal Care"},{e:"🐾",n:"Pet Care"}];
 // Shared edit-button icon (matches the recurring page's edit button) — used for every edit button.
 const EDIT_PENCIL    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 const EDIT_PENCIL_SM = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
@@ -25,7 +25,9 @@ const EXPENSE_TINTS = [
   "var(--tint-blue-bg)", "var(--tint-cyan-bg)", "var(--tint-cyan-bg)", "var(--tint-cyan-bg)",
   "var(--tint-amber-bg)", "var(--tint-rose-bg)", "var(--tint-orange-bg)", "var(--tint-purple-bg)",
   "var(--tint-purple-bg)", "var(--tint-purple-bg)", "var(--slate-100)", "var(--slate-100)",
-  "var(--tint-rose-bg)", "var(--tint-rose-bg)", "var(--slate-100)"
+  "var(--tint-rose-bg)", "var(--tint-rose-bg)", "var(--slate-100)",
+  "var(--tint-rose-bg)", "var(--tint-purple-bg)", "var(--tint-green-bg)", "var(--tint-amber-bg)",
+  "var(--tint-blue-bg)", "var(--tint-rose-bg)", "var(--tint-cyan-bg)"
 ];
 const INCOME_TINTS = Array(INCOME_CATS.length).fill("var(--tint-green-bg)");
 const CAT_BG = {};

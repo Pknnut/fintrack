@@ -394,9 +394,8 @@ function renderRecurringPage() {
     const isLogged = isLoggedThisMonth(loggedKeys, r.desc, r.type);
     const isIncome = (r.type||"Expense") === "Income";
     const isEditing = (_recEditIdx === idx);
-    const iconMap = {"Income":"💰","Entertainment":"🎬","Food & Dining":"🍜","Transport":"🚗","Health":"💊","Utilities":"💡","Shopping":"🛍️","Housing":"🏠","Education":"📚","Travel":"✈️"};
     const catName = (r.category||"").replace(/^\S+\s/,"");
-    const icon = iconMap[catName] || (isIncome ? "💰" : "🔄");
+    const icon = (r.category||"").match(/^\S+/)?.[0] || (isIncome ? "💰" : "🔄");
     return '<div class="rec-page-item" id="rec-item-' + idx + '">' +
       '<div class="rec-page-icon' + (isIncome?" income":"") + '">' + icon + '</div>' +
       '<div class="rec-page-info">' +
