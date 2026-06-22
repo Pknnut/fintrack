@@ -101,7 +101,11 @@
 <div class="modal-overlay hidden" id="modal-add-estbill">
   <div class="modal-sheet" style="padding-bottom:48px">
     <div class="modal-title">Add estimated bill</div>
-    <div class="modal-sub">A bill you know is coming, even if the amount varies</div>
+    <div class="modal-sub">A bill or income you know is coming, even if the amount varies</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button id="est-add-type-expense" onclick="setEstAddType('Expense')" style="flex:1;padding:8px;border-radius:8px;border:2px solid #ef4444;background:#fef2f2;color:#991b1b;font-size:12px;font-weight:700;cursor:pointer">Expense</button>
+      <button id="est-add-type-income" onclick="setEstAddType('Income')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--slate-200);background:var(--white);color:var(--slate-400);font-size:12px;font-weight:700;cursor:pointer">Income</button>
+    </div>
     <div style="margin-bottom:10px"><label style="font-size:10px;font-weight:700;color:var(--slate-400);letter-spacing:0.05em">CATEGORY</label>
       <select id="est-add-cat"></select>
     </div>
@@ -295,7 +299,9 @@
       <div class="safe-bd-row"><span>Expected income</span><span class="safe-bd-pos" id="safe-inc">+฿0</span></div>
       <div class="safe-bd-row"><span>Spent so far</span><span id="safe-spent">−฿0</span></div>
       <div class="safe-bd-row"><span>Bills &amp; instalments due</span><span id="safe-bills">−฿0</span></div>
+      <div class="safe-bd-row" id="safe-est-income-row" style="display:none;cursor:pointer" onclick="event.stopPropagation();goTo('estbills')"><span>Estimated income <i class="ti ti-chevron-right" style="font-size:11px;color:var(--slate-300)" aria-hidden="true"></i></span><span class="safe-bd-pos" id="safe-est-income">+฿0</span></div>
       <div class="safe-bd-row" id="safe-est-row" style="display:none;cursor:pointer" onclick="event.stopPropagation();goTo('estbills')"><span>Estimated bills <i class="ti ti-chevron-right" style="font-size:11px;color:var(--slate-300)" aria-hidden="true"></i></span><span id="safe-est">−฿0</span></div>
+      <div class="safe-bd-row" id="safe-est-net-row" style="display:none;font-weight:600"><span>Estimated net</span><span id="safe-est-net">฿0</span></div>
       <div class="safe-bd-row safe-bd-total"><span>Safe to spend</span><span id="safe-total">฿0</span></div>
       <div style="text-align:center;margin-top:6px"><button onclick="event.stopPropagation();goTo('forecast')" style="background:none;border:none;font-size:11px;font-weight:600;color:var(--indigo);cursor:pointer;font-family:inherit;padding:4px">See full forecast →</button></div>
     </div>
@@ -652,8 +658,10 @@
     <button onclick="openAddEstBillModal()" style="background:#0d9488;color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">+ Add</button>
   </div>
   <div style="margin:14px 16px 0;background:var(--white);border:1px solid var(--slate-200);border-radius:var(--radius);padding:14px">
-    <div style="font-size:10px;color:var(--slate-400);margin-bottom:2px">Pending total — still counted in Safe to spend</div>
-    <div style="font-size:26px;font-weight:800;color:var(--slate-900)" id="est-total-val">฿0</div>
+    <div style="font-size:10px;color:var(--slate-400);margin-bottom:8px">Pending this month — still counted in Safe to spend</div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--slate-700);padding:3px 0"><span>Estimated income</span><span id="est-income-val" style="color:var(--green-strong);font-weight:600">+฿0</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--slate-700);padding:3px 0"><span>Estimated bills</span><span id="est-expense-val" style="font-weight:600">−฿0</span></div>
+    <div style="display:flex;justify-content:space-between;border-top:0.5px solid var(--slate-100);margin-top:6px;padding-top:8px"><span style="font-size:13px;font-weight:700;color:var(--slate-900)">Estimated net</span><span id="est-net-val" style="font-size:18px;font-weight:800">฿0</span></div>
   </div>
   <div style="margin:10px 16px 0;background:var(--white);border:0.5px solid var(--slate-200);border-radius:var(--radius);">
     <div id="est-page-list"></div>

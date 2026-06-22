@@ -121,15 +121,26 @@ let ESTIMATED_BILLS = JSON.parse(localStorage.getItem("ft_estbills") || "[]");
 function saveEstBills() { localStorage.setItem("ft_estbills", JSON.stringify(ESTIMATED_BILLS)); }
 function getPendingEstBills() {
   const loggedKeys = buildLoggedKeysThisMonth();
-  return ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, "Expense"));
+  return ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
 }
-function estBillsPendingTotal() { return getPendingEstBills().reduce((s,b)=>s+(b.amount||0), 0); }
+// Split by direction — mixing income and expense into one lump total stopped being
+// meaningful once Estimated Bills could hold Income entries too (e.g. irregular freelance pay).
+function estBillsPendingExpenseTotal() {
+  return getPendingEstBills().filter(b => (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
+}
+function estBillsPendingIncomeTotal() {
+  return getPendingEstBills().filter(b => b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
+}
+function estBillsPendingNetTotal() { return estBillsPendingIncomeTotal() - estBillsPendingExpenseTotal(); }
 // Used by the Cash Flow Forecast — only bills explicitly flagged as repeating monthly
-// (electric, credit card...) get projected into future months. One-off estimates
-// (repeats === false) are excluded since there's no signal for what future months hold.
+// (electric, credit card... or irregular income) get projected into future months. One-off
+// estimates (repeats === false) are excluded since there's no signal for what future months hold.
 // Missing the flag entirely (legacy bills, added before this existed) defaults to true.
-function estBillsRepeatingTotal() {
-  return ESTIMATED_BILLS.filter(b => b.repeats !== false).reduce((s,b)=>s+(b.amount||0), 0);
+function estBillsRepeatingExpenseTotal() {
+  return ESTIMATED_BILLS.filter(b => b.repeats !== false && (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
+}
+function estBillsRepeatingIncomeTotal() {
+  return ESTIMATED_BILLS.filter(b => b.repeats !== false && b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
 }
 
 if (!settings.pin || settings.pin.length !== 6) settings.pin = "123456";

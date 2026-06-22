@@ -510,26 +510,35 @@ let _estAddEditIdx = -1;  // index of bill being edited in the add/edit modal, -
 function renderEstBillsPage() {
   const list = document.getElementById("est-page-list");
   const pendingLabel = document.getElementById("est-pending-label");
-  const totalVal = document.getElementById("est-total-val");
+  const incVal = document.getElementById("est-income-val");
+  const expVal = document.getElementById("est-expense-val");
+  const netVal = document.getElementById("est-net-val");
   if (!list) return;
   if (!ESTIMATED_BILLS.length) {
-    list.innerHTML = '<div class="rec-empty">No estimated bills yet.<br>Add bills you know are coming — like electric or credit card — to forecast this month before they arrive.</div>';
+    list.innerHTML = '<div class="rec-empty">No estimated bills yet.<br>Add bills or income you know are coming — like electric, credit card, or irregular freelance pay — to forecast this month before they arrive.</div>';
     if (pendingLabel) pendingLabel.textContent = "";
-    if (totalVal) totalVal.textContent = fmt(0);
+    if (incVal) incVal.textContent = fmt(0);
+    if (expVal) expVal.textContent = fmt(0);
+    if (netVal) netVal.textContent = fmt(0);
     return;
   }
   const loggedKeys = buildLoggedKeysThisMonth();
-  const pending = ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, "Expense"));
-  const pendingTotal = pending.reduce((s,b)=>s+(b.amount||0), 0);
-  if (totalVal) totalVal.textContent = fmt(pendingTotal);
+  const pending = ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
+  const pendingIncome  = pending.filter(b => b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
+  const pendingExpense = pending.filter(b => (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
+  const net = pendingIncome - pendingExpense;
+  if (incVal) incVal.textContent = "+" + fmt(pendingIncome);
+  if (expVal) expVal.textContent = "−" + fmt(pendingExpense);
+  if (netVal) { netVal.textContent = (net>=0?"+":"") + fmt(net); netVal.style.color = net>=0 ? "var(--green-strong)" : "var(--red-strong)"; }
   if (pendingLabel) pendingLabel.textContent = pending.length + " of " + ESTIMATED_BILLS.length + " still pending this month";
   list.innerHTML = ESTIMATED_BILLS.map((b, idx) => {
-    const isLogged = isLoggedThisMonth(loggedKeys, b.desc, "Expense");
+    const isInc = b.type === "Income";
+    const isLogged = isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense");
     const isEditing = (_estEditIdx === idx);
     const icon = (b.category||"").match(/^\S+/)?.[0] || "🔄";
     const catName = (b.category||"").replace(/^\S+\s/, "");
     return '<div class="rec-page-item" id="est-item-' + idx + '">' +
-      '<div class="rec-page-icon">' + icon + '</div>' +
+      '<div class="rec-page-icon' + (isInc?" income":"") + '">' + icon + '</div>' +
       '<div class="rec-page-info">' +
         '<div class="rec-page-name">' + (b.desc||"") + '</div>' +
         '<div class="rec-page-cat">' + catName + ' · ' + (b.repeats !== false ? "repeats monthly" : "one-off estimate") + '</div>' +
@@ -544,7 +553,7 @@ function renderEstBillsPage() {
           '</div>' +
           '<span class="rec-was-hint">was ' + fmt(b.amount) + '</span>'
         :
-          '<span class="rec-amt-display" onclick="editEstAmt(' + idx + ')" title="Tap to edit amount">' + fmt(b.amount) + '</span>' +
+          '<span class="rec-amt-display' + (isInc?" income":"") + '" onclick="editEstAmt(' + idx + ')" title="Tap to edit amount">' + (isInc?'+':'−') + fmt(b.amount) + '</span>' +
           (isLogged ?
             '<span class="rec-status-logged"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Logged</span>'
           :
@@ -589,6 +598,7 @@ async function removeEstBill(idx) {
 }
 
 let _estAddRepeats = true; // state for the modal's "Repeats monthly" toggle
+let _estAddType = "Expense"; // state for the modal's Expense/Income toggle
 
 function toggleEstRepeats() {
   _estAddRepeats = !_estAddRepeats;
@@ -596,9 +606,27 @@ function toggleEstRepeats() {
   if (t) t.className = "toggle" + (_estAddRepeats ? " on" : "");
 }
 
+function setEstAddType(type) {
+  _estAddType = type;
+  const expBtn = document.getElementById("est-add-type-expense");
+  const incBtn = document.getElementById("est-add-type-income");
+  const confirmBtn = document.getElementById("est-add-confirm-btn");
+  const cats = type === "Income" ? INCOME_CATS : EXPENSE_CATS;
+  catBuildList("est-add-cat", cats);
+  if (type === "Expense") {
+    expBtn.style.border = "2px solid var(--red)"; expBtn.style.background = "var(--red-bg)"; expBtn.style.color = "var(--red-text)";
+    incBtn.style.border = "1.5px solid var(--slate-200)"; incBtn.style.background = "var(--white)"; incBtn.style.color = "var(--slate-400)";
+    if (confirmBtn) confirmBtn.style.background = "var(--teal)";
+  } else {
+    incBtn.style.border = "2px solid var(--green-strong)"; incBtn.style.background = "#f0fdf4"; incBtn.style.color = "var(--green-text)";
+    expBtn.style.border = "1.5px solid var(--slate-200)"; expBtn.style.background = "var(--white)"; expBtn.style.color = "var(--slate-400)";
+    if (confirmBtn) confirmBtn.style.background = "var(--green-strong)";
+  }
+}
+
 function openAddEstBillModal() {
   _estAddEditIdx = -1;
-  catBuildList("est-add-cat", EXPENSE_CATS);
+  setEstAddType("Expense");
   document.getElementById("est-add-desc").value = "";
   document.getElementById("est-add-amount").value = "";
   _estAddRepeats = true;
@@ -614,7 +642,7 @@ function openEditEstBillModal(idx) {
   const b = ESTIMATED_BILLS[idx];
   if (!b) return;
   _estAddEditIdx = idx;
-  catBuildList("est-add-cat", EXPENSE_CATS);
+  setEstAddType(b.type === "Income" ? "Income" : "Expense");
   catSetValue("est-add-cat", b.category);
   document.getElementById("est-add-desc").value = b.desc || "";
   document.getElementById("est-add-amount").value = b.amount || "";
@@ -633,7 +661,7 @@ function confirmAddEstBill() {
   const cat = document.getElementById("est-add-cat").value;
   if (!desc) { showToast("Enter a description"); return; }
   if (!amount || amount <= 0) { showToast("Enter a valid amount"); return; }
-  const entry = { desc, category: cat, amount, repeats: _estAddRepeats };
+  const entry = { desc, category: cat, amount, repeats: _estAddRepeats, type: _estAddType };
   const isEdit = _estAddEditIdx >= 0;
   if (isEdit) ESTIMATED_BILLS[_estAddEditIdx] = entry;
   else ESTIMATED_BILLS.push(entry);

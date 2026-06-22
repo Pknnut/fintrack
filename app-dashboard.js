@@ -75,13 +75,14 @@ function renderSafeToSpend() {
   // this month, since that payment is now a real transaction already counted in
   // spentSoFar above. Without this check the same payment got subtracted twice.
   const instDue = INSTALLMENTS.filter(p => p.paid < p.total_mo && p.lastPaidYM !== curYM).reduce((s,p)=>s+(p.monthly||0), 0);
-  // Estimated bills not yet logged this month — same de-dup principle as instalments
-  // above: a bill drops out the moment its real transaction is logged, by description.
-  const estDue = estBillsPendingTotal();
+  // Estimated bills/income not yet logged this month — same de-dup principle as
+  // instalments above: an entry drops out the moment its real transaction is logged.
+  const estExpense = estBillsPendingExpenseTotal();
+  const estIncome  = estBillsPendingIncomeTotal();
 
-  const expectedIncome = incomeSoFar + pendingIncome;
+  const expectedIncome = incomeSoFar + pendingIncome + estIncome;
   const recurringAndInst = pendingBills + instDue;
-  const billsDue       = recurringAndInst + estDue;
+  const billsDue       = recurringAndInst + estExpense;
   const safe           = expectedIncome - spentSoFar - billsDue;
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
@@ -106,10 +107,23 @@ function renderSafeToSpend() {
   document.getElementById("safe-inc").textContent   = "+" + fmt(expectedIncome);
   document.getElementById("safe-spent").textContent = "−" + fmt(spentSoFar);
   document.getElementById("safe-bills").textContent = "−" + fmt(recurringAndInst);
+  const estIncRow = document.getElementById("safe-est-income-row");
   const estRow = document.getElementById("safe-est-row");
+  const estNetRow = document.getElementById("safe-est-net-row");
+  if (estIncRow) {
+    estIncRow.style.display = estIncome > 0 ? "flex" : "none";
+    document.getElementById("safe-est-income").textContent = "+" + fmt(estIncome);
+  }
   if (estRow) {
     estRow.style.display = ESTIMATED_BILLS.length ? "flex" : "none";
-    document.getElementById("safe-est").textContent = "−" + fmt(estDue);
+    document.getElementById("safe-est").textContent = "−" + fmt(estExpense);
+  }
+  if (estNetRow) {
+    const estNet = estIncome - estExpense;
+    estNetRow.style.display = ESTIMATED_BILLS.length ? "flex" : "none";
+    const netEl = document.getElementById("safe-est-net");
+    netEl.textContent = (estNet>=0?"+":"") + fmt(estNet);
+    netEl.style.color = estNet >= 0 ? "var(--green-strong)" : "var(--red-strong)";
   }
   const totalEl = document.getElementById("safe-total");
   totalEl.textContent = fmt(safe);
@@ -147,7 +161,8 @@ function setForecastHorizon(n, btn) {
 function calcForecastMonths(n) {
   const recurringIncome  = RECURRING.filter(r => (r.type||"Expense") === "Income").reduce((s,r)=>s+(r.amount||0), 0);
   const recurringExpense = RECURRING.filter(r => (r.type||"Expense") === "Expense").reduce((s,r)=>s+(r.amount||0), 0);
-  const estRepeating = estBillsRepeatingTotal();
+  const estRepeatingExpense = estBillsRepeatingExpenseTotal();
+  const estRepeatingIncome  = estBillsRepeatingIncomeTotal();
   let balance = calcSummary(txs).net; // today's actual all-time running balance
   const now = new Date();
   const months = [];
@@ -157,11 +172,11 @@ function calcForecastMonths(n) {
     // m=1, 1 month left (paid=9,total_mo=10): 9<10 → included (this is the final payment).
     // m=2 for the same plan: 10<10 → false → dropped off, freeing that money going forward.
     const instExpense = INSTALLMENTS.filter(p => (p.paid + (m - 1)) < p.total_mo).reduce((s,p)=>s+(p.monthly||0), 0);
-    const income  = recurringIncome;
-    const expense = recurringExpense + instExpense + estRepeating;
+    const income  = recurringIncome + estRepeatingIncome;
+    const expense = recurringExpense + instExpense + estRepeatingExpense;
     const net = income - expense;
     balance += net;
-    months.push({ label: MO[d.getMonth()] + " " + d.getFullYear(), income, recurringExpense, instExpense, estRepeating, expense, net, balance });
+    months.push({ label: MO[d.getMonth()] + " " + d.getFullYear(), income, recurringExpense, instExpense, estRepeatingExpense, estRepeatingIncome, expense, net, balance });
   }
   return months;
 }
@@ -258,19 +273,21 @@ function renderEstBillsHomeCard() {
   }
   const loggedKeys = buildLoggedKeysThisMonth();
   const sorted = [...ESTIMATED_BILLS].sort((a,b) => {
-    const aLogged = isLoggedThisMonth(loggedKeys, a.desc, "Expense");
-    const bLogged = isLoggedThisMonth(loggedKeys, b.desc, "Expense");
+    const aLogged = isLoggedThisMonth(loggedKeys, a.desc, a.type || "Expense");
+    const bLogged = isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense");
     return aLogged === bLogged ? 0 : aLogged ? 1 : -1; // pending first
   });
   const preview = sorted.slice(0, 3);
   const extra = sorted.length - preview.length;
   const rowsHtml = preview.map(b => {
     const icon = (b.category||"").match(/^\S+/)?.[0] || "🔄";
+    const isInc = b.type === "Income";
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:0.5px solid var(--slate-100);font-size:12px">' +
       '<span style="color:var(--slate-700)">' + icon + ' ' + (b.desc||"") + '</span>' +
-      '<span style="font-weight:600;color:var(--slate-900)">' + fmt(b.amount) + '</span>' +
+      '<span style="font-weight:600;color:' + (isInc?'var(--green-strong)':'var(--slate-900)') + '">' + (isInc?'+':'−') + fmt(b.amount) + '</span>' +
     '</div>';
   }).join("") + (extra > 0 ? '<div style="font-size:10px;color:var(--slate-400);padding:5px 0 0">+' + extra + ' more</div>' : '');
+  const net = estBillsPendingNetTotal();
   el.innerHTML =
     '<div class="nw-card">' +
       '<div class="nw-card-hd">' +
@@ -278,8 +295,8 @@ function renderEstBillsHomeCard() {
         '<span style="font-size:11px;font-weight:600;color:var(--teal);cursor:pointer" onclick="goTo(\'estbills\')">Manage →</span>' +
       '</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">' +
-        '<span style="font-size:9px;color:var(--slate-400)">Pending this month</span>' +
-        '<span style="font-size:18px;font-weight:700;color:var(--slate-900)">' + fmt(estBillsPendingTotal()) + '</span>' +
+        '<span style="font-size:9px;color:var(--slate-400)">Net this month</span>' +
+        '<span style="font-size:18px;font-weight:700;color:' + (net>=0?'var(--green-strong)':'var(--red-strong)') + '">' + (net>=0?'+':'') + fmt(net) + '</span>' +
       '</div>' +
       rowsHtml +
       '<button onclick="openAddEstBillModal()" style="width:100%;margin-top:8px;padding:8px;border:1.5px dashed var(--slate-200);border-radius:var(--radius-sm);background:none;color:var(--slate-400);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer">+ Add bill</button>' +
