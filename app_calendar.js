@@ -468,7 +468,7 @@ let _kbScrollPadEl = null, _kbScrollPadPrev = "";
 // ══ EDGE SWIPE-BACK ══════════════════════════════════════════
 // Swipe right from the left edge to go back, on pages that have a back button.
 // Starts only from the very left edge so it never clashes with row swipe-to-delete.
-const SWIPE_BACK_PAGES = new Set(["history","budget","calendar","recurring","estbills","goals","installments","analytics","settings"]);
+const SWIPE_BACK_PAGES = new Set(["history","budget","calendar","recurring","estbills","forecast","goals","installments","analytics","settings"]);
 (function initSwipeBack() {
   let dragging = false, startX = 0, startY = 0, pageEl = null;
   const EDGE = 28, THRESHOLD = 80, MAX_PULL = 130;
@@ -510,4 +510,3 @@ const SWIPE_BACK_PAGES = new Set(["history","budget","calendar","recurring","est
     if (dx > THRESHOLD) goTo(_prevPage || "home");
   });
 })();
-

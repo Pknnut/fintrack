@@ -124,6 +124,13 @@ function getPendingEstBills() {
   return ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, "Expense"));
 }
 function estBillsPendingTotal() { return getPendingEstBills().reduce((s,b)=>s+(b.amount||0), 0); }
+// Used by the Cash Flow Forecast — only bills explicitly flagged as repeating monthly
+// (electric, credit card...) get projected into future months. One-off estimates
+// (repeats === false) are excluded since there's no signal for what future months hold.
+// Missing the flag entirely (legacy bills, added before this existed) defaults to true.
+function estBillsRepeatingTotal() {
+  return ESTIMATED_BILLS.filter(b => b.repeats !== false).reduce((s,b)=>s+(b.amount||0), 0);
+}
 
 if (!settings.pin || settings.pin.length !== 6) settings.pin = "123456";
 if (settings.pinEnabled === undefined) settings.pinEnabled = true;
@@ -399,6 +406,7 @@ function goTo(page) {
   if (page==="settings")     renderSettings();
   if (page==="recurring")    { _recEditIdx = null; renderRecurringPage(); }
   if (page==="estbills")     { _estEditIdx = null; renderEstBillsPage(); }
+  if (page==="forecast")     { renderForecastPage(); }
   if (page==="calendar")     { const cs=document.getElementById("cal-search"); if(cs)cs.value=""; const cr=document.getElementById("cal-search-results"); if(cr)cr.style.display="none"; const cm=document.getElementById("cal-main-content"); if(cm)cm.style.display="block"; renderCalendarPage(); }
   if (page==="history")      { histFilter="all"; document.getElementById("hist-search").value=""; document.getElementById("hist-adv-panel").classList.remove("open"); document.getElementById("hist-adv-btn").classList.remove("active"); if(document.getElementById("hist-filter-type"))document.getElementById("hist-filter-type").value="all"; buildHistFilterDropdowns(); ["hist-filter-type","hist-filter-year","hist-filter-month","hist-filter-cat"].forEach(id=>sddEnhance(id)); sddEnhance("hist-sort",{inline:true}); renderHistory(); }
   if (page==="budget")       { closeBudgetDropdown(); renderBudget(); }
@@ -670,4 +678,3 @@ function ymOf(d) {
 function monthTxs(mo,yr) { const d=new Date(),m=(mo!==undefined)?mo:d.getMonth(),y=(yr!==undefined)?yr:d.getFullYear(); return txs.filter(t=>{const td=parseDate(t.date);return td.getMonth()===m&&td.getFullYear()===y;}); }
 function yearTxs(yr) { return txs.filter(t=>{const td=parseDate(t.date);return td.getFullYear()===yr;}); }
 function calcSummary(arr) { const inc=arr.filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0),exp=arr.filter(t=>t.type==="Expense").reduce((s,t)=>s+t.amount,0); return {inc,exp,net:inc-exp,rate:inc>0?(inc-exp)/inc:0}; }
-

@@ -532,7 +532,7 @@ function renderEstBillsPage() {
       '<div class="rec-page-icon">' + icon + '</div>' +
       '<div class="rec-page-info">' +
         '<div class="rec-page-name">' + (b.desc||"") + '</div>' +
-        '<div class="rec-page-cat">' + catName + ' · estimate</div>' +
+        '<div class="rec-page-cat">' + catName + ' · ' + (b.repeats !== false ? "repeats monthly" : "one-off estimate") + '</div>' +
       '</div>' +
       '<div class="rec-page-right">' +
         (isEditing ?
@@ -588,11 +588,22 @@ async function removeEstBill(idx) {
   showToast("Removed");
 }
 
+let _estAddRepeats = true; // state for the modal's "Repeats monthly" toggle
+
+function toggleEstRepeats() {
+  _estAddRepeats = !_estAddRepeats;
+  const t = document.getElementById("est-add-repeats-toggle");
+  if (t) t.className = "toggle" + (_estAddRepeats ? " on" : "");
+}
+
 function openAddEstBillModal() {
   _estAddEditIdx = -1;
   catBuildList("est-add-cat", EXPENSE_CATS);
   document.getElementById("est-add-desc").value = "";
   document.getElementById("est-add-amount").value = "";
+  _estAddRepeats = true;
+  const t = document.getElementById("est-add-repeats-toggle");
+  if (t) t.className = "toggle on";
   document.querySelector("#modal-add-estbill .modal-title").textContent = "Add estimated bill";
   document.getElementById("est-add-confirm-btn").textContent = "Add bill";
   openModal("add-estbill");
@@ -607,6 +618,9 @@ function openEditEstBillModal(idx) {
   catSetValue("est-add-cat", b.category);
   document.getElementById("est-add-desc").value = b.desc || "";
   document.getElementById("est-add-amount").value = b.amount || "";
+  _estAddRepeats = b.repeats !== false;
+  const t = document.getElementById("est-add-repeats-toggle");
+  if (t) t.className = "toggle" + (_estAddRepeats ? " on" : "");
   document.querySelector("#modal-add-estbill .modal-title").textContent = "Edit estimated bill";
   document.getElementById("est-add-confirm-btn").textContent = "Save changes";
   openModal("add-estbill");
@@ -619,7 +633,7 @@ function confirmAddEstBill() {
   const cat = document.getElementById("est-add-cat").value;
   if (!desc) { showToast("Enter a description"); return; }
   if (!amount || amount <= 0) { showToast("Enter a valid amount"); return; }
-  const entry = { desc, category: cat, amount };
+  const entry = { desc, category: cat, amount, repeats: _estAddRepeats };
   const isEdit = _estAddEditIdx >= 0;
   if (isEdit) ESTIMATED_BILLS[_estAddEditIdx] = entry;
   else ESTIMATED_BILLS.push(entry);
@@ -630,4 +644,3 @@ function confirmAddEstBill() {
   showToast(isEdit ? "Bill updated ✓" : "Added ✓");
   _estAddEditIdx = -1;
 }
-

@@ -111,6 +111,10 @@
     <div style="margin-bottom:16px"><label style="font-size:10px;font-weight:700;color:var(--slate-400);letter-spacing:0.05em">ESTIMATED AMOUNT (฿)</label>
       <input id="est-add-amount" type="text" inputmode="none" placeholder="0.00" style="width:100%;margin-top:4px;border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-family:inherit;background:var(--white);color:var(--slate-900);outline:none">
     </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;background:var(--slate-50);border-radius:var(--radius-sm);padding:10px 12px">
+      <div><div style="font-size:12px;font-weight:600;color:var(--slate-700)">Repeats monthly</div><div style="font-size:10px;color:var(--slate-400)">On = counted in the Cash Flow Forecast. Off = a one-off, this month only.</div></div>
+      <button class="toggle on" id="est-add-repeats-toggle" onclick="toggleEstRepeats()" style="flex-shrink:0;margin-left:10px"></button>
+    </div>
     <div class="modal-btn-row"><button class="modal-cancel" onclick="closeModal('add-estbill')">Cancel</button><button class="modal-confirm" id="est-add-confirm-btn" style="background:#0d9488" onclick="confirmAddEstBill()">Add bill</button></div>
   </div>
 </div>
@@ -293,6 +297,7 @@
       <div class="safe-bd-row"><span>Bills &amp; instalments due</span><span id="safe-bills">−฿0</span></div>
       <div class="safe-bd-row" id="safe-est-row" style="display:none;cursor:pointer" onclick="event.stopPropagation();goTo('estbills')"><span>Estimated bills <i class="ti ti-chevron-right" style="font-size:11px;color:var(--slate-300)" aria-hidden="true"></i></span><span id="safe-est">−฿0</span></div>
       <div class="safe-bd-row safe-bd-total"><span>Safe to spend</span><span id="safe-total">฿0</span></div>
+      <div style="text-align:center;margin-top:6px"><button onclick="event.stopPropagation();goTo('forecast')" style="background:none;border:none;font-size:11px;font-weight:600;color:var(--indigo);cursor:pointer;font-family:inherit;padding:4px">See full forecast →</button></div>
     </div>
   </div>
   <div id="notif-banners"></div>
@@ -595,6 +600,7 @@
     <div class="settings-card">
       <div class="settings-row" onclick="goTo('recurring')"><div><div class="settings-row-label">Recurring transactions</div><div class="settings-row-sub">Manage your monthly recurring items</div></div><div class="settings-row-right">→</div></div>
       <div class="settings-row" onclick="goTo('estbills')"><div><div class="settings-row-label">Estimated bills</div><div class="settings-row-sub">Forecast bills with amounts that vary, like electric or credit card</div></div><div class="settings-row-right">→</div></div>
+      <div class="settings-row" onclick="goTo('forecast')"><div><div class="settings-row-label">Cash flow forecast</div><div class="settings-row-sub">Project income, expenses and balance for the months ahead</div></div><div class="settings-row-right">→</div></div>
     </div>
   </div>
   <div class="settings-section">
@@ -657,6 +663,50 @@
   </div>
   <div style="margin:10px 16px 0;font-size:11px;color:var(--slate-400);line-height:1.5">
     These never create a transaction on their own — log the real bill as a normal expense when it arrives, using the same description, and it drops off this list automatically.
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- CASH FLOW FORECAST PAGE -->
+<div class="page" id="page-forecast">
+  <div style="padding:20px 16px 0;display:flex;align-items:center;gap:12px">
+    <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div style="flex:1"><div class="meta">Projected forward</div><div class="page-title">Cash flow forecast</div></div>
+  </div>
+
+  <div style="margin:14px 16px 0">
+    <div class="budget-trend-mo" style="display:inline-flex">
+      <button onclick="setForecastHorizon(3,this)">3m</button>
+      <button class="on" onclick="setForecastHorizon(6,this)">6m</button>
+      <button onclick="setForecastHorizon(12,this)">12m</button>
+    </div>
+  </div>
+
+  <div id="forecast-hint" style="display:none;margin:10px 16px 0;background:var(--amber-bg);color:var(--amber-text);font-size:11px;padding:8px 10px;border-radius:var(--radius-sm)">Add your income as a recurring item for an accurate forecast.</div>
+
+  <div style="margin:10px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div style="background:var(--white);border:1px solid var(--slate-200);border-radius:var(--radius);padding:10px">
+      <div style="font-size:9px;color:var(--slate-400)">Avg monthly net</div>
+      <div style="font-size:18px;font-weight:700" id="forecast-avg-net">฿0</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--slate-200);border-radius:var(--radius);padding:10px">
+      <div style="font-size:9px;color:var(--slate-400)" id="forecast-end-balance-label">In 6 months</div>
+      <div style="font-size:18px;font-weight:700" id="forecast-end-balance">฿0</div>
+    </div>
+  </div>
+
+  <div style="margin:10px 16px 0;background:var(--white);border:1px solid var(--slate-200);border-radius:var(--radius);padding:10px 6px 4px">
+    <svg id="forecast-chart-svg" width="100%" height="110" viewBox="0 0 300 110" preserveAspectRatio="none"></svg>
+  </div>
+  <div style="margin:8px 16px 0;font-size:10px;color:var(--slate-400);display:flex;gap:14px">
+    <span><span style="display:inline-block;width:8px;height:8px;background:var(--green-strong);border-radius:2px;margin-right:3px;opacity:0.55"></span>Net (bars)</span>
+    <span><span style="display:inline-block;width:8px;height:2px;background:var(--indigo);margin-right:3px;vertical-align:middle"></span>Running balance (line)</span>
+  </div>
+
+  <div style="margin:14px 16px 0;background:var(--white);border:0.5px solid var(--slate-200);border-radius:var(--radius);overflow:hidden" id="forecast-table"></div>
+
+  <div style="margin:10px 16px 0;font-size:11px;color:var(--slate-400);line-height:1.5">
+    Uses Recurring income/expenses, Instalments (dropping off the month after their final payment), and Estimated Bills flagged as repeating. One-off estimates and ad hoc transactions aren't projected — there's no signal for what future months hold.
   </div>
   <div class="spacer"></div>
 </div>

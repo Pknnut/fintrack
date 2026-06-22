@@ -128,6 +128,119 @@ function renderSafeToSpend() {
   card.style.display = "";
 }
 
+// ══ CASH FLOW FORECAST (multi-month projection) ══════════════
+// Safe to Spend stretched across many months instead of one. Reuses the exact
+// same sources: Recurring income/expenses (assumed to repeat indefinitely),
+// Instalments (drop off automatically the month after their final payment — same
+// math as the payoff timeline), and Estimated Bills flagged as repeating monthly
+// (current amount used as a placeholder guess; one-off estimates are excluded —
+// there's no signal for what a future month's one-time cost would be).
+let forecastHorizon = 6;
+
+function setForecastHorizon(n, btn) {
+  forecastHorizon = n;
+  if (btn) { btn.parentElement.querySelectorAll("button").forEach(b => b.classList.remove("on")); btn.classList.add("on"); }
+  renderForecastPage();
+}
+
+// Pure calc, no DOM — returns one object per projected month, easy to reason about independently.
+function calcForecastMonths(n) {
+  const recurringIncome  = RECURRING.filter(r => (r.type||"Expense") === "Income").reduce((s,r)=>s+(r.amount||0), 0);
+  const recurringExpense = RECURRING.filter(r => (r.type||"Expense") === "Expense").reduce((s,r)=>s+(r.amount||0), 0);
+  const estRepeating = estBillsRepeatingTotal();
+  let balance = calcSummary(txs).net; // today's actual all-time running balance
+  const now = new Date();
+  const months = [];
+  for (let m = 1; m <= n; m++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + m, 1);
+    // Active by month m if its final payment hasn't happened yet: paid + (m-1) < total_mo.
+    // m=1, 1 month left (paid=9,total_mo=10): 9<10 → included (this is the final payment).
+    // m=2 for the same plan: 10<10 → false → dropped off, freeing that money going forward.
+    const instExpense = INSTALLMENTS.filter(p => (p.paid + (m - 1)) < p.total_mo).reduce((s,p)=>s+(p.monthly||0), 0);
+    const income  = recurringIncome;
+    const expense = recurringExpense + instExpense + estRepeating;
+    const net = income - expense;
+    balance += net;
+    months.push({ label: MO[d.getMonth()] + " " + d.getFullYear(), income, recurringExpense, instExpense, estRepeating, expense, net, balance });
+  }
+  return months;
+}
+
+function renderForecastPage() {
+  const tableEl = document.getElementById("forecast-table");
+  if (!tableEl) return;
+  const months = calcForecastMonths(forecastHorizon);
+
+  const hintEl = document.getElementById("forecast-hint");
+  if (hintEl) hintEl.style.display = RECURRING.some(r => (r.type||"Expense")==="Income") ? "none" : "block";
+
+  const avgNet = months.reduce((s,m)=>s+m.net, 0) / months.length;
+  const avgEl = document.getElementById("forecast-avg-net");
+  if (avgEl) { avgEl.textContent = (avgNet>=0?"+":"") + fmt(avgNet); avgEl.style.color = avgNet>=0 ? "var(--green-strong)" : "var(--red-strong)"; }
+  const finalBalance = months[months.length-1].balance;
+  const lblEl = document.getElementById("forecast-end-balance-label");
+  if (lblEl) lblEl.textContent = "In " + forecastHorizon + " month" + (forecastHorizon!==1?"s":"");
+  const balEl = document.getElementById("forecast-end-balance");
+  if (balEl) { balEl.textContent = fmt(finalBalance); balEl.style.color = finalBalance>=0 ? "var(--slate-900)" : "var(--red-strong)"; }
+
+  renderForecastChart(months);
+
+  tableEl.innerHTML = months.map((m,i) => {
+    const droppedOff = i>0 && m.instExp < months[i-1].instExp;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:0.5px solid var(--slate-100)">' +
+      '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--slate-800)">' + m.label + '</div>' +
+      (droppedOff ? '<div style="font-size:9px;color:var(--green-text);margin-top:1px">an instalment finished — expenses dropped</div>' : '') + '</div>' +
+      '<div style="text-align:right;min-width:70px;margin-right:8px"><div style="font-size:10px;color:var(--green-text)">+' + fmt(m.income,0) + '</div><div style="font-size:10px;color:var(--red-text)">−' + fmt(m.expense,0) + '</div></div>' +
+      '<div style="text-align:right;min-width:72px;font-size:13px;font-weight:700;color:' + (m.balance>=0?'var(--slate-900)':'var(--red-strong)') + '">' + fmt(m.balance,0) + '</div>' +
+    '</div>';
+  }).join("");
+}
+
+// Hand-rolled inline SVG — bars for each month's net, a line for the running balance.
+// No chart library: matches every other chart already in this app (Spending, Budget trend, Savings rate).
+function renderForecastChart(months) {
+  const svg = document.getElementById("forecast-chart-svg");
+  if (!svg) return;
+  const W = 300, H = 110, padT = 8, padB = 16, padX = 4;
+  const chartH = H - padT - padB;
+  const n = months.length;
+  const lane = (W - padX*2) / n;
+  const barW = Math.min(26, lane - 6);
+  const maxNet = Math.max(...months.map(m=>Math.abs(m.net)), 1);
+  const minBal = Math.min(...months.map(m=>m.balance), 0);
+  const maxBal = Math.max(...months.map(m=>m.balance), 1);
+  const balRange = Math.max(maxBal - minBal, 1);
+  const zeroY = padT + chartH * 0.62;
+  const barScale = (chartH * 0.55) / maxNet;
+
+  const bars = months.map((m,i) => {
+    const cx = padX + (i + 0.5) * lane;
+    const bh = Math.max(Math.abs(m.net) * barScale, 1.5);
+    const y = m.net >= 0 ? zeroY - bh : zeroY;
+    const color = m.net >= 0 ? "var(--green-strong)" : "var(--red-strong)";
+    return '<rect x="' + (cx-barW/2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="2" fill="' + color + '" opacity="0.55"/>';
+  }).join("");
+
+  const pts = months.map((m,i) => {
+    const x = padX + (i + 0.5) * lane;
+    const y = padT + chartH - ((m.balance - minBal) / balRange) * chartH;
+    return { x, y };
+  });
+  const lineStr = pts.map((p,i)=>(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  const dots = pts.map(p=>'<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="2.5" fill="var(--indigo)"/>').join('');
+  const labels = months.map((m,i) => {
+    const x = padX + (i + 0.5) * lane;
+    const show = n<=6 || i===0 || i===n-1 || i===Math.floor(n/2);
+    return '<text x="'+x.toFixed(1)+'" y="'+(H-3)+'" font-size="8" fill="var(--slate-400)" text-anchor="middle">'+(show?m.label.split(" ")[0]:'')+'</text>';
+  }).join("");
+
+  svg.innerHTML =
+    '<line x1="0" y1="' + zeroY.toFixed(1) + '" x2="' + W + '" y2="' + zeroY.toFixed(1) + '" stroke="var(--slate-200)" stroke-width="1"/>' +
+    bars +
+    '<path d="' + lineStr + '" fill="none" stroke="var(--indigo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    dots + labels;
+}
+
 // Estimated bills get their own card on Home — same tier as Net Worth below —
 // so the feature is visible without ever opening Settings. Shows the pending
 // total plus a short preview list; "Manage" opens the full page.
@@ -700,4 +813,3 @@ function toggleMoMExpand(id, btn) {
   el.style.maxHeight = isOpen ? '0' : el.scrollHeight + 'px';
   btn.textContent = isOpen ? 'See all ›' : 'Collapse ‹';
 }
-
