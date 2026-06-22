@@ -364,6 +364,36 @@ async function fetchFromSheets(silent = false) {
   } catch(e) { if (!silent) { setSyncStatus("error"); showToast("Pull failed — check connection"); } return false; }
 }
 
+// Settings' "Pull from Google Sheets" button used to call fetchFromSheets() alone —
+// transactions only. Budgets and Recurring only ever came back automatically on a
+// full app startup() (which runs the same three fetches together) — meaning a fresh
+// device that pastes the Sheets URL and taps Pull, without reloading the page first,
+// got transactions back but not Recurring or Budgets. This is the actual "Pull"
+// button now; it does what the label always implied it did.
+async function pullAllFromSheets() {
+  if (!settings.sheetsUrl) { showToast("Add Sheets URL in Settings first"); goTo("settings"); return; }
+  setSyncStatus("syncing"); showToast("Pulling from Google Sheets…");
+  const [txOk, budgetOk, recOk] = await Promise.all([
+    fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true)
+  ]);
+  if (txOk || budgetOk || recOk) {
+    setSyncStatus("ok");
+    settings.lastPull = new Date().toISOString(); saveSettings();
+    const lbl = document.getElementById("last-pull-label");
+    if (lbl) lbl.textContent = "Last pulled: just now";
+    const parts = [];
+    if (txOk) parts.push("transactions");
+    if (budgetOk) parts.push("budgets");
+    if (recOk) parts.push("recurring");
+    showToast("Pulled " + parts.join(", ") + " ✓");
+    renderHome(); renderAnalytics();
+    if (document.getElementById("page-budget")?.classList.contains("active")) renderBudget();
+    if (document.getElementById("page-recurring")?.classList.contains("active")) renderRecurringPage();
+  } else {
+    setSyncStatus("error"); showToast("Pull failed — check connection");
+  }
+}
+
 function pinPress(digit) { if (pinBuffer.length >= 6) return; pinBuffer += digit; updatePinDots(); if (pinBuffer.length === 6) setTimeout(() => checkPin(), 120); }
 function pinDel() { pinBuffer = pinBuffer.slice(0,-1); updatePinDots(); document.getElementById("pin-error").textContent = ""; }
 function updatePinDots() { for (let i=0;i<6;i++) document.getElementById("d"+i).classList.toggle("filled", i<pinBuffer.length); }
