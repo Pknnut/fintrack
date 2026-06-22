@@ -41,9 +41,11 @@ const _savedGoals = JSON.parse(localStorage.getItem("ft_goals") || "null");
 const _savedInsts = JSON.parse(localStorage.getItem("ft_insts") || "null");
 if (_savedGoals) GOALS.push(..._savedGoals);
 if (_savedInsts) { INSTALLMENTS.length = 0; INSTALLMENTS.push(..._savedInsts); }
-// One-time migration: backfill goalId onto legacy goal-spends (matched by current name),
-// so the link survives future goal renames. Runs cheaply on every load; no-op once done.
-(function backfillGoalIds() {
+// Backfills goalId onto legacy goal-spends (matched by current name), so the link
+// survives future goal renames. Runs at load, and again after fetchGoalsFromSheets —
+// a freshly-fetched goal has a brand new local id, so any transaction that already
+// references it by name needs re-linking to that new id.
+function backfillGoalIds() {
   let changed = false;
   txs.forEach(t => {
     if (t.fromGoal === true && t.type === "Expense" && t.goalId == null && t.goalName) {
@@ -52,16 +54,20 @@ if (_savedInsts) { INSTALLMENTS.length = 0; INSTALLMENTS.push(..._savedInsts); }
     }
   });
   if (changed) saveTxs();
-})();
-// One-time migration: backfill a stable id onto existing instalments — needed so
-// confirmMarkPaid can link a transaction back to the instalment that created it.
-(function backfillInstIds() {
+}
+backfillGoalIds();
+// Backfills a stable id onto any instalment missing one — needed so confirmMarkPaid
+// can link a transaction back to the instalment that created it. Runs at load time,
+// and again after fetchInstallmentsFromSheets (since Sheets has no id column at all —
+// every fetched instalment needs a fresh one assigned locally).
+function backfillInstIds() {
   let changed = false;
   INSTALLMENTS.forEach((p, i) => {
     if (p.id == null) { p.id = Date.now() + i; changed = true; }
   });
   if (changed) saveInsts();
-})();
+}
+backfillInstIds();
 let pinBuffer = "", pinMode = "enter", pinSetupFirst = "";
 let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
 let RECURRING = JSON.parse(localStorage.getItem("ft_recurring") || "[]");
@@ -84,6 +90,84 @@ async function fetchRecurringFromSheets(silent = false) {
     if (data.recurring && Array.isArray(data.recurring) && data.recurring.length) {
       RECURRING = data.recurring;
       localStorage.setItem("ft_recurring", JSON.stringify(RECURRING));
+      return true;
+    }
+    return false;
+  } catch { return false; }
+}
+
+// The backend's get_installments route already existed — this is the frontend half
+// that was never built, which is why instalments never came back on a fresh device.
+// Sheets has no id/color columns at all (those are local-only concepts), so every
+// fetched plan needs a fresh id (backfillInstIds) and a fallback color assigned here.
+// "name" may or may not carry a leading emoji depending on how it was originally
+// saved — parsed the same way submitInst()/openEditInstModal() already do.
+async function fetchInstallmentsFromSheets(silent = false) {
+  if (!settings.sheetsUrl) return false;
+  try {
+    const res  = await fetch(settings.sheetsUrl + "?action=get_installments");
+    const data = await res.json();
+    if (data.installments && Array.isArray(data.installments) && data.installments.length) {
+      INSTALLMENTS = data.installments.map((r, i) => {
+        const raw = r.name || "";
+        const m = raw.match(/^(\p{Emoji}\uFE0F?)\s*/u);
+        return {
+          id: Date.now() + i,
+          icon: m ? m[1] : "📦",
+          name: m ? raw.slice(m[0].length) : raw,
+          cat: r.category || "",
+          total: Number(r.total) || 0,
+          monthly: Number(r.monthly) || 0,
+          paid: Number(r.monthsPaid) || 0,
+          total_mo: Number(r.totalMonths) || 0,
+          color: CAT_COLORS[i % CAT_COLORS.length],
+          startDate: r.startDate || ""
+        };
+      });
+      saveInsts();
+      return true;
+    }
+    return false;
+  } catch { return false; }
+}
+
+// Goals had no pull-back path at all until now — backend's get_goals route is brand
+// new (see fintrack_appscript.gs). Recovers name/saved/target/monthly/due, since
+// that's all the sheet stores; category, color, contribution history, and goal-spend
+// logs are local-only concepts with no Sheets column, so they're not recoverable —
+// the goal itself comes back, not its full history. Re-running backfillGoalIds after
+// this is what re-links any local goal-spend transactions to the newly-fetched goal's
+// (necessarily new) local id, matched by name.
+async function fetchGoalsFromSheets(silent = false) {
+  if (!settings.sheetsUrl) return false;
+  try {
+    const res  = await fetch(settings.sheetsUrl + "?action=get_goals");
+    const data = await res.json();
+    if (data.goals && Array.isArray(data.goals) && data.goals.length) {
+      GOALS = data.goals.map((r, i) => {
+        const raw = r.name || "";
+        const m = raw.match(/^(\p{Emoji}\uFE0F?)\s*/u);
+        // Defensive: Sheets can silently reinterpret "Jul 2026"-style text as a Date
+        // object on re-entry (the same risk already fixed for Budgets' effectiveYM
+        // column) — formatDate() on the backend would then send back "2026-07-01"
+        // instead. Convert that back to the "Mon YYYY" shape the rest of the app expects.
+        let due = r.due || "—";
+        const isoMatch = String(due).match(/^(\d{4})-(\d{2})-\d{2}/);
+        if (isoMatch) due = MO[parseInt(isoMatch[2],10)-1] + " " + isoMatch[1];
+        return {
+          id: Date.now() + i,
+          icon: m ? m[1] : "🎯",
+          name: m ? raw.slice(m[0].length) : raw,
+          saved: Number(r.saved) || 0,
+          target: Number(r.target) || 0,
+          monthly: Number(r.monthly) || 0,
+          color: "var(--teal)", bg: "var(--tint-green-bg)",
+          due, category: "",
+          contributions: [], spends: []
+        };
+      });
+      saveGoals();
+      backfillGoalIds();
       return true;
     }
     return false;
@@ -319,7 +403,7 @@ async function startup() {
   setLoading("Starting up…", 10);
   if (settings.sheetsUrl) {
     setLoading("Fetching data from Google Sheets…", 25);
-    const [txOk, budgetOk] = await Promise.all([fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true)]);
+    const [txOk, budgetOk] = await Promise.all([fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true), fetchInstallmentsFromSheets(true), fetchGoalsFromSheets(true)]);
     if (txOk || budgetOk) { setLoading("Data loaded ✓", 90); await delay(600); }
     else { setLoading("Working offline", 90); await delay(600); }
   } else { setLoading("Loading…", 80); await delay(300); }
@@ -373,10 +457,10 @@ async function fetchFromSheets(silent = false) {
 async function pullAllFromSheets() {
   if (!settings.sheetsUrl) { showToast("Add Sheets URL in Settings first"); goTo("settings"); return; }
   setSyncStatus("syncing"); showToast("Pulling from Google Sheets…");
-  const [txOk, budgetOk, recOk] = await Promise.all([
-    fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true)
+  const [txOk, budgetOk, recOk, instOk, goalOk] = await Promise.all([
+    fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true), fetchInstallmentsFromSheets(true), fetchGoalsFromSheets(true)
   ]);
-  if (txOk || budgetOk || recOk) {
+  if (txOk || budgetOk || recOk || instOk || goalOk) {
     setSyncStatus("ok");
     settings.lastPull = new Date().toISOString(); saveSettings();
     const lbl = document.getElementById("last-pull-label");
@@ -385,10 +469,14 @@ async function pullAllFromSheets() {
     if (txOk) parts.push("transactions");
     if (budgetOk) parts.push("budgets");
     if (recOk) parts.push("recurring");
+    if (instOk) parts.push("instalments");
+    if (goalOk) parts.push("goals");
     showToast("Pulled " + parts.join(", ") + " ✓");
     renderHome(); renderAnalytics();
     if (document.getElementById("page-budget")?.classList.contains("active")) renderBudget();
     if (document.getElementById("page-recurring")?.classList.contains("active")) renderRecurringPage();
+    if (document.getElementById("page-installments")?.classList.contains("active")) renderInstallments();
+    if (document.getElementById("page-goals")?.classList.contains("active")) renderGoals();
   } else {
     setSyncStatus("error"); showToast("Pull failed — check connection");
   }
@@ -587,9 +675,11 @@ function histSplitCard(members) {
 async function refreshApp() {
   const icon=document.querySelector("#refresh-btn i"); if(icon)icon.classList.add("spin");
   showToast("Refreshing…");
-  const [txOk,budgetOk]=await Promise.all([fetchFromSheets(true),fetchBudgetsFromSheets(true),fetchRecurringFromSheets(true)]);
+  const [txOk,budgetOk,recOk,instOk,goalOk]=await Promise.all([fetchFromSheets(true),fetchBudgetsFromSheets(true),fetchRecurringFromSheets(true),fetchInstallmentsFromSheets(true),fetchGoalsFromSheets(true)]);
   if(icon)icon.classList.remove("spin"); renderHome(); renderAnalytics();
-  if(txOk||budgetOk)showToast("Refreshed ✓"); else showToast("Up to date ✓");
+  if (document.getElementById("page-installments")?.classList.contains("active")) renderInstallments();
+  if (document.getElementById("page-goals")?.classList.contains("active")) renderGoals();
+  if(txOk||budgetOk||recOk||instOk||goalOk)showToast("Refreshed ✓"); else showToast("Up to date ✓");
 }
 
 let editGoalIdx = -1;

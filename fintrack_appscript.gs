@@ -10,6 +10,7 @@ function doGet(e) {
     const action = e.parameter.action || "get_transactions";
     if (action === "get_transactions") return jsonResponse(getTransactions());
     if (action === "get_installments") return jsonResponse(getInstallments());
+    if (action === "get_goals")        return jsonResponse(getGoals());
     if (action === "get_summary")      return jsonResponse(getSummary(e.parameter.month, e.parameter.year));
     if (action === "get_budgets")      return jsonResponse(getBudgets());
     if (action === "get_recurring")    return jsonResponse(getRecurring());
@@ -96,6 +97,26 @@ function getInstallments() {
     amountPaid: Number(r[8]) || 0, balance: Number(r[9]) || 0
   }));
   return { installments };
+}
+
+// Goals previously had NO pull-back route at all — only ever pushed (addGoal,
+// updateGoal, updateGoalSaved), never fetched. This recovers name/saved/target/
+// monthly/due — the columns this sheet actually stores. Contribution history and
+// goal-spend logs are local-only concepts with no Sheets column, so they can't be
+// recovered this way; only the goal itself (and its current saved total) comes back.
+function getGoals() {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("🎯 Goals");
+  if (!sheet) return { goals: [] };
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 6) return { goals: [] };
+  const vals = sheet.getRange(6, 1, lastRow - 5, 7).getValues();
+  const goals = vals.filter(r => r[0] !== "").map((r, i) => ({
+    row: i + 6, name: r[0],
+    saved: Number(r[1]) || 0, target: Number(r[2]) || 0,
+    monthly: Number(r[4]) || 0, due: formatDate(r[6])
+  }));
+  return { goals };
 }
 
 function getSummary(filterMonth, filterYear) {
