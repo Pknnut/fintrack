@@ -266,7 +266,9 @@ function deleteTransaction(rowId, data) {
     const desc   = String(data.desc || data.description || "").trim().toLowerCase();
     const amount = Number(data.amount);
     for (let i = vals.length - 1; i >= 0; i--) {
-      const rowDate   = String(vals[i][0] || "");
+      const rowDate   = (vals[i][0] instanceof Date)
+                        ? Utilities.formatDate(vals[i][0], Session.getScriptTimeZone(), "yyyy-MM-dd")
+                        : String(vals[i][0] || "");
       const rowDesc   = String(vals[i][3] || "").trim().toLowerCase();
       const rowAmount = Number(vals[i][4]) || 0;
       if (rowDate === date && rowDesc === desc && rowAmount === amount) {

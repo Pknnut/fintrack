@@ -74,9 +74,9 @@ let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
 // Tracks txs edited locally but not synced — keyed by rowId so fetchFromSheets
 // can re-apply the edit on top of pulled data instead of losing it.
 let pendingEdits = JSON.parse(localStorage.getItem("ft_pending_edits") || "{}");
+function savePendingEdits() { localStorage.setItem("ft_pending_edits", JSON.stringify(pendingEdits)); }
 let deletedRowIds = new Set(JSON.parse(localStorage.getItem("ft_deleted_rows") || "[]"));
 function saveDeletedRows() { localStorage.setItem("ft_deleted_rows", JSON.stringify([...deletedRowIds])); }
-function savePendingEdits() { localStorage.setItem("ft_pending_edits", JSON.stringify(pendingEdits)); }
 let RECURRING = JSON.parse(localStorage.getItem("ft_recurring") || "[]");
 // Strip null/undefined holes that can appear when confirmAddRecurring() writes
 // to an out-of-bounds index (stale _recAddEditIdx). Those holes survive
@@ -800,7 +800,7 @@ async function _doDeleteTx(id) {
   const tx=txs.find(t=>t.id===id); txs=txs.filter(t=>t.id!==id); unsyncedIds=unsyncedIds.filter(uid=>uid!==id);
   if(tx&&tx.rowId){deletedRowIds.add(tx.rowId);saveDeletedRows();}
   localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds)); saveTxs(); renderHistory(); renderHome();
-  if(tx&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_transaction",{rowId:tx.rowId,data:{date:tx.date,desc:tx.desc||tx.description||"",amount:tx.amount}}),new Promise(r=>setTimeout(()=>r(false),15000))]);if(ok){setSyncStatus("ok");deletedRowIds.delete(tx.rowId);saveDeletedRows();showToast("Transaction deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — sync pending");}}
+  if(tx&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_transaction",{rowId:tx.rowId,data:{date:tx.date,desc:tx.desc||tx.description||"",amount:tx.amount}}),new Promise(r=>setTimeout(()=>r(false),15000))]);if(ok){setSyncStatus("ok");deletedRowIds.delete(tx.rowId);saveDeletedRows();showToast("Transaction deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — Sheets sync pending");}}
   else showToast("Transaction deleted");
 }
 
