@@ -385,9 +385,7 @@ function renderRecurringPage() {
   const list = document.getElementById("rec-page-list");
   const pendingLabel = document.getElementById("rec-pending-label");
   const logAllBtn = document.getElementById("rec-log-all-btn");
-  if (!list) return;
-  // DEBUG — remove after diagnosis
-  showToast("RECURRING count: " + RECURRING.length + " | localStorage: " + (localStorage.getItem("ft_recurring")||"null").slice(0,40));
+  if (!list) { showToast("DEBUG: list element NOT FOUND"); return; }
   if (!RECURRING.length) {
     list.innerHTML = '<div class="rec-empty">No recurring items yet.<br>Mark a transaction as recurring when adding it.</div>';
     if (pendingLabel) pendingLabel.textContent = "";
@@ -402,7 +400,8 @@ function renderRecurringPage() {
   if (pendingLabel) pendingLabel.textContent = pending.length ? pending.length + " pending · " + fmt(pendingTotal) : "All logged this month ✓";
   if (logAllBtn) logAllBtn.disabled = pending.length === 0;
   try {
-    list.innerHTML = RECURRING.map((r, idx) => {
+    list.innerHTML = '<div style="padding:10px;background:red;color:white;font-weight:bold">DEBUG: ' + RECURRING.length + ' items</div>' +
+    RECURRING.map((r, idx) => {
       const isLogged = isLoggedThisMonth(loggedKeys, r.desc, r.type);
       const isIncome = (r.type||"Expense") === "Income";
       const isEditing = (_recEditIdx === idx);
@@ -439,6 +438,9 @@ function renderRecurringPage() {
         '<button class="rec-del-btn" onclick="removeRecurringByIdx(' + idx + ')" title="Remove">×</button>' +
       '</div>';
     }).join("");
+    // DEBUG: check if list gets cleared after render
+    const snapshot = list.innerHTML.length;
+    setTimeout(() => showToast("After 500ms: innerHTML length=" + list.innerHTML.length + " (was " + snapshot + ")"), 500);
   } catch(e) {
     console.error("renderRecurringPage error:", e);
     // Wipe corrupt entries so the user gets a clean empty state rather than a blank broken page.
