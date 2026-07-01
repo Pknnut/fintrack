@@ -8,6 +8,10 @@ async function postToSheetsRaw(action,payload) {
   if(!settings.sheetsUrl)return null;
   try { const res=await fetch(settings.sheetsUrl,{method:"POST",body:JSON.stringify({action,...payload}),headers:{"Content-Type":"text/plain"}}); return await res.json(); } catch{return null;}
 }
+async function postToSheetsRaw(action,payload) {
+  if(!settings.sheetsUrl)return null;
+  try { const res=await fetch(settings.sheetsUrl,{method:"POST",body:JSON.stringify({action,...payload}),headers:{"Content-Type":"text/plain"}}); return await res.json(); } catch{return null;}
+}
 // Like postToSheets but returns the raw response object so callers can read rowId,
 // success fields, etc. Returns null on network/parse failure.
 async function postToSheetsRaw(action,payload) {
