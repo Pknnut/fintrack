@@ -690,3 +690,15 @@ function confirmAddEstBill() {
   showToast(isEdit ? "Bill updated ✓" : "Added ✓");
   _estAddEditIdx = -1;
 }
+// Temporary recovery function — clears corrupt recurring localStorage and re-fetches from Sheets.
+// Accessible via Settings → "Reset recurring list".
+async function resetRecurringData() {
+  if (!(await appConfirm({title:"Reset recurring list?", message:"This clears local recurring data and pulls fresh from Google Sheets.", okText:"Reset", danger:true}))) return;
+  RECURRING = [];
+  localStorage.removeItem("ft_recurring");
+  showToast("Clearing…");
+  const ok = await fetchRecurringFromSheets(true);
+  renderRecurringPage();
+  if (ok) showToast("Recurring restored from Sheets ✓");
+  else showToast("Cleared — no Sheets data found. Re-add items manually.");
+}
