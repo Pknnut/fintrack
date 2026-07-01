@@ -77,6 +77,13 @@ let pendingEdits = JSON.parse(localStorage.getItem("ft_pending_edits") || "{}");
 function savePendingEdits() { localStorage.setItem("ft_pending_edits", JSON.stringify(pendingEdits)); }
 let deletedRowIds = new Set(JSON.parse(localStorage.getItem("ft_deleted_rows") || "[]"));
 function saveDeletedRows() { localStorage.setItem("ft_deleted_rows", JSON.stringify([...deletedRowIds])); }
+async function fixBalance() {
+  deletedRowIds = new Set();
+  saveDeletedRows();
+  showToast("Blocked rows cleared — pulling fresh data…");
+  await pullAllFromSheets();
+  showToast("Balance updated ✓");
+}
 let RECURRING = JSON.parse(localStorage.getItem("ft_recurring") || "[]");
 // Strip null/undefined holes that can appear when confirmAddRecurring() writes
 // to an out-of-bounds index (stale _recAddEditIdx). Those holes survive
