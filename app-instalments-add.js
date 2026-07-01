@@ -510,8 +510,14 @@ async function submitSplitTx() {
   newTxs.forEach(t => txs.push(t)); saveTxs();
   if (settings.sheetsUrl && settings.autosync) {
     setSyncStatus("syncing");
-    if (editing) { for (const m of oldMembers) { await Promise.race([postToSheets("delete_transaction",{rowId:m.rowId,data:{desc:m.desc||"",amount:m.amount}}), new Promise(r=>setTimeout(()=>r(false),5000))]); } }
-    const ok = await Promise.race([postToSheets("add_transactions_bulk",{data:newTxs}), new Promise(r=>setTimeout(()=>r(false),8000))]);
+    if (editing) {
+      for (const m of oldMembers) { if (m.rowId) { deletedRowIds.add(m.rowId); saveDeletedRows(); } }
+      for (const m of oldMembers) {
+        const ok = await Promise.race([postToSheets("delete_transaction",{rowId:m.rowId,data:{desc:m.desc||"",amount:m.amount}}), new Promise(r=>setTimeout(()=>r(false),12000))]);
+        if (ok && m.rowId) { deletedRowIds.delete(m.rowId); saveDeletedRows(); }
+      }
+    }
+    const ok = await Promise.race([postToSheets("add_transactions_bulk",{data:newTxs}), new Promise(r=>setTimeout(()=>r(false),12000))]);
     if (ok) { showToast(editing?"Split updated + synced ✓":"Split added + synced ✓"); setSyncStatus("ok"); }
     else { newTxs.forEach(t=>unsyncedIds.push(t.id)); showToast("Saved locally — will sync later"); setSyncStatus("error"); }
   } else showToast(editing ? "Split updated ✓" : ("Split saved ✓ ("+items.length+" categories)"));
