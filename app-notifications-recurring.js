@@ -393,47 +393,59 @@ function renderRecurringPage() {
     return;
   }
   const loggedKeys = buildLoggedKeysThisMonth();
+  // Strip any null/invalid entries that may have slipped in before rendering.
+  RECURRING = RECURRING.filter(r => r && typeof r === "object" && r.desc);
   const pending = RECURRING.filter(r => !isLoggedThisMonth(loggedKeys, r.desc, r.type));
   const pendingTotal = pending.reduce((s, r) => s + (r.amount||0), 0);
   if (pendingLabel) pendingLabel.textContent = pending.length ? pending.length + " pending · " + fmt(pendingTotal) : "All logged this month ✓";
   if (logAllBtn) logAllBtn.disabled = pending.length === 0;
-  list.innerHTML = RECURRING.map((r, idx) => {
-    const isLogged = isLoggedThisMonth(loggedKeys, r.desc, r.type);
-    const isIncome = (r.type||"Expense") === "Income";
-    const isEditing = (_recEditIdx === idx);
-    const catName = (r.category||"").replace(/^\S+\s/,"");
-    const icon = (r.category||"").match(/^\S+/)?.[0] || (isIncome ? "💰" : "🔄");
-    return '<div class="rec-page-item" id="rec-item-' + idx + '">' +
-      '<div class="rec-page-icon' + (isIncome?" income":"") + '">' + icon + '</div>' +
-      '<div class="rec-page-info">' +
-        '<div class="rec-page-name">' + (r.desc||"") + '</div>' +
-        '<div class="rec-page-cat">' + (r.category||"").replace(/^\S+\s/,"") + ' · monthly</div>' +
-      '</div>' +
-      '<div class="rec-page-right">' +
-        (isEditing ?
-          '<div class="rec-amt-edit-row">' +
-            '<span style="font-size:12px;color:var(--slate-400)">฿</span>' +
-            '<input class="rec-amt-input" id="rec-amt-input-' + idx + '" type="text" inputmode="none" readonly value="' + r.amount + '" />' +
-            '<button class="rec-amt-confirm" onclick="confirmRecurringAmt(' + idx + ')" aria-label="confirm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--white)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>' +
-            '<button class="rec-amt-cancel" onclick="cancelRecurringAmt()" aria-label="cancel"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
-          '</div>' +
-          '<span class="rec-was-hint">was ' + fmt(r.amount) + '</span>'
-        :
-          '<span class="rec-amt-display' + (isIncome?" income":"") + '" onclick="editRecurringAmt(' + idx + ')" title="Tap to edit amount">' + fmt(r.amount) + '</span>' +
-          (isLogged ?
-            '<span class="rec-status-logged"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Logged</span>'
+  try {
+    list.innerHTML = RECURRING.map((r, idx) => {
+      const isLogged = isLoggedThisMonth(loggedKeys, r.desc, r.type);
+      const isIncome = (r.type||"Expense") === "Income";
+      const isEditing = (_recEditIdx === idx);
+      const catName = (r.category||"").replace(/^\S+\s/,"");
+      const icon = (r.category||"").match(/^\S+/)?.[0] || (isIncome ? "💰" : "🔄");
+      return '<div class="rec-page-item" id="rec-item-' + idx + '">' +
+        '<div class="rec-page-icon' + (isIncome?" income":"") + '">' + icon + '</div>' +
+        '<div class="rec-page-info">' +
+          '<div class="rec-page-name">' + (r.desc||"") + '</div>' +
+          '<div class="rec-page-cat">' + (r.category||"").replace(/^\S+\s/,"") + ' · monthly</div>' +
+        '</div>' +
+        '<div class="rec-page-right">' +
+          (isEditing ?
+            '<div class="rec-amt-edit-row">' +
+              '<span style="font-size:12px;color:var(--slate-400)">฿</span>' +
+              '<input class="rec-amt-input" id="rec-amt-input-' + idx + '" type="text" inputmode="none" readonly value="' + r.amount + '" />' +
+              '<button class="rec-amt-confirm" onclick="confirmRecurringAmt(' + idx + ')" aria-label="confirm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--white)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>' +
+              '<button class="rec-amt-cancel" onclick="cancelRecurringAmt()" aria-label="cancel"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+            '</div>' +
+            '<span class="rec-was-hint">was ' + fmt(r.amount) + '</span>'
           :
-            '<div style="display:flex;gap:5px;align-items:center">' +
-              '<span class="rec-status-pending">Pending</span>' +
-              '<button class="rec-log-btn" onclick="logRecurringItem(' + idx + ')">Log</button>' +
-            '</div>'
-          )
-        ) +
-      '</div>' +
-      '<button class="rec-edit-btn" onclick="openEditRecurringModal(' + idx + ')" title="Edit">' + EDIT_PENCIL + '</button>' +
-      '<button class="rec-del-btn" onclick="removeRecurringByIdx(' + idx + ')" title="Remove">×</button>' +
-    '</div>';
-  }).join("");
+            '<span class="rec-amt-display' + (isIncome?" income":"") + '" onclick="editRecurringAmt(' + idx + ')" title="Tap to edit amount">' + fmt(r.amount) + '</span>' +
+            (isLogged ?
+              '<span class="rec-status-logged"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Logged</span>'
+            :
+              '<div style="display:flex;gap:5px;align-items:center">' +
+                '<span class="rec-status-pending">Pending</span>' +
+                '<button class="rec-log-btn" onclick="logRecurringItem(' + idx + ')">Log</button>' +
+              '</div>'
+            )
+          ) +
+        '</div>' +
+        '<button class="rec-edit-btn" onclick="openEditRecurringModal(' + idx + ')" title="Edit">' + EDIT_PENCIL + '</button>' +
+        '<button class="rec-del-btn" onclick="removeRecurringByIdx(' + idx + ')" title="Remove">×</button>' +
+      '</div>';
+    }).join("");
+  } catch(e) {
+    console.error("renderRecurringPage error:", e);
+    // Wipe corrupt entries so the user gets a clean empty state rather than a blank broken page.
+    RECURRING = [];
+    saveRecurring();
+    list.innerHTML = '<div class="rec-empty">Recurring list had corrupt data and was reset.<br>Please re-add your items using the + Add button.</div>';
+    if (pendingLabel) pendingLabel.textContent = "";
+    if (logAllBtn) logAllBtn.disabled = true;
+  }
   // Open the keypad directly when editing (programmatic focus alone no longer opens it)
   if (_recEditIdx !== null) {
     const inp = document.getElementById("rec-amt-input-" + _recEditIdx);
