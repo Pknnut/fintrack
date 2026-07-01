@@ -198,7 +198,6 @@ function buildLoggedKeysThisMonth() {
   const mo = now.getMonth(), yr = now.getFullYear();
   const keys = new Set();
   txs.forEach(t => {
-    if (!t || typeof t !== "object") return;
     const d = parseDate(t.date);
     if (d.getMonth() === mo && d.getFullYear() === yr) {
       keys.add((t.type || "Expense") + "|" + (t.desc || t.description || "").toLowerCase());
@@ -772,7 +771,7 @@ async function confirmEditTx() {
   const idx=txs.findIndex(t=>t.id===editTxId); if(idx<0){showToast("Transaction not found");return;}
   const oldTx={...txs[idx]}; txs[idx]={...oldTx,type:editTxType,category:cat,desc,amount,notes,date};
   saveTxs(); closeModal("edit-tx"); renderHistory(); renderHome(); showToast("Transaction updated ✓");
-  if(settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("update_transaction",{rowId:oldTx.rowId,data:{oldDesc:oldTx.desc||oldTx.description||"",oldAmount:oldTx.amount,date,type:editTxType,category:cat,description:desc,amount,notes}}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){setSyncStatus("ok");showToast("Updated + synced to Sheets ✓");}else{setSyncStatus("error");showToast("Updated locally — Sheets sync failed");}}
+  if(settings.sheetsUrl){setSyncStatus("syncing");const res=await Promise.race([postToSheetsRaw("update_transaction",{rowId:oldTx.rowId,data:{oldDesc:oldTx.desc||oldTx.description||"",oldAmount:oldTx.amount,date,type:editTxType,category:cat,description:desc,amount,notes}}),new Promise(r=>setTimeout(()=>r(null),15000))]);if(res&&!res.error){setSyncStatus("ok");showToast("Updated + synced to Sheets ✓");}else{setSyncStatus("error");showToast("Sync failed: "+(res?.error||"timeout — check connection"));}}
 }
 
 async function deleteTx(id) {

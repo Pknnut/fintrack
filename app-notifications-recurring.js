@@ -392,26 +392,15 @@ function renderRecurringPage() {
     if (logAllBtn) logAllBtn.disabled = true;
     return;
   }
-  // Build logged-this-month keys inline with a null guard, so a corrupt txs
-  // entry can't throw and kill the whole render.
-  const loggedKeys = new Set();
-  try {
-    const _now = new Date(), _mo = _now.getMonth(), _yr = _now.getFullYear();
-    (Array.isArray(txs) ? txs : []).forEach(t => {
-      if (!t || typeof t !== "object") return;
-      const d = parseDate(t.date);
-      if (d.getMonth() === _mo && d.getFullYear() === _yr)
-        loggedKeys.add((t.type||"Expense") + "|" + (t.desc||t.description||"").toLowerCase());
-    });
-  } catch(e) { console.warn("loggedKeys build error:", e); }
+  const loggedKeys = buildLoggedKeysThisMonth();
+  // Strip any null/invalid entries that may have slipped in before rendering.
   RECURRING = RECURRING.filter(r => r && typeof r === "object" && r.desc);
   const pending = RECURRING.filter(r => !isLoggedThisMonth(loggedKeys, r.desc, r.type));
   const pendingTotal = pending.reduce((s, r) => s + (r.amount||0), 0);
   if (pendingLabel) pendingLabel.textContent = pending.length ? pending.length + " pending · " + fmt(pendingTotal) : "All logged this month ✓";
   if (logAllBtn) logAllBtn.disabled = pending.length === 0;
   try {
-    list.innerHTML = '<div style="padding:10px;background:red;color:white;font-weight:bold">DEBUG: ' + RECURRING.length + ' items</div>' +
-    RECURRING.map((r, idx) => {
+    list.innerHTML = RECURRING.map((r, idx) => {
       const isLogged = isLoggedThisMonth(loggedKeys, r.desc, r.type);
       const isIncome = (r.type||"Expense") === "Income";
       const isEditing = (_recEditIdx === idx);
@@ -448,9 +437,6 @@ function renderRecurringPage() {
         '<button class="rec-del-btn" onclick="removeRecurringByIdx(' + idx + ')" title="Remove">×</button>' +
       '</div>';
     }).join("");
-    // DEBUG: check if list gets cleared after render
-    const snapshot = list.innerHTML.length;
-    setTimeout(() => showToast("After 500ms: innerHTML length=" + list.innerHTML.length + " (was " + snapshot + ")"), 500);
   } catch(e) {
     console.error("renderRecurringPage error:", e);
     // Wipe corrupt entries so the user gets a clean empty state rather than a blank broken page.
