@@ -381,10 +381,15 @@ async function confirmMarkPaid() {
   showToast(p.name + " — payment " + newPaid + "/" + p.total_mo + " marked + logged ✓");
   if (settings.sheetsUrl && settings.autosync) {
     setSyncStatus("syncing");
-    const [instOk, txOk] = await Promise.all([
+    const [instOk, txRes] = await Promise.all([
       Promise.race([postToSheets("update_installment_paid",{planName:p.name,monthsPaid:newPaid}),new Promise(r=>setTimeout(()=>r(false),6000))]),
-      Promise.race([postToSheets("add_transaction",{data:{...tx}}),new Promise(r=>setTimeout(()=>r(false),6000))])
+      Promise.race([postToSheetsRaw("add_transaction",{data:{...tx}}),new Promise(r=>setTimeout(()=>r(null),6000))])
     ]);
+    const txOk = txRes && !txRes.error;
+    if (txOk && txRes.rowId) {
+      const local = txs.find(t => t.id === tx.id);
+      if (local) { local.rowId = txRes.rowId; saveTxs(); }
+    }
     if (instOk && txOk) { setSyncStatus("ok"); }
     else {
       setSyncStatus("error");

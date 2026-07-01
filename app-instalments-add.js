@@ -552,7 +552,7 @@ async function submitTx() {
     saveRecurring();
     showToast("Added as recurring ✓");
   }
-  if(settings.sheetsUrl&&settings.autosync){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("add_transaction",{data:{...tx}}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){showToast("Added + synced ✓");setSyncStatus("ok");}else{unsyncedIds.push(tx.id);localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds));showToast("Saved locally — will sync later");setSyncStatus("error");}}
+  if(settings.sheetsUrl&&settings.autosync){setSyncStatus("syncing");const res=await Promise.race([postToSheetsRaw("add_transaction",{data:{...tx}}),new Promise(r=>setTimeout(()=>r(null),6000))]);if(res&&!res.error){if(res.rowId){const local=txs.find(t=>t.id===tx.id);if(local){local.rowId=res.rowId;saveTxs();}}showToast("Added + synced ✓");setSyncStatus("ok");}else{unsyncedIds.push(tx.id);localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds));showToast("Saved locally — will sync later");setSyncStatus("error");}}
   else showToast("Transaction added ✓");
   flashBtn("btn-add-tx","Add Transaction","var(--slate-900)"); await delay(900); goTo("home");
 }
@@ -581,4 +581,3 @@ async function submitInst() {
   else showToast("Instalment saved ✓");
   flashBtn("btn-add-inst","Add Instalment","var(--indigo)"); await delay(900); goTo("installments");
 }
-

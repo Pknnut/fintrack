@@ -334,8 +334,15 @@ async function addRecurringNow(r, overrideAmt) {
   renderHome();
   if (settings.sheetsUrl && settings.autosync) {
     setSyncStatus("syncing");
-    const ok = await Promise.race([postToSheets("add_transaction",{data:{...tx}}), new Promise(res=>setTimeout(()=>res(false),6000))]);
-    if (ok) setSyncStatus("ok"); else setSyncStatus("error");
+    const res = await Promise.race([postToSheetsRaw("add_transaction",{data:{...tx}}), new Promise(r=>setTimeout(()=>r(null),6000))]);
+    if (res && !res.error) {
+      setSyncStatus("ok");
+      // Backfill rowId so future deletes can find the right Sheets row.
+      if (res.rowId) {
+        const local = txs.find(t => t.id === tx.id);
+        if (local) { local.rowId = res.rowId; saveTxs(); }
+      }
+    } else { setSyncStatus("error"); }
   }
 }
 
