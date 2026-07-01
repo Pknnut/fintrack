@@ -352,7 +352,9 @@ function confirmAddRecurring() {
   if (!desc)            { showToast("Enter a description"); return; }
   if (!amount || amount <= 0) { showToast("Enter a valid amount"); return; }
   const entry = { desc, category: cat, amount, type: _recAddType, notes };
-  const isEdit = _recAddEditIdx >= 0;
+  // Guard: if the stored edit index is out of bounds (stale from a cancelled edit),
+  // treat it as a new add rather than writing to a non-existent slot.
+  const isEdit = _recAddEditIdx >= 0 && _recAddEditIdx < RECURRING.length;
   if (isEdit) {
     RECURRING[_recAddEditIdx] = entry;
     _recAddEditIdx = -1;
