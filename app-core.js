@@ -8,11 +8,10 @@ const EDIT_PENCIL_SM = '<svg width="12" height="12" viewBox="0 0 24 24" fill="no
 const SIM_BOLT = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>';
 let GOALS = [];
 let INSTALLMENTS = [
-  {icon:"📚",name:"Jeducations",cat:"💳 Credit Card",total:7711.50,monthly:771.15,paid:9,total_mo:10,color:"var(--indigo)"},
-  {icon:"🏍️",name:"Bike (1)",cat:"💳 Credit Card",total:3218.80,monthly:321.88,paid:4,total_mo:10,color:"var(--teal)"},
-  {icon:"🏍️",name:"Bike (2)",cat:"💳 Credit Card",total:9556.50,monthly:955.65,paid:4,total_mo:10,color:"var(--amber)"},
-  {icon:"🏍️",name:"Bike (3)",cat:"💳 Credit Card",total:2772.90,monthly:462.15,paid:3,total_mo:6,color:"var(--green)"},
-  {icon:"🛡️",name:"AIA Insurance",cat:"🛡️ Insurance",total:30681.70,monthly:3068.17,paid:4,total_mo:10,color:"#8b5cf6"},
+  {icon:"🏍️",name:"Bike (1)",cat:"💳 Credit Card",total:3218.80,monthly:321.88,paid:5,total_mo:10,color:"var(--teal)"},
+  {icon:"🏍️",name:"Bike (2)",cat:"💳 Credit Card",total:9556.50,monthly:955.65,paid:5,total_mo:10,color:"var(--amber)"},
+  {icon:"🏍️",name:"Bike (3)",cat:"💳 Credit Card",total:2772.90,monthly:462.15,paid:4,total_mo:6,color:"var(--green)"},
+  {icon:"🛡️",name:"AIA Insurance",cat:"🛡️ Insurance",total:30681.70,monthly:3068.17,paid:5,total_mo:10,color:"#8b5cf6"},
 ];
 const MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const CAT_COLORS = ["#6366f1","#0d9488","#f59e0b","#ef4444","#22c55e","#8b5cf6","#ec4899","#f97316"];
@@ -35,6 +34,11 @@ EXPENSE_CATS.forEach((c, i) => { CAT_BG[c.n] = EXPENSE_TINTS[i] || "var(--slate-
 INCOME_CATS.forEach((c, i) => { CAT_BG[c.n] = INCOME_TINTS[i] || "var(--tint-green-bg)"; });
 
 let txs = JSON.parse(localStorage.getItem("ft_txs") || "[]");
+// Tracks Sheets rowIds the user has deleted locally but that Sheets hasn't confirmed yet.
+// Filtered out during fetchFromSheets so deleted txs don't "come back from the dead"
+// when the Sheets delete failed (e.g. missing rowId on a locally-created tx).
+let deletedRowIds = new Set(JSON.parse(localStorage.getItem("ft_deleted_rows") || "[]"));
+function saveDeletedRows() { localStorage.setItem("ft_deleted_rows", JSON.stringify([...deletedRowIds])); }
 // Data integrity: strip fromGoal:true when there's no goalName (legacy bad data).
 // Names that don't match a real goal are validated later in isGoalSpend() at render time.
 txs = txs.map(t => t.fromGoal && !t.goalName ? {...t, fromGoal: false} : t);
@@ -79,10 +83,12 @@ function saveRecurring() {
   if (settings.sheetsUrl) syncRecurringToSheets();
 }
 async function syncRecurringToSheets() {
-  await Promise.race([
+  const ok = await Promise.race([
     postToSheets("save_recurring", { recurring: RECURRING }),
     new Promise(r => setTimeout(() => r(false), 6000))
   ]);
+  if (!ok) setSyncStatus("error");
+  return ok;
 }
 async function fetchRecurringFromSheets(silent = false) {
   if (!settings.sheetsUrl) return false;
@@ -410,9 +416,12 @@ async function startup() {
     else { setLoading("Working offline", 90); await delay(600); }
   } else { setLoading("Loading…", 80); await delay(300); }
   setLoading("Ready", 100); await delay(300);
-  applyDarkMode();
-  checkRecurringSuggestions();
-  checkInAppNotifications();
+  // Wrap post-ready render calls so a crash here never freezes the loading screen.
+  // checkRecurringSuggestions() runs on the 1st of every month and is the most
+  // likely to throw on bad data — a try/catch here is the safety net.
+  try { applyDarkMode(); } catch(e) { console.error("applyDarkMode error:", e); }
+  try { checkRecurringSuggestions(); } catch(e) { console.error("Recurring suggestions error:", e); }
+  try { checkInAppNotifications(); } catch(e) { console.error("Notifications error:", e); }
   document.getElementById("loading-screen").classList.add("hidden");
   if (settings.pinEnabled) {
     document.getElementById("pin-screen").classList.remove("hidden");
@@ -441,7 +450,10 @@ async function fetchFromSheets(silent = false) {
       });
       localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
       const localOnly = txs.filter(t => !t.rowId && unsyncedIds.includes(t.id));
-      txs = [...data.transactions.map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal===true||t.fromGoal==="true"||t.fromGoal===1,goalName:t.goalName||"",splitId:t.splitId||""})),...localOnly];
+      const sheetsRows = data.transactions
+        .filter(t => !deletedRowIds.has(t.rowId))  // strip rows the user deleted locally
+        .map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal===true||t.fromGoal==="true"||t.fromGoal===1,goalName:t.goalName||"",splitId:t.splitId||""}));
+      txs = [...sheetsRows,...localOnly];
       saveTxs(); settings.lastPull = new Date().toISOString(); saveSettings();
       if (!silent) { setSyncStatus("ok"); showToast(data.transactions.length + " transactions pulled ✓"); document.getElementById("last-pull-label").textContent = "Last pulled: just now"; }
       renderHome(); renderAnalytics(); return true;
@@ -777,8 +789,10 @@ async function deleteTxSilent(id) {
 }
 async function _doDeleteTx(id) {
   const tx=txs.find(t=>t.id===id); txs=txs.filter(t=>t.id!==id); unsyncedIds=unsyncedIds.filter(uid=>uid!==id);
+  // Track rowId so fetchFromSheets won't re-add this tx before Sheets confirms the delete.
+  if (tx && tx.rowId) { deletedRowIds.add(tx.rowId); saveDeletedRows(); }
   localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds)); saveTxs(); renderHistory(); renderHome();
-  if(tx&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_transaction",{rowId:tx.rowId,data:{date:tx.date,desc:tx.desc||tx.description||"",amount:tx.amount}}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){setSyncStatus("ok");showToast("Transaction deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — Sheets sync failed");}}
+  if(tx&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_transaction",{rowId:tx.rowId,data:{date:tx.date,desc:tx.desc||tx.description||"",amount:tx.amount}}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){setSyncStatus("ok");showToast("Transaction deleted + synced ✓"); deletedRowIds.delete(tx.rowId); saveDeletedRows();}else{setSyncStatus("error");showToast("Deleted locally — Sheets sync failed");}}
   else showToast("Transaction deleted");
 }
 
