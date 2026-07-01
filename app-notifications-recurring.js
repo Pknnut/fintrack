@@ -386,6 +386,8 @@ function renderRecurringPage() {
   const pendingLabel = document.getElementById("rec-pending-label");
   const logAllBtn = document.getElementById("rec-log-all-btn");
   if (!list) return;
+  // DEBUG — remove after diagnosis
+  showToast("RECURRING count: " + RECURRING.length + " | localStorage: " + (localStorage.getItem("ft_recurring")||"null").slice(0,40));
   if (!RECURRING.length) {
     list.innerHTML = '<div class="rec-empty">No recurring items yet.<br>Mark a transaction as recurring when adding it.</div>';
     if (pendingLabel) pendingLabel.textContent = "";
