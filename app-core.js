@@ -76,6 +76,9 @@ let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
 // can re-apply the edit on top of pulled data instead of losing it.
 let pendingEdits = JSON.parse(localStorage.getItem("ft_pending_edits") || "{}");
 function savePendingEdits() { localStorage.setItem("ft_pending_edits", JSON.stringify(pendingEdits)); }
+// Tracks Sheets rowIds the user deleted locally so fetchFromSheets won't re-add them.
+let deletedRowIds = new Set(JSON.parse(localStorage.getItem("ft_deleted_rows") || "[]"));
+function saveDeletedRows() { localStorage.setItem("ft_deleted_rows", JSON.stringify([...deletedRowIds])); }
 let RECURRING = JSON.parse(localStorage.getItem("ft_recurring") || "[]");
 // Strip null/undefined holes that can appear when confirmAddRecurring() writes
 // to an out-of-bounds index (stale _recAddEditIdx). Those holes survive
@@ -452,7 +455,8 @@ async function fetchFromSheets(silent = false) {
       });
       localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
       const localOnly = txs.filter(t => !t.rowId && unsyncedIds.includes(t.id));
-      txs = [...data.transactions.map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal===true||t.fromGoal==="true"||t.fromGoal===1,goalName:t.goalName||"",splitId:t.splitId||""})),...localOnly];
+      const sheetsRows = data.transactions.filter(t => !deletedRowIds.has(t.rowId)).map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal===true||t.fromGoal==="true"||t.fromGoal===1,goalName:t.goalName||"",splitId:t.splitId||""}));
+      txs = [...sheetsRows,...localOnly];
       // Re-apply any locally-edited values that haven't synced yet, so a pull
       // doesn't silently overwrite changes the user made since the last sync.
       if (Object.keys(pendingEdits).length) {
@@ -796,8 +800,9 @@ async function deleteTxSilent(id) {
 }
 async function _doDeleteTx(id) {
   const tx=txs.find(t=>t.id===id); txs=txs.filter(t=>t.id!==id); unsyncedIds=unsyncedIds.filter(uid=>uid!==id);
+  if(tx&&tx.rowId){deletedRowIds.add(tx.rowId);saveDeletedRows();}
   localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds)); saveTxs(); renderHistory(); renderHome();
-  if(tx&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_transaction",{rowId:tx.rowId,data:{date:tx.date,desc:tx.desc||tx.description||"",amount:tx.amount}}),new Promise(r=>setTimeout(()=>r(false),6000))]);if(ok){setSyncStatus("ok");showToast("Transaction deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — Sheets sync failed");}}
+  if(tx&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_transaction",{rowId:tx.rowId,data:{date:tx.date,desc:tx.desc||tx.description||"",amount:tx.amount}}),new Promise(r=>setTimeout(()=>r(false),15000))]);if(ok){setSyncStatus("ok");deletedRowIds.delete(tx.rowId);saveDeletedRows();showToast("Transaction deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — will sync on next pull");}}
   else showToast("Transaction deleted");
 }
 
