@@ -8,11 +8,10 @@ const EDIT_PENCIL_SM = '<svg width="12" height="12" viewBox="0 0 24 24" fill="no
 const SIM_BOLT = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>';
 let GOALS = [];
 let INSTALLMENTS = [
-  {icon:"📚",name:"Jeducations",cat:"💳 Credit Card",total:7711.50,monthly:771.15,paid:9,total_mo:10,color:"var(--indigo)"},
-  {icon:"🏍️",name:"Bike (1)",cat:"💳 Credit Card",total:3218.80,monthly:321.88,paid:4,total_mo:10,color:"var(--teal)"},
-  {icon:"🏍️",name:"Bike (2)",cat:"💳 Credit Card",total:9556.50,monthly:955.65,paid:4,total_mo:10,color:"var(--amber)"},
-  {icon:"🏍️",name:"Bike (3)",cat:"💳 Credit Card",total:2772.90,monthly:462.15,paid:3,total_mo:6,color:"var(--green)"},
-  {icon:"🛡️",name:"AIA Insurance",cat:"🛡️ Insurance",total:30681.70,monthly:3068.17,paid:4,total_mo:10,color:"#8b5cf6"},
+  {icon:"🏍️",name:"Bike (1)",cat:"💳 Credit Card",total:3218.80,monthly:321.88,paid:5,total_mo:10,color:"var(--teal)"},
+  {icon:"🏍️",name:"Bike (2)",cat:"💳 Credit Card",total:9556.50,monthly:955.65,paid:5,total_mo:10,color:"var(--amber)"},
+  {icon:"🏍️",name:"Bike (3)",cat:"💳 Credit Card",total:2772.90,monthly:462.15,paid:4,total_mo:6,color:"var(--green)"},
+  {icon:"🛡️",name:"AIA Insurance",cat:"🛡️ Insurance",total:30681.70,monthly:3068.17,paid:5,total_mo:10,color:"#8b5cf6"},
 ];
 const MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const CAT_COLORS = ["#6366f1","#0d9488","#f59e0b","#ef4444","#22c55e","#8b5cf6","#ec4899","#f97316"];
@@ -75,10 +74,9 @@ let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
 // Tracks txs edited locally but not synced — keyed by rowId so fetchFromSheets
 // can re-apply the edit on top of pulled data instead of losing it.
 let pendingEdits = JSON.parse(localStorage.getItem("ft_pending_edits") || "{}");
-function savePendingEdits() { localStorage.setItem("ft_pending_edits", JSON.stringify(pendingEdits)); }
-// Tracks Sheets rowIds the user deleted locally so fetchFromSheets won't re-add them.
 let deletedRowIds = new Set(JSON.parse(localStorage.getItem("ft_deleted_rows") || "[]"));
 function saveDeletedRows() { localStorage.setItem("ft_deleted_rows", JSON.stringify([...deletedRowIds])); }
+function savePendingEdits() { localStorage.setItem("ft_pending_edits", JSON.stringify(pendingEdits)); }
 let RECURRING = JSON.parse(localStorage.getItem("ft_recurring") || "[]");
 // Strip null/undefined holes that can appear when confirmAddRecurring() writes
 // to an out-of-bounds index (stale _recAddEditIdx). Those holes survive
@@ -802,7 +800,7 @@ async function _doDeleteTx(id) {
   const tx=txs.find(t=>t.id===id); txs=txs.filter(t=>t.id!==id); unsyncedIds=unsyncedIds.filter(uid=>uid!==id);
   if(tx&&tx.rowId){deletedRowIds.add(tx.rowId);saveDeletedRows();}
   localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds)); saveTxs(); renderHistory(); renderHome();
-  if(tx&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_transaction",{rowId:tx.rowId,data:{date:tx.date,desc:tx.desc||tx.description||"",amount:tx.amount}}),new Promise(r=>setTimeout(()=>r(false),15000))]);if(ok){setSyncStatus("ok");deletedRowIds.delete(tx.rowId);saveDeletedRows();showToast("Transaction deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — will sync on next pull");}}
+  if(tx&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_transaction",{rowId:tx.rowId,data:{date:tx.date,desc:tx.desc||tx.description||"",amount:tx.amount}}),new Promise(r=>setTimeout(()=>r(false),15000))]);if(ok){setSyncStatus("ok");deletedRowIds.delete(tx.rowId);saveDeletedRows();showToast("Transaction deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — sync pending");}}
   else showToast("Transaction deleted");
 }
 

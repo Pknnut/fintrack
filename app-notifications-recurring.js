@@ -453,7 +453,7 @@ function renderRecurringPage() {
   } catch(e) {
     console.error("renderRecurringPage error:", e);
     RECURRING = RECURRING.filter(r => r && typeof r === "object" && r.desc);
-    saveRecurring();
+    try { saveRecurring(); } catch(_) {}
     const _l = document.getElementById("rec-page-list");
     const _b = document.getElementById("rec-log-all-btn");
     const _p = document.getElementById("rec-pending-label");
