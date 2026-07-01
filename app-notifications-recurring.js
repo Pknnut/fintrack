@@ -382,10 +382,11 @@ async function removeRecurringByIdx(idx) {
 let _recEditIdx = null; // index of item currently being amount-edited
 
 function renderRecurringPage() {
+  try {
   const list = document.getElementById("rec-page-list");
   const pendingLabel = document.getElementById("rec-pending-label");
   const logAllBtn = document.getElementById("rec-log-all-btn");
-  if (!list) { showToast("DEBUG: list element NOT FOUND"); return; }
+  if (!list) return;
   if (!RECURRING.length) {
     list.innerHTML = '<div class="rec-empty">No recurring items yet.<br>Mark a transaction as recurring when adding it.</div>';
     if (pendingLabel) pendingLabel.textContent = "";
@@ -393,15 +394,12 @@ function renderRecurringPage() {
     return;
   }
   const loggedKeys = buildLoggedKeysThisMonth();
-  // Strip any null/invalid entries that may have slipped in before rendering.
   RECURRING = RECURRING.filter(r => r && typeof r === "object" && r.desc);
   const pending = RECURRING.filter(r => !isLoggedThisMonth(loggedKeys, r.desc, r.type));
   const pendingTotal = pending.reduce((s, r) => s + (r.amount||0), 0);
   if (pendingLabel) pendingLabel.textContent = pending.length ? pending.length + " pending · " + fmt(pendingTotal) : "All logged this month ✓";
   if (logAllBtn) logAllBtn.disabled = pending.length === 0;
-  try {
-    list.innerHTML = '<div style="padding:10px;background:red;color:white;font-weight:bold">DEBUG: ' + RECURRING.length + ' items</div>' +
-    RECURRING.map((r, idx) => {
+  list.innerHTML = RECURRING.map((r, idx) => {
       const isLogged = isLoggedThisMonth(loggedKeys, r.desc, r.type);
       const isIncome = (r.type||"Expense") === "Income";
       const isEditing = (_recEditIdx === idx);
@@ -438,17 +436,17 @@ function renderRecurringPage() {
         '<button class="rec-del-btn" onclick="removeRecurringByIdx(' + idx + ')" title="Remove">×</button>' +
       '</div>';
     }).join("");
-    // DEBUG: check if list gets cleared after render
-    const snapshot = list.innerHTML.length;
-    setTimeout(() => showToast("After 500ms: innerHTML length=" + list.innerHTML.length + " (was " + snapshot + ")"), 500);
   } catch(e) {
     console.error("renderRecurringPage error:", e);
-    // Wipe corrupt entries so the user gets a clean empty state rather than a blank broken page.
-    RECURRING = [];
+    showToast("Recurring render error — resetting list");
+    RECURRING = RECURRING.filter(r => r && typeof r === "object" && r.desc);
     saveRecurring();
-    list.innerHTML = '<div class="rec-empty">Recurring list had corrupt data and was reset.<br>Please re-add your items using the + Add button.</div>';
-    if (pendingLabel) pendingLabel.textContent = "";
-    if (logAllBtn) logAllBtn.disabled = true;
+    const list2 = document.getElementById("rec-page-list");
+    const lb = document.getElementById("rec-log-all-btn");
+    const pl = document.getElementById("rec-pending-label");
+    if (list2) list2.innerHTML = '<div class="rec-empty">Recurring list had an error and was reset.<br>Please re-add your items using the + Add button.</div>';
+    if (pl) pl.textContent = "";
+    if (lb) lb.disabled = true;
   }
   // Open the keypad directly when editing (programmatic focus alone no longer opens it)
   if (_recEditIdx !== null) {

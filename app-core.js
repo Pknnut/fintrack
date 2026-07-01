@@ -198,6 +198,7 @@ function buildLoggedKeysThisMonth() {
   const mo = now.getMonth(), yr = now.getFullYear();
   const keys = new Set();
   txs.forEach(t => {
+    if (!t || typeof t !== "object") return;
     const d = parseDate(t.date);
     if (d.getMonth() === mo && d.getFullYear() === yr) {
       keys.add((t.type || "Expense") + "|" + (t.desc || t.description || "").toLowerCase());
