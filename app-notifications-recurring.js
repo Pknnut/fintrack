@@ -294,8 +294,9 @@ function toggleRecurring() {
 }
 
 function getPendingRecurring() {
-  const loggedKeys = buildLoggedKeysThisMonth();
-  return RECURRING.filter(r => !isLoggedThisMonth(loggedKeys, r.desc, r.type));
+  let loggedKeys;
+  try { loggedKeys = buildLoggedKeysThisMonth(); } catch(e) { loggedKeys = new Set(); }
+  return RECURRING.filter(r => r && typeof r === "object" && r.desc && !isLoggedThisMonth(loggedKeys, r.desc, r.type));
 }
 
 function checkRecurringSuggestions() {
@@ -555,7 +556,7 @@ function renderEstBillsPage() {
     if (netVal) netVal.textContent = fmt(0);
     return;
   }
-  const loggedKeys = buildLoggedKeysThisMonth();
+  let loggedKeys; try { loggedKeys = buildLoggedKeysThisMonth(); } catch(e) { loggedKeys = new Set(); }
   const pending = ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
   const pendingIncome  = pending.filter(b => b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
   const pendingExpense = pending.filter(b => (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
