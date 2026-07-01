@@ -72,6 +72,10 @@ function backfillInstIds() {
 backfillInstIds();
 let pinBuffer = "", pinMode = "enter", pinSetupFirst = "";
 let unsyncedIds = JSON.parse(localStorage.getItem("ft_unsynced") || "[]");
+// Tracks txs edited locally but not synced — keyed by rowId so fetchFromSheets
+// can re-apply the edit on top of pulled data instead of losing it.
+let pendingEdits = JSON.parse(localStorage.getItem("ft_pending_edits") || "{}");
+function savePendingEdits() { localStorage.setItem("ft_pending_edits", JSON.stringify(pendingEdits)); }
 let RECURRING = JSON.parse(localStorage.getItem("ft_recurring") || "[]");
 // Strip null/undefined holes that can appear when confirmAddRecurring() writes
 // to an out-of-bounds index (stale _recAddEditIdx). Those holes survive
@@ -449,6 +453,14 @@ async function fetchFromSheets(silent = false) {
       localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
       const localOnly = txs.filter(t => !t.rowId && unsyncedIds.includes(t.id));
       txs = [...data.transactions.map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal===true||t.fromGoal==="true"||t.fromGoal===1,goalName:t.goalName||"",splitId:t.splitId||""})),...localOnly];
+      // Re-apply any locally-edited values that haven't synced yet, so a pull
+      // doesn't silently overwrite changes the user made since the last sync.
+      if (Object.keys(pendingEdits).length) {
+        txs = txs.map(t => {
+          const edit = pendingEdits[t.rowId];
+          return edit ? {...t, ...edit} : t;
+        });
+      }
       saveTxs(); settings.lastPull = new Date().toISOString(); saveSettings();
       if (!silent) { setSyncStatus("ok"); showToast(data.transactions.length + " transactions pulled ✓"); document.getElementById("last-pull-label").textContent = "Last pulled: just now"; }
       renderHome(); renderAnalytics(); return true;
@@ -772,7 +784,7 @@ async function confirmEditTx() {
   const idx=txs.findIndex(t=>t.id===editTxId); if(idx<0){showToast("Transaction not found");return;}
   const oldTx={...txs[idx]}; txs[idx]={...oldTx,type:editTxType,category:cat,desc,amount,notes,date};
   saveTxs(); closeModal("edit-tx"); renderHistory(); renderHome(); showToast("Transaction updated ✓");
-  if(settings.sheetsUrl){setSyncStatus("syncing");const res=await Promise.race([postToSheetsRaw("update_transaction",{rowId:oldTx.rowId,data:{oldDesc:oldTx.desc||oldTx.description||"",oldAmount:oldTx.amount,date,type:editTxType,category:cat,description:desc,amount,notes}}),new Promise(r=>setTimeout(()=>r(null),15000))]);if(res&&!res.error){setSyncStatus("ok");showToast("Updated + synced to Sheets ✓");}else{setSyncStatus("error");showToast("Sync failed: "+(res&&res.error?res.error:"timeout"));}}
+  if(settings.sheetsUrl){setSyncStatus("syncing");const res=await Promise.race([postToSheetsRaw("update_transaction",{rowId:oldTx.rowId,data:{oldDesc:oldTx.desc||oldTx.description||"",oldAmount:oldTx.amount,date,type:editTxType,category:cat,description:desc,amount,notes}}),new Promise(r=>setTimeout(()=>r(null),15000))]);if(res&&!res.error){setSyncStatus("ok");delete pendingEdits[oldTx.rowId];savePendingEdits();showToast("Updated + synced to Sheets ✓");}else{setSyncStatus("error");if(oldTx.rowId){pendingEdits[oldTx.rowId]={type:editTxType,category:cat,desc,amount,notes,date};savePendingEdits();}showToast("Sync failed: "+(res&&res.error?res.error:"timeout")+" — edit saved locally");}}
 }
 
 async function deleteTx(id) {

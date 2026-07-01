@@ -342,7 +342,11 @@ async function addRecurringNow(r, overrideAmt) {
         const local = txs.find(t => t.id === tx.id);
         if (local) { local.rowId = res.rowId; saveTxs(); }
       }
-    } else { setSyncStatus("error"); }
+    } else {
+      setSyncStatus("error");
+      unsyncedIds.push(tx.id);
+      localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
+    }
   }
 }
 
