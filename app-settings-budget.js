@@ -36,9 +36,10 @@ async function manualSync() {
     else{setSyncStatus("error");showToast("Push failed — check your URL");return;} // don't attempt a pull if the push itself couldn't reach Sheets
   }
   setSyncStatus("syncing");
-  const [txOk] = await Promise.all([fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true), fetchInstallmentsFromSheets(true), fetchGoalsFromSheets(true)]);
+  const [txOk] = await Promise.all([fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true), fetchInstallmentsFromSheets(true), fetchGoalsFromSheets(true), fetchEstBillsFromSheets(true)]);
   try { renderHome(); } catch(e) { console.warn("renderHome:", e); }
   if (document.getElementById("page-recurring")?.classList.contains("active")) { try { renderRecurringPage(); } catch(e) { console.warn("renderRecurringPage:", e); } }
+  if (document.getElementById("page-estbills")?.classList.contains("active")) { try { renderEstBillsPage(); } catch(e) { console.warn("renderEstBillsPage:", e); } }
   setSyncStatus(txOk ? "ok" : "error");
   showToast(pending.length ? (pending.length+" synced + refreshed ✓") : (txOk ? "Synced ✓" : "Refresh failed — check your URL"));
 }

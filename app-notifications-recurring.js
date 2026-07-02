@@ -582,6 +582,18 @@ async function logAllRecurring() {
 let _estEditIdx = null;   // index of bill currently being amount-edited inline
 let _estAddEditIdx = -1;  // index of bill being edited in the add/edit modal, -1 = adding new
 
+// A bill only shows "since [month]" when its current amount was set in a PAST
+// month (i.e. it's carrying forward unchanged) — if it was just set this month,
+// that's the normal/expected state and doesn't need calling out.
+function estSinceLabel(ym) {
+  if (!ym || typeof ym !== "string") return "";
+  const m = ym.match(/^(\d{4})-(\d{2})$/);
+  if (!m) return "";
+  const now = new Date();
+  const nowYM = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+  if (ym >= nowYM) return "";
+  return " · since " + MO[parseInt(m[2],10)-1] + " " + m[1];
+}
 function renderEstBillsPage() {
   const list = document.getElementById("est-page-list");
   const pendingLabel = document.getElementById("est-pending-label");
@@ -617,7 +629,7 @@ function renderEstBillsPage() {
       '<div class="rec-page-icon' + (isInc?" income":"") + '">' + icon + '</div>' +
       '<div class="rec-page-info">' +
         '<div class="rec-page-name">' + (b.desc||"") + '</div>' +
-        '<div class="rec-page-cat">' + catName + ' · ' + (b.repeats !== false ? "repeats monthly" : "one-off estimate") + '</div>' +
+        '<div class="rec-page-cat">' + catName + ' · ' + (b.repeats !== false ? "repeats monthly" : "one-off estimate") + estSinceLabel(b.since) + '</div>' +
       '</div>' +
       '<div class="rec-page-right">' +
         (isEditing ?

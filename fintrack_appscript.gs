@@ -14,6 +14,7 @@ function doGet(e) {
     if (action === "get_summary")      return jsonResponse(getSummary(e.parameter.month, e.parameter.year));
     if (action === "get_budgets")      return jsonResponse(getBudgets());
     if (action === "get_recurring")    return jsonResponse(getRecurring());
+    if (action === "get_estbills")     return jsonResponse(getEstimatedBills());
     if (action === "ping")             return jsonResponse({ status: "ok", version: "2026-07-02-lock-fix", timestamp: new Date().toISOString() });
     if (action === "rebuild_analytics") return jsonResponse(rebuildAnalyticsSheet());
     if (action === "rebuild_installment_log") return jsonResponse(regenerateInstallmentLog());
@@ -40,6 +41,7 @@ function doPost(e) {
     if (action === "rebuild_installment_log") return jsonResponse(regenerateInstallmentLog());
     if (action === "save_budgets")            return jsonResponse(saveBudgets(body.budgets));
     if (action === "save_recurring")          return jsonResponse(saveRecurringToSheet(body.recurring));
+    if (action === "save_estbills")           return jsonResponse(saveEstimatedBillsToSheet(body.estimates));
     return jsonResponse({ error: "Unknown action" }, 400);
   } catch (err) { return jsonResponse({ error: err.message }, 500); }
 }
@@ -1165,6 +1167,103 @@ function saveRecurringToSheet(recurring) {
   }
   SpreadsheetApp.flush();
   return { success: true, count: recurring.length };
+}
+
+// ══ ESTIMATED BILLS ══════════════════════════════════════════
+// Same pattern as Recurring above — these previously lived in localStorage only,
+// so deleting and re-adding the Home Screen icon (which iOS treats as a fresh
+// install, wiping local storage) silently lost every estimated bill. Persisting
+// them to their own Sheet tab means a fresh device/reinstall can pull them back.
+function getEstimatedBills() {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("📋 Estimated Bills");
+  if (!sheet) return { estimates: [] };
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { estimates: [] };
+  const vals = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
+  const nowYM = normalizeYM(new Date());
+  // Same resolution as getBudgets(): the sheet is an append-only history (one row
+  // per description per month it CHANGED, not one row per month), and "current" is
+  // whichever row is the latest at-or-before this month for that description. This
+  // is what lets a fixed bill like Netflix carry forward with zero rows added most
+  // months, while something like electricity gets a fresh row only when it actually
+  // changes — e.g. Jul 2026 = 1000, Aug 2026 = 1500, both preserved as separate rows.
+  const latestMap = {};
+  vals.filter(r => r[0] !== "").forEach(r => {
+    const key    = String(r[0]).trim().toLowerCase() + "|" + (String(r[3]) || "Expense");
+    const ym     = normalizeYM(r[5]) || "0000-00";
+    if (ym > nowYM) return; // ignore any row pre-dated for a future month that hasn't arrived yet
+    if (!latestMap[key] || ym >= latestMap[key].ym) {
+      latestMap[key] = {
+        desc: String(r[0]), category: String(r[1]), amount: Number(r[2]) || 0,
+        type: String(r[3]) || "Expense", repeats: r[4] === true || r[4] === "TRUE" || r[4] === "true",
+        active: !(r[6] === false || r[6] === "FALSE" || r[6] === "false"), ym: ym
+      };
+    }
+  });
+  const estimates = Object.values(latestMap)
+    .filter(e => e.active)
+    .map(e => ({ desc: e.desc, category: e.category, amount: e.amount, type: e.type, repeats: e.repeats, since: e.ym }));
+  return { estimates };
+}
+
+function saveEstimatedBillsToSheet(estimates) {
+  if (!Array.isArray(estimates)) return { error: "Invalid data" };
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("📋 Estimated Bills");
+  if (!sheet) {
+    sheet = ss.insertSheet("📋 Estimated Bills");
+  }
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 1) {
+    const hdr = [["Description", "Category", "Amount", "Type", "Repeats", "Month", "Active"]];
+    sheet.getRange(1, 1, 1, 7).setValues(hdr)
+      .setBackground("#0F172A").setFontColor("#FFFFFF").setFontWeight("bold");
+  }
+  const nowYM = normalizeYM(new Date());
+  // Resolve current state exactly like getEstimatedBills(), so we only append a row
+  // for a description when something about it genuinely changed since last time —
+  // not on every save. This is what keeps the history readable instead of one row
+  // per bill per app sync.
+  const existing = lastRow >= 2 ? sheet.getRange(2, 1, lastRow - 1, 7).getValues() : [];
+  const latestMap = {};
+  existing.filter(r => r[0] !== "").forEach(r => {
+    const key = String(r[0]).trim().toLowerCase() + "|" + (String(r[3]) || "Expense");
+    const ym  = normalizeYM(r[5]) || "0000-00";
+    if (!latestMap[key] || ym >= latestMap[key].ym) {
+      latestMap[key] = {
+        category: String(r[1]), amount: Number(r[2]) || 0,
+        repeats: r[4] === true || r[4] === "TRUE" || r[4] === "true",
+        active: !(r[6] === false || r[6] === "FALSE" || r[6] === "false"), ym: ym
+      };
+    }
+  });
+  const incomingKeys = new Set();
+  const newRows = [];
+  estimates.forEach(e => {
+    const desc = e.desc || ""; if (!desc) return;
+    const type = e.type || "Expense";
+    const key  = desc.trim().toLowerCase() + "|" + type;
+    incomingKeys.add(key);
+    const cur = latestMap[key];
+    const changed = !cur || !cur.active || cur.category !== (e.category||"") || cur.amount !== (Number(e.amount)||0) || cur.repeats !== (e.repeats !== false);
+    if (changed) newRows.push([desc, e.category || "", Number(e.amount) || 0, type, e.repeats !== false, nowYM, true]);
+  });
+  // Anything active in the sheet but missing from the incoming list was deleted
+  // client-side — append an Active=FALSE row so it stops resolving as current,
+  // without erasing its history.
+  Object.keys(latestMap).forEach(key => {
+    if (latestMap[key].active && !incomingKeys.has(key)) {
+      const [desc, type] = [key.split("|")[0], key.split("|")[1]];
+      newRows.push([desc, latestMap[key].category, latestMap[key].amount, type, latestMap[key].repeats, nowYM, false]);
+    }
+  });
+  if (newRows.length) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, 7).setValues(newRows)
+      .setBackground("#F8FAFC");
+  }
+  SpreadsheetApp.flush();
+  return { success: true, appended: newRows.length };
 }
 
 function jsonResponse(data, code) {

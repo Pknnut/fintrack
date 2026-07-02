@@ -230,7 +230,29 @@ if (!Array.isArray(ESTIMATES)) ESTIMATES = [];
 // throw inside renderEstBillsHomeCard() and silently take Safe-to-Spend and the
 // Recent list down with it, since they render later in the same renderHome() call.
 ESTIMATES = ESTIMATES.filter(b => b && typeof b === "object" && b.desc);
-function saveEstBills() { localStorage.setItem("ft_estbills", JSON.stringify(ESTIMATES)); }
+function saveEstBills() {
+  localStorage.setItem("ft_estbills", JSON.stringify(ESTIMATES));
+  if (settings.sheetsUrl) syncEstBillsToSheets();
+}
+async function syncEstBillsToSheets() {
+  await Promise.race([
+    postToSheets("save_estbills", { estimates: ESTIMATES }),
+    new Promise(r => setTimeout(() => r(false), 6000))
+  ]);
+}
+async function fetchEstBillsFromSheets(silent = false) {
+  if (!settings.sheetsUrl) return false;
+  try {
+    const res  = await fetch(settings.sheetsUrl + "?action=get_estbills");
+    const data = await res.json();
+    if (data.estimates && Array.isArray(data.estimates)) {
+      ESTIMATES = data.estimates.filter(e => e && typeof e === "object" && e.desc);
+      localStorage.setItem("ft_estbills", JSON.stringify(ESTIMATES));
+      return true;
+    }
+    return false;
+  } catch { return false; }
+}
 function getPendingEstBills() {
   const loggedKeys = buildLoggedKeysThisMonth();
   return ESTIMATES.filter(b => b && !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
@@ -431,7 +453,7 @@ async function startup() {
   setLoading("Starting up…", 10);
   if (settings.sheetsUrl) {
     setLoading("Fetching data from Google Sheets…", 25);
-    const [txOk, budgetOk] = await Promise.all([fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true), fetchInstallmentsFromSheets(true), fetchGoalsFromSheets(true)]);
+    const [txOk, budgetOk] = await Promise.all([fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true), fetchInstallmentsFromSheets(true), fetchGoalsFromSheets(true), fetchEstBillsFromSheets(true)]);
     if (txOk || budgetOk) { setLoading("Data loaded ✓", 90); await delay(600); }
     else { setLoading("Working offline", 90); await delay(600); }
   } else { setLoading("Loading…", 80); await delay(300); }
@@ -526,7 +548,7 @@ async function pullAllFromSheets() {
   if (!settings.sheetsUrl) { showToast("Add Sheets URL in Settings first"); goTo("settings"); return; }
   setSyncStatus("syncing"); showToast("Pulling from Google Sheets…");
   const [txOk, budgetOk, recOk, instOk, goalOk] = await Promise.all([
-    fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true), fetchInstallmentsFromSheets(true), fetchGoalsFromSheets(true)
+    fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true), fetchInstallmentsFromSheets(true), fetchGoalsFromSheets(true), fetchEstBillsFromSheets(true)
   ]);
   if (txOk || budgetOk || recOk || instOk || goalOk) {
     setSyncStatus("ok");
@@ -743,10 +765,11 @@ function histSplitCard(members) {
 async function refreshApp() {
   const icon=document.querySelector("#refresh-btn i"); if(icon)icon.classList.add("spin");
   showToast("Refreshing…");
-  const [txOk,budgetOk,recOk,instOk,goalOk]=await Promise.all([fetchFromSheets(true),fetchBudgetsFromSheets(true),fetchRecurringFromSheets(true),fetchInstallmentsFromSheets(true),fetchGoalsFromSheets(true)]);
+  const [txOk,budgetOk,recOk,instOk,goalOk]=await Promise.all([fetchFromSheets(true),fetchBudgetsFromSheets(true),fetchRecurringFromSheets(true),fetchInstallmentsFromSheets(true),fetchGoalsFromSheets(true),fetchEstBillsFromSheets(true)]);
   if(icon)icon.classList.remove("spin"); renderHome(); renderAnalytics();
   if (document.getElementById("page-installments")?.classList.contains("active")) renderInstallments();
   if (document.getElementById("page-goals")?.classList.contains("active")) renderGoals();
+  if (document.getElementById("page-estbills")?.classList.contains("active")) { try { renderEstBillsPage(); } catch(e) { console.warn("renderEstBillsPage:", e); } }
   if(txOk||budgetOk||recOk||instOk||goalOk)showToast("Refreshed ✓"); else showToast("Up to date ✓");
 }
 
