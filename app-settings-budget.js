@@ -21,11 +21,26 @@ async function rebuildInstallmentLog() {
 }
 async function manualSync() {
   if(!settings.sheetsUrl){showToast("Add Sheets URL in Settings first");goTo("settings");return;}
-  const pending=txs.filter(t=>unsyncedIds.includes(t.id)); if(!pending.length){showToast("Everything is already synced ✓");return;}
-  setSyncStatus("syncing"); showToast("Syncing "+pending.length+" transactions…");
-  const ok=await postToSheets("add_transactions_bulk",{data:pending});
-  if(ok){unsyncedIds=[];localStorage.setItem("ft_unsynced",JSON.stringify([]));settings.lastSync=new Date().toISOString();saveSettings();setSyncStatus("ok");showToast(pending.length+" transactions synced ✓");document.getElementById("last-sync-label").textContent="Last pushed: just now";}
-  else{setSyncStatus("error");showToast("Sync failed — check your URL");}
+  // This used to be push-only despite being labeled "Sync now" — it never pulled anything
+  // back down, so it could never clear stale state (like the Recurring "Logged" cache) or
+  // pick up changes made elsewhere (e.g. editing the Sheet directly, or a delete that
+  // hadn't been reflected locally yet). Only the small refresh icon (refreshApp) or a full
+  // app restart actually pulled fresh data — which is exactly why a "sync" often looked
+  // like it silently did nothing. Now this button does both directions, matching what its
+  // label has always implied.
+  const pending=txs.filter(t=>unsyncedIds.includes(t.id));
+  if(pending.length){
+    setSyncStatus("syncing"); showToast("Syncing "+pending.length+" transactions…");
+    const ok=await postToSheets("add_transactions_bulk",{data:pending});
+    if(ok){unsyncedIds=[];localStorage.setItem("ft_unsynced",JSON.stringify([]));settings.lastSync=new Date().toISOString();saveSettings();document.getElementById("last-sync-label").textContent="Last pushed: just now";}
+    else{setSyncStatus("error");showToast("Push failed — check your URL");return;} // don't attempt a pull if the push itself couldn't reach Sheets
+  }
+  setSyncStatus("syncing");
+  const [txOk] = await Promise.all([fetchFromSheets(true), fetchBudgetsFromSheets(true), fetchRecurringFromSheets(true), fetchInstallmentsFromSheets(true), fetchGoalsFromSheets(true)]);
+  try { renderHome(); } catch(e) { console.warn("renderHome:", e); }
+  if (document.getElementById("page-recurring")?.classList.contains("active")) { try { renderRecurringPage(); } catch(e) { console.warn("renderRecurringPage:", e); } }
+  setSyncStatus(txOk ? "ok" : "error");
+  showToast(pending.length ? (pending.length+" synced + refreshed ✓") : (txOk ? "Synced ✓" : "Refresh failed — check your URL"));
 }
 async function testConnection() {
   const url=document.getElementById("sheets-url").value.trim(); if(!url){document.getElementById("conn-status").textContent="Enter a URL first";return;}
