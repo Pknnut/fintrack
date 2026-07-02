@@ -173,25 +173,37 @@ function getSummary(filterMonth, filterYear) {
 // ══════════════════════════════════════════════════════════════
 
 function addTransaction(data) {
-  const ss      = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet   = ss.getSheetByName(SHEET_NAME_TX);
-  const lastRow = getFirstEmptyRow(sheet, DATA_START_ROW);
-  const dateVal = new Date(data.date);
-  const desc    = data.description || data.desc || "";
-  const fromGoal = data.fromGoal === true || data.fromGoal === "true";
-  const goalName = data.goalName || "";
-  sheet.getRange(lastRow, 1, 1, 10).setValues([[
-    Utilities.formatDate(dateVal, Session.getScriptTimeZone(), "yyyy-MM-dd"),
-    data.type, data.category, desc,
-    Number(data.amount), data.notes || "",
-    dateVal.getMonth() + 1, getWeekNumber(dateVal),
-    fromGoal ? goalName : "",  // Col I: goal name if goal spend, else blank
-    fromGoal ? ("goal:" + (data.goalId || "")) : (data.splitId || "")  // Col J: goalId (goal-spend) or splitId
-  ]]);
-  const rowBg = fromGoal ? "#FFFBEB" : (data.type === "Income" ? "#ECFDF5" : "#FEF2F2");
-  sheet.getRange(lastRow, 1, 1, 10).setBackground(rowBg);
-  SpreadsheetApp.flush();
-  return { success: true, rowId: lastRow, message: "Transaction added" };
+  // Apps Script can run overlapping doPost requests. Without a lock, two concurrent
+  // calls can both read getFirstEmptyRow() before either has written anything, land
+  // on the SAME row, and the second write silently overwrites the first — the loser
+  // still gets back {success:true, rowId:X}, so the client has no way to know it lost
+  // the race. The row genuinely never existed, which is what caused a recurring-logged
+  // transaction to report success and sync a rowId, yet never actually appear in Sheets.
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const ss      = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet   = ss.getSheetByName(SHEET_NAME_TX);
+    const lastRow = getFirstEmptyRow(sheet, DATA_START_ROW);
+    const dateVal = new Date(data.date);
+    const desc    = data.description || data.desc || "";
+    const fromGoal = data.fromGoal === true || data.fromGoal === "true";
+    const goalName = data.goalName || "";
+    sheet.getRange(lastRow, 1, 1, 10).setValues([[
+      Utilities.formatDate(dateVal, Session.getScriptTimeZone(), "yyyy-MM-dd"),
+      data.type, data.category, desc,
+      Number(data.amount), data.notes || "",
+      dateVal.getMonth() + 1, getWeekNumber(dateVal),
+      fromGoal ? goalName : "",  // Col I: goal name if goal spend, else blank
+      fromGoal ? ("goal:" + (data.goalId || "")) : (data.splitId || "")  // Col J: goalId (goal-spend) or splitId
+    ]]);
+    const rowBg = fromGoal ? "#FFFBEB" : (data.type === "Income" ? "#ECFDF5" : "#FEF2F2");
+    sheet.getRange(lastRow, 1, 1, 10).setBackground(rowBg);
+    SpreadsheetApp.flush();
+    return { success: true, rowId: lastRow, message: "Transaction added" };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function addTransactionsBulk(transactions) {
@@ -200,6 +212,9 @@ function addTransactionsBulk(transactions) {
 }
 
 function updateTransaction(rowId, data) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
   const ss          = SpreadsheetApp.getActiveSpreadsheet();
   const sheet       = ss.getSheetByName(SHEET_NAME_TX);
   const lastDataRow = getFirstEmptyRow(sheet, DATA_START_ROW) - 1;
@@ -242,9 +257,15 @@ function updateTransaction(rowId, data) {
   sheet.getRange(targetRow, 1, 1, 10).setBackground(fromGoal ? "#FFFBEB" : (data.type === "Income" ? "#ECFDF5" : "#FEF2F2"));
   SpreadsheetApp.flush();
   return { success: true, message: "Transaction updated at row " + targetRow };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function deleteTransaction(rowId, data) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
   const ss          = SpreadsheetApp.getActiveSpreadsheet();
   const sheet       = ss.getSheetByName(SHEET_NAME_TX);
   const lastDataRow = getFirstEmptyRow(sheet, DATA_START_ROW) - 1;
@@ -280,6 +301,9 @@ function deleteTransaction(rowId, data) {
   }
 
   return { error: "Transaction not found" };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
