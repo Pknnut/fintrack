@@ -14,7 +14,7 @@ function doGet(e) {
     if (action === "get_summary")      return jsonResponse(getSummary(e.parameter.month, e.parameter.year));
     if (action === "get_budgets")      return jsonResponse(getBudgets());
     if (action === "get_recurring")    return jsonResponse(getRecurring());
-    if (action === "ping")             return jsonResponse({ status: "ok", timestamp: new Date().toISOString() });
+    if (action === "ping")             return jsonResponse({ status: "ok", version: "2026-07-02-lock-fix", timestamp: new Date().toISOString() });
     if (action === "rebuild_analytics") return jsonResponse(rebuildAnalyticsSheet());
     if (action === "rebuild_installment_log") return jsonResponse(regenerateInstallmentLog());
     return jsonResponse({ error: "Unknown action" }, 400);
