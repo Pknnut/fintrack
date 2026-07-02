@@ -323,6 +323,16 @@ function checkRecurringSuggestions() {
 }
 
 async function addRecurringNow(r, overrideAmt) {
+  // Re-entrancy guard: the Log button had no disabled/loading state, so tapping it
+  // multiple times while the first tap was still in flight (no visible feedback made
+  // this easy to do by accident) pushed a separate local transaction per tap — the
+  // "3 duplicate transactions" from 3 taps. Key it on desc+category so double-tapping
+  // Log on the SAME item is blocked, but logging two different items stays independent.
+  const guardKey = (r.type||"Expense") + "|" + (r.desc||"").toLowerCase() + "|" + (r.category||"");
+  if (!window._recurringLogInFlight) window._recurringLogInFlight = new Set();
+  if (window._recurringLogInFlight.has(guardKey)) { showToast("Already logging " + r.desc + "…"); return; }
+  window._recurringLogInFlight.add(guardKey);
+  try {
   const now = new Date();
   const date = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
   const amount = overrideAmt !== undefined ? overrideAmt : r.amount;
@@ -330,9 +340,18 @@ async function addRecurringNow(r, overrideAmt) {
   const tx = {id:Date.now(), date, type:r.type||"Expense", category:r.category, desc:r.desc, amount:amount, notes:notes};
   txs.push(tx); saveTxs();
   _loggedRecurringCache.add((tx.type||"Expense") + "|" + (tx.desc||"").toLowerCase());
-  showToast("Logged: " + r.desc + " ✓");
-  checkRecurringSuggestions();
-  renderHome();
+  // These two used to run unguarded — if either threw, the whole function stopped right
+  // here, before ever reaching the sync attempt below. That looked like "nothing happens
+  // at all" (no toast, no sync, no error), because an unhandled throw inside an async
+  // function just silently rejects the promise with nothing watching it. Guard each one
+  // individually (same pattern as _doDeleteTx) so a render hiccup can never block syncing,
+  // and surface the real error as a toast so it's visible without needing DevTools.
+  try { checkRecurringSuggestions(); } catch(e) { console.warn("checkRecurringSuggestions:", e); showToast("Render error: " + e.message); }
+  try { renderHome(); } catch(e) { console.warn("renderHome:", e); showToast("Render error: " + e.message); }
+  // This used to show "Logged: X ✓" immediately, before the sync attempt even started,
+  // and never followed up — so a silent sync failure looked identical to a success in
+  // the UI. Now it waits for the real outcome and reports it honestly, same wording
+  // pattern as the manual Add form, so a failure is never invisible again.
   if (settings.sheetsUrl && settings.autosync) {
     setSyncStatus("syncing");
     const res = await Promise.race([postToSheetsRaw("add_transaction",{data:{...tx}}), new Promise(r=>setTimeout(()=>r(null),6000))]);
@@ -343,20 +362,33 @@ async function addRecurringNow(r, overrideAmt) {
         const local = txs.find(t => t.id === tx.id);
         if (local) { local.rowId = res.rowId; saveTxs(); }
       }
+      showToast("Logged + synced: " + r.desc + " ✓");
     } else {
       setSyncStatus("error");
       unsyncedIds.push(tx.id);
       localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
+      showToast("Sync failed (" + (res && res.error ? res.error : "timeout") + ") — " + r.desc + " saved locally");
     }
+  } else {
+    showToast("Logged: " + r.desc + " ✓");
+  }
+  } catch(e) {
+    // Last-resort net: whatever this catches is the real answer to "why did nothing
+    // happen" — console.warn for anyone with DevTools access, plus a toast so it's
+    // visible on-device without needing them.
+    console.warn("addRecurringNow:", e);
+    showToast("Error logging " + (r&&r.desc||"item") + ": " + e.message);
+  } finally {
+    window._recurringLogInFlight.delete(guardKey);
   }
 }
 
 async function logAllRecurringFromBanner() {
   const due = getPendingRecurring();
   if (!due.length) return;
-  await bulkLogRecurring(due);
+  const ok = await bulkLogRecurring(due);
   dismissRecurringSuggestions();
-  showToast(due.length + " recurring items logged ✓");
+  if (ok) showToast(due.length + " recurring items logged ✓");
 }
 
 function dismissRecurringSuggestions() {
@@ -525,22 +557,25 @@ async function bulkLogRecurring(items) {
     ]);
     if (ok) {
       setSyncStatus("ok");
+      return true;
     } else {
       setSyncStatus("error");
       // Mark as unsynced so manual push can catch them
       newTxs.forEach(tx => { if (!unsyncedIds.includes(tx.id)) unsyncedIds.push(tx.id); });
       localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
       showToast("Saved locally — sync when online");
+      return false;
     }
   }
+  return true; // no Sheets configured — local save above already succeeded, nothing to sync
 }
 
 async function logAllRecurring() {
   const due = getPendingRecurring();
   if (!due.length) return;
-  await bulkLogRecurring(due);
+  const ok = await bulkLogRecurring(due);
   renderRecurringPage();
-  showToast(due.length + " items logged ✓");
+  if (ok) showToast(due.length + " items logged ✓");
 }
 
 // ── Estimated Bills Page ──────────────────────────────────────

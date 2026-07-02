@@ -468,13 +468,38 @@ async function fetchFromSheets(silent = false) {
       localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
       // A tx that just got a rowId back from a successful write can still vanish here if
       // Sheets' read hasn't caught up with that write yet (Apps Script propagation lag) —
-      // it has a rowId (so the old !t.rowId check dropped it) but isn't in data.transactions
-      // yet either, so it fell through both buckets. Fix: keep any local tx whose rowId isn't
-      // present in this fetch's results, not just ones with no rowId at all.
+      // it has a rowId (so a plain !t.rowId check would drop it) but isn't in data.transactions
+      // yet either, so it fell through both buckets.
+      // BUT rowId is a Sheet row number, not a stable id — deleting any row shifts every row
+      // below it up by one, so every other local tx's cached rowId can go stale in one delete.
+      // A stale rowId won't be in this fetch either, which used to make a same-old-rowId check
+      // treat it as "still unsynced" and keep it — duplicating the same transaction that's
+      // also present correctly in sheetsRows under its new (shifted) rowId. Disambiguate the
+      // two cases by content (date+amount+desc, same key already built above as sheetsKeys):
+      // if the content is already present in the fresh pull under some rowId, this local copy
+      // is just a stale echo of a shifted row — drop it. Only keep it if the content itself
+      // isn't in the pull at all yet (genuine propagation lag on a brand-new add).
       const fetchedRowIds = new Set(data.transactions.map(t => t.rowId));
-      const localOnly = txs.filter(t => t.rowId ? !fetchedRowIds.has(t.rowId) : unsyncedIds.includes(t.id));
+      const localOnly = txs.filter(t => {
+        if (t.rowId && fetchedRowIds.has(t.rowId)) return false; // present under its own rowId — sheetsRows already covers it
+        if (!t.rowId) return unsyncedIds.includes(t.id); // never synced — keep only if genuinely still unsynced
+        const key = (t.date||"") + '|' + t.amount + '|' + (t.desc||t.description||"");
+        return !sheetsKeys.has(key); // has a stale rowId — keep only if its content isn't in Sheets yet either
+      });
       const sheetsRows = data.transactions.filter(t => !deletedRowIds.has(t.rowId)).map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal===true||t.fromGoal==="true"||t.fromGoal===1,goalName:t.goalName||"",splitId:t.splitId||""}));
+      // deletedRowIds is only meant to hide a just-deleted row for the few seconds before
+      // Sheets' read catches up with the delete — it must NOT persist past that. Row numbers
+      // get reused once everything below a deleted row shifts up, so a stale entry here
+      // silently blacklists whatever unrelated transaction later lands on that same number.
+      // Once we have a fresh authoritative pull, its job is done — clear it every pull.
+      if (deletedRowIds.size) { deletedRowIds = new Set(); saveDeletedRows(); }
       txs = [...sheetsRows,...localOnly];
+      // _loggedRecurringCache (app-notifications-recurring.js) is only a short-lived UI
+      // convenience so the "Logged" badge updates instantly after tapping Log. This fetch
+      // just pulled authoritative data from Sheets, so from this point on isLoggedThisMonth()
+      // reading straight from txs IS the truth — clear the cache so it can never keep
+      // claiming "Logged" for a transaction that was deleted or whose sync actually failed.
+      if (typeof _loggedRecurringCache !== "undefined") _loggedRecurringCache.clear();
       // Re-apply any locally-edited values that haven't synced yet, so a pull
       // doesn't silently overwrite changes the user made since the last sync.
       if (Object.keys(pendingEdits).length) {
