@@ -792,7 +792,10 @@ async function confirmEditTx() {
   if(!amount||amount<=0){showToast("Enter a valid amount");return;} if(!desc){showToast("Enter a description");return;}
   const idx=txs.findIndex(t=>t.id===editTxId); if(idx<0){showToast("Transaction not found");return;}
   const oldTx={...txs[idx]}; txs[idx]={...oldTx,type:editTxType,category:cat,desc,amount,notes,date};
-  saveTxs(); closeModal("edit-tx"); renderHistory(); renderHome(); showToast("Transaction updated ✓");
+  saveTxs(); closeModal("edit-tx");
+  try { renderHistory(); } catch(e) { console.warn("renderHistory:", e); }
+  try { renderHome(); } catch(e) { console.warn("renderHome:", e); }
+  showToast("Transaction updated ✓");
   if(settings.sheetsUrl){setSyncStatus("syncing");const res=await Promise.race([postToSheetsRaw("update_transaction",{rowId:oldTx.rowId,data:{oldDesc:oldTx.desc||oldTx.description||"",oldAmount:oldTx.amount,date,type:editTxType,category:cat,description:desc,amount,notes}}),new Promise(r=>setTimeout(()=>r(null),15000))]);if(res&&!res.error){setSyncStatus("ok");delete pendingEdits[oldTx.rowId];savePendingEdits();showToast("Updated + synced to Sheets ✓");}else{setSyncStatus("error");if(oldTx.rowId){pendingEdits[oldTx.rowId]={type:editTxType,category:cat,desc,amount,notes,date};savePendingEdits();}showToast("Sync failed: "+(res&&res.error?res.error:"timeout")+" — edit saved locally");}}
 }
 
@@ -806,7 +809,9 @@ async function deleteTxSilent(id) {
 async function _doDeleteTx(id) {
   const tx=txs.find(t=>t.id===id); txs=txs.filter(t=>t.id!==id); unsyncedIds=unsyncedIds.filter(uid=>uid!==id);
   if(tx&&tx.rowId){deletedRowIds.add(tx.rowId);saveDeletedRows();}
-  localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds)); saveTxs(); renderHistory(); renderHome();
+  localStorage.setItem("ft_unsynced",JSON.stringify(unsyncedIds)); saveTxs();
+  try { renderHistory(); } catch(e) { console.warn("renderHistory:", e); }
+  try { renderHome(); } catch(e) { console.warn("renderHome:", e); }
   if(tx&&settings.sheetsUrl){setSyncStatus("syncing");const ok=await Promise.race([postToSheets("delete_transaction",{rowId:tx.rowId,data:{date:tx.date,desc:tx.desc||tx.description||"",amount:tx.amount}}),new Promise(r=>setTimeout(()=>r(false),15000))]);if(ok){setSyncStatus("ok");deletedRowIds.delete(tx.rowId);saveDeletedRows();showToast("Transaction deleted + synced ✓");}else{setSyncStatus("error");showToast("Deleted locally — Sheets sync pending");}}
   else showToast("Transaction deleted");
 }
