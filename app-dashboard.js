@@ -487,7 +487,8 @@ async function deleteGoal(idx) {
 }
 
 // ══ ANALYTICS ════════════════════════════════════════════════
-let analyticsMonth = 5, analyticsYear = 2026, analyticsPickerOpen = false;
+let _analyticsNow = new Date();
+let analyticsMonth = _analyticsNow.getMonth(), analyticsYear = _analyticsNow.getFullYear(), analyticsPickerOpen = false;
 
 function buildPeriodSelects(moSelId, yrSelId, curMo, curYr) {
   // Month select — all 12
