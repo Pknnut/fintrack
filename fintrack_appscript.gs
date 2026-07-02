@@ -1181,18 +1181,23 @@ function getEstimatedBills() {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return { estimates: [] };
   const vals = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
-  const nowYM = normalizeYM(new Date());
+  // This page forecasts NEXT month, not the current one — nothing can be "logged"
+  // against a month that hasn't started yet, so the cutoff for "what's current" is
+  // next month, not this one. A row someone pre-enters ahead of time (e.g. sets
+  // August's electricity estimate while still in July) becomes visible immediately.
+  const now    = new Date();
+  const nextYM = normalizeYM(new Date(now.getFullYear(), now.getMonth() + 1, 1));
   // Same resolution as getBudgets(): the sheet is an append-only history (one row
   // per description per month it CHANGED, not one row per month), and "current" is
-  // whichever row is the latest at-or-before this month for that description. This
-  // is what lets a fixed bill like Netflix carry forward with zero rows added most
-  // months, while something like electricity gets a fresh row only when it actually
-  // changes — e.g. Jul 2026 = 1000, Aug 2026 = 1500, both preserved as separate rows.
+  // whichever row is the latest at-or-before the forecast month for that description.
+  // This is what lets a fixed bill like Netflix carry forward with zero rows added
+  // most months, while something like electricity gets a fresh row only when it
+  // actually changes — e.g. Jul 2026 = 1000, Aug 2026 = 1500, both preserved as rows.
   const latestMap = {};
   vals.filter(r => r[0] !== "").forEach(r => {
     const key    = String(r[0]).trim().toLowerCase() + "|" + (String(r[3]) || "Expense");
     const ym     = normalizeYM(r[5]) || "0000-00";
-    if (ym > nowYM) return; // ignore any row pre-dated for a future month that hasn't arrived yet
+    if (ym > nextYM) return; // ignore anything pre-dated even further ahead than next month
     if (!latestMap[key] || ym >= latestMap[key].ym) {
       latestMap[key] = {
         desc: String(r[0]), category: String(r[1]), amount: Number(r[2]) || 0,
@@ -1220,7 +1225,8 @@ function saveEstimatedBillsToSheet(estimates) {
     sheet.getRange(1, 1, 1, 7).setValues(hdr)
       .setBackground("#0F172A").setFontColor("#FFFFFF").setFontWeight("bold");
   }
-  const nowYM = normalizeYM(new Date());
+  const now    = new Date();
+  const nextYM = normalizeYM(new Date(now.getFullYear(), now.getMonth() + 1, 1));
   // Resolve current state exactly like getEstimatedBills(), so we only append a row
   // for a description when something about it genuinely changed since last time —
   // not on every save. This is what keeps the history readable instead of one row
@@ -1247,7 +1253,7 @@ function saveEstimatedBillsToSheet(estimates) {
     incomingKeys.add(key);
     const cur = latestMap[key];
     const changed = !cur || !cur.active || cur.category !== (e.category||"") || cur.amount !== (Number(e.amount)||0) || cur.repeats !== (e.repeats !== false);
-    if (changed) newRows.push([desc, e.category || "", Number(e.amount) || 0, type, e.repeats !== false, nowYM, true]);
+    if (changed) newRows.push([desc, e.category || "", Number(e.amount) || 0, type, e.repeats !== false, nextYM, true]);
   });
   // Anything active in the sheet but missing from the incoming list was deleted
   // client-side — append an Active=FALSE row so it stops resolving as current,
@@ -1255,7 +1261,7 @@ function saveEstimatedBillsToSheet(estimates) {
   Object.keys(latestMap).forEach(key => {
     if (latestMap[key].active && !incomingKeys.has(key)) {
       const [desc, type] = [key.split("|")[0], key.split("|")[1]];
-      newRows.push([desc, latestMap[key].category, latestMap[key].amount, type, latestMap[key].repeats, nowYM, false]);
+      newRows.push([desc, latestMap[key].category, latestMap[key].amount, type, latestMap[key].repeats, nextYM, false]);
     }
   });
   if (newRows.length) {

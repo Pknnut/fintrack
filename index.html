@@ -656,11 +656,11 @@
 <div class="page" id="page-estbills">
   <div style="padding:20px 16px 0;display:flex;align-items:center;gap:12px">
     <button onclick="goTo(_prevPage||'home')" style="width:32px;height:32px;border-radius:50%;background:var(--slate-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <div style="flex:1"><div class="meta">This month's forecast</div><div class="page-title">Estimated bills</div></div>
+    <div style="flex:1"><div class="meta">Next month's forecast</div><div class="page-title">Estimated bills</div></div>
     <button onclick="openAddEstBillModal()" style="background:#0d9488;color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">+ Add</button>
   </div>
   <div style="margin:14px 16px 0;background:var(--white);border:1px solid var(--slate-200);border-radius:var(--radius);padding:14px">
-    <div style="font-size:10px;color:var(--slate-400);margin-bottom:8px">Pending this month — still counted in Safe to spend</div>
+    <div style="font-size:10px;color:var(--slate-400);margin-bottom:8px">These are forecasts only — they don't affect this month's Safe to spend</div>
     <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--slate-700);padding:3px 0"><span>Estimated income</span><span id="est-income-val" style="color:var(--green-strong);font-weight:600">+฿0</span></div>
     <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--slate-700);padding:3px 0"><span>Estimated bills</span><span id="est-expense-val" style="font-weight:600">−฿0</span></div>
     <div style="display:flex;justify-content:space-between;border-top:0.5px solid var(--slate-100);margin-top:6px;padding-top:8px"><span style="font-size:13px;font-weight:700;color:var(--slate-900)">Estimated net</span><span id="est-net-val" style="font-size:18px;font-weight:800">฿0</span></div>
@@ -672,7 +672,7 @@
     </div>
   </div>
   <div style="margin:10px 16px 0;font-size:11px;color:var(--slate-400);line-height:1.5">
-    These never create a transaction on their own — log the real bill as a normal expense when it arrives, using the same description, and it drops off this list automatically.
+    This is a forecast for next month, not a checklist — it won't disappear when the real bill arrives. Edit the amount here whenever it actually changes; anything left untouched just carries forward automatically.
   </div>
   <div class="spacer"></div>
 </div>

@@ -253,19 +253,11 @@ async function fetchEstBillsFromSheets(silent = false) {
     return false;
   } catch { return false; }
 }
-function getPendingEstBills() {
-  const loggedKeys = buildLoggedKeysThisMonth();
-  return ESTIMATES.filter(b => b && !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
-}
-// Split by direction — mixing income and expense into one lump total stopped being
-// meaningful once Estimated Bills could hold Income entries too (e.g. irregular freelance pay).
-function estBillsPendingExpenseTotal() {
-  return getPendingEstBills().filter(b => (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
-}
-function estBillsPendingIncomeTotal() {
-  return getPendingEstBills().filter(b => b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
-}
-function estBillsPendingNetTotal() { return estBillsPendingIncomeTotal() - estBillsPendingExpenseTotal(); }
+// getPendingEstBills / estBillsPending*Total used to feed this-month Safe to Spend,
+// back when Estimated Bills tracked "has this month's bill arrived yet." That page
+// now forecasts next month instead (nothing can be logged against a month that
+// hasn't started), so this-month Logged/Pending tracking no longer applies here —
+// removed along with their only call site in renderSafeToSpend().
 // Used by the Cash Flow Forecast — only bills explicitly flagged as repeating monthly
 // (electric, credit card... or irregular income) get projected into future months. One-off
 // estimates (repeats === false) are excluded since there's no signal for what future months hold.

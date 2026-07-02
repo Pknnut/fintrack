@@ -75,14 +75,14 @@ function renderSafeToSpend() {
   // this month, since that payment is now a real transaction already counted in
   // spentSoFar above. Without this check the same payment got subtracted twice.
   const instDue = INSTALLMENTS.filter(p => p.paid < p.total_mo && p.lastPaidYM !== curYM).reduce((s,p)=>s+(p.monthly||0), 0);
-  // Estimated bills/income not yet logged this month — same de-dup principle as
-  // instalments above: an entry drops out the moment its real transaction is logged.
-  const estExpense = estBillsPendingExpenseTotal();
-  const estIncome  = estBillsPendingIncomeTotal();
+  // Estimated Bills used to contribute here too, but that page now forecasts NEXT
+  // month specifically (nothing can be "logged" against a month that hasn't started),
+  // so it no longer belongs in THIS month's Safe to Spend. It still feeds the
+  // multi-month Cash Flow Forecast further down, which is the right place for it.
 
-  const expectedIncome = incomeSoFar + pendingIncome + estIncome;
+  const expectedIncome = incomeSoFar + pendingIncome;
   const recurringAndInst = pendingBills + instDue;
-  const billsDue       = recurringAndInst + estExpense;
+  const billsDue       = recurringAndInst;
   const safe           = expectedIncome - spentSoFar - billsDue;
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
@@ -107,24 +107,16 @@ function renderSafeToSpend() {
   document.getElementById("safe-inc").textContent   = "+" + fmt(expectedIncome);
   document.getElementById("safe-spent").textContent = "−" + fmt(spentSoFar);
   document.getElementById("safe-bills").textContent = "−" + fmt(recurringAndInst);
+  // Estimated Bills breakdown rows retired along with its contribution to this
+  // month's Safe to Spend — always hidden now, since that page forecasts next
+  // month instead. Left as display:none in the HTML rather than removed, in case
+  // a future "this month" view of Estimated Bills gets reintroduced.
   const estIncRow = document.getElementById("safe-est-income-row");
   const estRow = document.getElementById("safe-est-row");
   const estNetRow = document.getElementById("safe-est-net-row");
-  if (estIncRow) {
-    estIncRow.style.display = estIncome > 0 ? "flex" : "none";
-    document.getElementById("safe-est-income").textContent = "+" + fmt(estIncome);
-  }
-  if (estRow) {
-    estRow.style.display = ESTIMATES.length ? "flex" : "none";
-    document.getElementById("safe-est").textContent = "−" + fmt(estExpense);
-  }
-  if (estNetRow) {
-    const estNet = estIncome - estExpense;
-    estNetRow.style.display = ESTIMATES.length ? "flex" : "none";
-    const netEl = document.getElementById("safe-est-net");
-    netEl.textContent = (estNet>=0?"+":"") + fmt(estNet);
-    netEl.style.color = estNet >= 0 ? "var(--green-strong)" : "var(--red-strong)";
-  }
+  if (estIncRow) estIncRow.style.display = "none";
+  if (estRow) estRow.style.display = "none";
+  if (estNetRow) estNetRow.style.display = "none";
   const totalEl = document.getElementById("safe-total");
   totalEl.textContent = fmt(safe);
   totalEl.className = neg ? "safe-total-neg" : "safe-bd-pos";
@@ -266,20 +258,14 @@ function renderEstBillsHomeCard() {
   if (!ESTIMATES.length) {
     el.innerHTML =
       '<div class="nw-card">' +
-        '<div class="nw-card-hd"><span class="nw-card-title">Estimated bills</span></div>' +
-        '<p style="font-size:11px;color:var(--slate-400);margin:0 0 10px;line-height:1.5">Add bills you know are coming — like electric or credit card — to forecast them before the real amount arrives.</p>' +
+        '<div class="nw-card-hd"><span class="nw-card-title">Next month\'s forecast</span></div>' +
+        '<p style="font-size:11px;color:var(--slate-400);margin:0 0 10px;line-height:1.5">Add bills or income you expect next month — like electric or credit card — to see them coming.</p>' +
         '<button onclick="openAddEstBillModal()" style="width:100%;padding:9px;border:1.5px dashed var(--slate-200);border-radius:var(--radius-sm);background:none;color:var(--slate-400);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer">+ Add bill</button>' +
       '</div>';
     return;
   }
-  const loggedKeys = buildLoggedKeysThisMonth();
-  const sorted = [...ESTIMATES].filter(b => b).sort((a,b) => {
-    const aLogged = isLoggedThisMonth(loggedKeys, a.desc, a.type || "Expense");
-    const bLogged = isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense");
-    return aLogged === bLogged ? 0 : aLogged ? 1 : -1; // pending first
-  });
-  const preview = sorted.slice(0, 3);
-  const extra = sorted.length - preview.length;
+  const preview = ESTIMATES.filter(b => b).slice(0, 3);
+  const extra = ESTIMATES.length - preview.length;
   const rowsHtml = preview.map(b => {
     const icon = (b.category||"").match(/^\S+/)?.[0] || "🔄";
     const isInc = b.type === "Income";
@@ -288,15 +274,17 @@ function renderEstBillsHomeCard() {
       '<span style="font-weight:600;color:' + (isInc?'var(--green-strong)':'var(--slate-900)') + '">' + (isInc?'+':'−') + fmt(b.amount) + '</span>' +
     '</div>';
   }).join("") + (extra > 0 ? '<div style="font-size:10px;color:var(--slate-400);padding:5px 0 0">+' + extra + ' more</div>' : '');
-  const net = estBillsPendingNetTotal();
+  const totalIncome  = ESTIMATES.filter(b => b && b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
+  const totalExpense = ESTIMATES.filter(b => b && (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
+  const net = totalIncome - totalExpense;
   el.innerHTML =
     '<div class="nw-card">' +
       '<div class="nw-card-hd">' +
-        '<span class="nw-card-title">Estimated bills</span>' +
+        '<span class="nw-card-title">Next month\'s forecast</span>' +
         '<span style="font-size:11px;font-weight:600;color:var(--teal);cursor:pointer" onclick="goTo(\'estbills\')">Manage →</span>' +
       '</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">' +
-        '<span style="font-size:9px;color:var(--slate-400)">Net this month</span>' +
+        '<span style="font-size:9px;color:var(--slate-400)">Net forecast</span>' +
         '<span style="font-size:18px;font-weight:700;color:' + (net>=0?'var(--green-strong)':'var(--red-strong)') + '">' + (net>=0?'+':'') + fmt(net) + '</span>' +
       '</div>' +
       rowsHtml +
@@ -487,8 +475,7 @@ async function deleteGoal(idx) {
 }
 
 // ══ ANALYTICS ════════════════════════════════════════════════
-let _analyticsNow = new Date();
-let analyticsMonth = _analyticsNow.getMonth(), analyticsYear = _analyticsNow.getFullYear(), analyticsPickerOpen = false;
+let analyticsMonth = 5, analyticsYear = 2026, analyticsPickerOpen = false;
 
 function buildPeriodSelects(moSelId, yrSelId, curMo, curYr) {
   // Month select — all 12

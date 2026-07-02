@@ -582,16 +582,18 @@ async function logAllRecurring() {
 let _estEditIdx = null;   // index of bill currently being amount-edited inline
 let _estAddEditIdx = -1;  // index of bill being edited in the add/edit modal, -1 = adding new
 
-// A bill only shows "since [month]" when its current amount was set in a PAST
-// month (i.e. it's carrying forward unchanged) — if it was just set this month,
-// that's the normal/expected state and doesn't need calling out.
+// A bill only shows "since [month]" when its current amount was set before the
+// forecast month (i.e. it's carrying forward unchanged) — if it was just set for
+// next month specifically, that's the normal/expected state and doesn't need
+// calling out.
 function estSinceLabel(ym) {
   if (!ym || typeof ym !== "string") return "";
   const m = ym.match(/^(\d{4})-(\d{2})$/);
   if (!m) return "";
   const now = new Date();
-  const nowYM = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
-  if (ym >= nowYM) return "";
+  const next = new Date(now.getFullYear(), now.getMonth()+1, 1);
+  const nextYM = next.getFullYear() + "-" + String(next.getMonth()+1).padStart(2,"0");
+  if (ym >= nextYM) return "";
   return " · since " + MO[parseInt(m[2],10)-1] + " " + m[1];
 }
 function renderEstBillsPage() {
@@ -601,27 +603,26 @@ function renderEstBillsPage() {
   const expVal = document.getElementById("est-expense-val");
   const netVal = document.getElementById("est-net-val");
   if (!list) return;
+  const now = new Date();
+  const nextMonthLabel = MO[(now.getMonth()+1) % 12] + " " + (now.getMonth() === 11 ? now.getFullYear()+1 : now.getFullYear());
   if (!ESTIMATES.length) {
-    list.innerHTML = '<div class="rec-empty">No estimated bills yet.<br>Add bills or income you know are coming — like electric, credit card, or irregular freelance pay — to forecast this month before they arrive.</div>';
+    list.innerHTML = '<div class="rec-empty">No bills forecasted yet.<br>Add bills or income you expect next month — like electric, credit card, or irregular freelance pay — so you can see it coming.</div>';
     if (pendingLabel) pendingLabel.textContent = "";
     if (incVal) incVal.textContent = fmt(0);
     if (expVal) expVal.textContent = fmt(0);
     if (netVal) netVal.textContent = fmt(0);
     return;
   }
-  const loggedKeys = buildLoggedKeysThisMonth();
-  const pending = ESTIMATES.filter(b => b && !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
-  const pendingIncome  = pending.filter(b => b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
-  const pendingExpense = pending.filter(b => (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
-  const net = pendingIncome - pendingExpense;
-  if (incVal) incVal.textContent = "+" + fmt(pendingIncome);
-  if (expVal) expVal.textContent = "−" + fmt(pendingExpense);
+  const totalIncome  = ESTIMATES.filter(b => b && b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
+  const totalExpense = ESTIMATES.filter(b => b && (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
+  const net = totalIncome - totalExpense;
+  if (incVal) incVal.textContent = "+" + fmt(totalIncome);
+  if (expVal) expVal.textContent = "−" + fmt(totalExpense);
   if (netVal) { netVal.textContent = (net>=0?"+":"") + fmt(net); netVal.style.color = net>=0 ? "var(--green-strong)" : "var(--red-strong)"; }
-  if (pendingLabel) pendingLabel.textContent = pending.length + " of " + ESTIMATES.length + " still pending this month";
+  if (pendingLabel) pendingLabel.textContent = "Forecast for " + nextMonthLabel;
   list.innerHTML = ESTIMATES.map((b, idx) => {
     if (!b) return "";
     const isInc = b.type === "Income";
-    const isLogged = isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense");
     const isEditing = (_estEditIdx === idx);
     const icon = (b.category||"").match(/^\S+/)?.[0] || "🔄";
     const catName = (b.category||"").replace(/^\S+\s/, "");
@@ -641,12 +642,7 @@ function renderEstBillsPage() {
           '</div>' +
           '<span class="rec-was-hint">was ' + fmt(b.amount) + '</span>'
         :
-          '<span class="rec-amt-display' + (isInc?" income":"") + '" onclick="editEstAmt(' + idx + ')" title="Tap to edit amount">' + (isInc?'+':'−') + fmt(b.amount) + '</span>' +
-          (isLogged ?
-            '<span class="rec-status-logged"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Logged</span>'
-          :
-            '<span class="rec-status-pending">Pending</span>'
-          )
+          '<span class="rec-amt-display' + (isInc?" income":"") + '" onclick="editEstAmt(' + idx + ')" title="Tap to edit amount">' + (isInc?'+':'−') + fmt(b.amount) + '</span>'
         ) +
       '</div>' +
       '<button class="rec-edit-btn" onclick="openEditEstBillModal(' + idx + ')" title="Edit">' + EDIT_PENCIL + '</button>' +
@@ -677,7 +673,7 @@ function confirmEstAmt(idx) {
 async function removeEstBill(idx) {
   const b = ESTIMATES[idx];
   if (!b) return;
-  if (!(await appConfirm({title:"Remove estimated bill?", message:'"'+(b.desc||"This item")+'" will no longer count toward Safe to Spend.', okText:"Remove", danger:true}))) return;
+  if (!(await appConfirm({title:"Remove from forecast?", message:'"'+(b.desc||"This item")+'" will no longer show in next month\'s forecast.', okText:"Remove", danger:true}))) return;
   ESTIMATES.splice(idx, 1);
   saveEstBills();
   renderEstBillsPage();
