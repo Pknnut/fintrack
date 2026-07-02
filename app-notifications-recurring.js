@@ -294,9 +294,8 @@ function toggleRecurring() {
 }
 
 function getPendingRecurring() {
-  let loggedKeys;
-  try { loggedKeys = buildLoggedKeysThisMonth(); } catch(e) { loggedKeys = new Set(); }
-  return RECURRING.filter(r => r && typeof r === "object" && r.desc && !isLoggedThisMonth(loggedKeys, r.desc, r.type));
+  const loggedKeys = buildLoggedKeysThisMonth();
+  return RECURRING.filter(r => !isLoggedThisMonth(loggedKeys, r.desc, r.type));
 }
 
 function checkRecurringSuggestions() {
@@ -330,9 +329,10 @@ async function addRecurringNow(r, overrideAmt) {
   const notes = r.notes ? r.notes + " · recurring" : "recurring";
   const tx = {id:Date.now(), date, type:r.type||"Expense", category:r.category, desc:r.desc, amount:amount, notes:notes};
   txs.push(tx); saveTxs();
+  _loggedRecurringCache.add((tx.type||"Expense") + "|" + (tx.desc||"").toLowerCase());
   showToast("Logged: " + r.desc + " ✓");
-  try { checkRecurringSuggestions(); } catch(e) { console.warn("checkRecurringSuggestions:", e); }
-  try { renderHome(); } catch(e) { console.warn("renderHome:", e); }
+  checkRecurringSuggestions();
+  renderHome();
   if (settings.sheetsUrl && settings.autosync) {
     setSyncStatus("syncing");
     const res = await Promise.race([postToSheetsRaw("add_transaction",{data:{...tx}}), new Promise(r=>setTimeout(()=>r(null),6000))]);
@@ -385,6 +385,10 @@ async function removeRecurringByIdx(idx) {
 
 // ── Recurring Page ────────────────────────────────────────────
 let _recEditIdx = null; // index of item currently being amount-edited
+// Session cache of recurring items logged this month. Keyed as "type|desc_lower".
+// Updated immediately when we log, so renderRecurringPage shows "Logged" right away
+// regardless of any txs scanning issues.
+const _loggedRecurringCache = new Set();
 
 function renderRecurringPage() {
   try {
@@ -410,12 +414,14 @@ function renderRecurringPage() {
     });
   } catch(e) { console.warn("loggedKeys error:", e); }
   RECURRING = RECURRING.filter(r => r && typeof r === "object" && r.desc);
-  const pending = RECURRING.filter(r => !isLoggedThisMonth(loggedKeys, r.desc, r.type));
+  const pending = RECURRING.filter(r => !isLoggedThisMonth(loggedKeys, r.desc, r.type)
+                                      && !_loggedRecurringCache.has((r.type||"Expense") + "|" + (r.desc||"").toLowerCase()));
   const pendingTotal = pending.reduce((s, r) => s + (r.amount||0), 0);
   if (pendingLabel) pendingLabel.textContent = pending.length ? pending.length + " pending · " + fmt(pendingTotal) : "All logged this month ✓";
   if (logAllBtn) logAllBtn.disabled = pending.length === 0;
   list.innerHTML = RECURRING.map((r, idx) => {
-      const isLogged = isLoggedThisMonth(loggedKeys, r.desc, r.type);
+      const isLogged = isLoggedThisMonth(loggedKeys, r.desc, r.type)
+                    || _loggedRecurringCache.has((r.type||"Expense") + "|" + (r.desc||"").toLowerCase());
       const isIncome = (r.type||"Expense") === "Income";
       const isEditing = (_recEditIdx === idx);
       const catName = (r.category||"").replace(/^\S+\s/,"");
@@ -556,7 +562,7 @@ function renderEstBillsPage() {
     if (netVal) netVal.textContent = fmt(0);
     return;
   }
-  let loggedKeys; try { loggedKeys = buildLoggedKeysThisMonth(); } catch(e) { loggedKeys = new Set(); }
+  const loggedKeys = buildLoggedKeysThisMonth();
   const pending = ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
   const pendingIncome  = pending.filter(b => b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
   const pendingExpense = pending.filter(b => (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
