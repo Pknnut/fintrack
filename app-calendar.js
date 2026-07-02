@@ -382,9 +382,9 @@ function calOnSearch() {
   mainEl.style.display = "none";
   resultsEl.style.display = "block";
   const matched = txs.filter(t => {
-    const desc = (t.desc || t.description || "").toLowerCase();
+    const desc = String(t.desc || t.description || "").toLowerCase();
     const cat  = (t.category || "").toLowerCase();
-    const notes = (t.notes || "").toLowerCase();
+    const notes = String(t.notes || "").toLowerCase();
     return desc.includes(q) || cat.includes(q) || notes.includes(q);
   }).sort((a, b) => parseDate(b.date) - parseDate(a.date));
 
