@@ -330,9 +330,12 @@ async function addRecurringNow(r, overrideAmt) {
   const tx = {id:Date.now(), date, type:r.type||"Expense", category:r.category, desc:r.desc, amount:amount, notes:notes};
   txs.push(tx); saveTxs();
   _loggedRecurringCache.add((tx.type||"Expense") + "|" + (tx.desc||"").toLowerCase());
-  showToast("Logged: " + r.desc + " ✓");
   checkRecurringSuggestions();
   renderHome();
+  // This used to show "Logged: X ✓" immediately, before the sync attempt even started,
+  // and never followed up — so a silent sync failure looked identical to a success in
+  // the UI. Now it waits for the real outcome and reports it honestly, same wording
+  // pattern as the manual Add form, so a failure is never invisible again.
   if (settings.sheetsUrl && settings.autosync) {
     setSyncStatus("syncing");
     const res = await Promise.race([postToSheetsRaw("add_transaction",{data:{...tx}}), new Promise(r=>setTimeout(()=>r(null),6000))]);
@@ -343,20 +346,24 @@ async function addRecurringNow(r, overrideAmt) {
         const local = txs.find(t => t.id === tx.id);
         if (local) { local.rowId = res.rowId; saveTxs(); }
       }
+      showToast("Logged + synced: " + r.desc + " ✓");
     } else {
       setSyncStatus("error");
       unsyncedIds.push(tx.id);
       localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
+      showToast("Sync failed (" + (res && res.error ? res.error : "timeout") + ") — " + r.desc + " saved locally");
     }
+  } else {
+    showToast("Logged: " + r.desc + " ✓");
   }
 }
 
 async function logAllRecurringFromBanner() {
   const due = getPendingRecurring();
   if (!due.length) return;
-  await bulkLogRecurring(due);
+  const ok = await bulkLogRecurring(due);
   dismissRecurringSuggestions();
-  showToast(due.length + " recurring items logged ✓");
+  if (ok) showToast(due.length + " recurring items logged ✓");
 }
 
 function dismissRecurringSuggestions() {
@@ -387,10 +394,7 @@ async function removeRecurringByIdx(idx) {
 let _recEditIdx = null; // index of item currently being amount-edited
 // Session cache of recurring items logged this month. Keyed as "type|desc_lower".
 // Updated immediately when we log, so renderRecurringPage shows "Logged" right away
-// without waiting for a re-scan of txs. IMPORTANT: this is a short-lived UI convenience,
-// not a source of truth — it must be cleared after every fetchFromSheets() pull (see
-// app-core.js) so it can never keep showing "Logged" for a transaction whose sync
-// actually failed. Without that, this cache masks real sync failures indefinitely.
+// regardless of any txs scanning issues.
 const _loggedRecurringCache = new Set();
 
 function renderRecurringPage() {
@@ -528,22 +532,25 @@ async function bulkLogRecurring(items) {
     ]);
     if (ok) {
       setSyncStatus("ok");
+      return true;
     } else {
       setSyncStatus("error");
       // Mark as unsynced so manual push can catch them
       newTxs.forEach(tx => { if (!unsyncedIds.includes(tx.id)) unsyncedIds.push(tx.id); });
       localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
       showToast("Saved locally — sync when online");
+      return false;
     }
   }
+  return true; // no Sheets configured — local save above already succeeded, nothing to sync
 }
 
 async function logAllRecurring() {
   const due = getPendingRecurring();
   if (!due.length) return;
-  await bulkLogRecurring(due);
+  const ok = await bulkLogRecurring(due);
   renderRecurringPage();
-  showToast(due.length + " items logged ✓");
+  if (ok) showToast(due.length + " items logged ✓");
 }
 
 // ── Estimated Bills Page ──────────────────────────────────────
