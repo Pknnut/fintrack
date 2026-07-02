@@ -466,7 +466,13 @@ async function fetchFromSheets(silent = false) {
         return !sheetsKeys.has(key); // keep in unsynced only if NOT already in Sheets
       });
       localStorage.setItem("ft_unsynced", JSON.stringify(unsyncedIds));
-      const localOnly = txs.filter(t => !t.rowId && unsyncedIds.includes(t.id));
+      // A tx that just got a rowId back from a successful write can still vanish here if
+      // Sheets' read hasn't caught up with that write yet (Apps Script propagation lag) —
+      // it has a rowId (so the old !t.rowId check dropped it) but isn't in data.transactions
+      // yet either, so it fell through both buckets. Fix: keep any local tx whose rowId isn't
+      // present in this fetch's results, not just ones with no rowId at all.
+      const fetchedRowIds = new Set(data.transactions.map(t => t.rowId));
+      const localOnly = txs.filter(t => t.rowId ? !fetchedRowIds.has(t.rowId) : unsyncedIds.includes(t.id));
       const sheetsRows = data.transactions.filter(t => !deletedRowIds.has(t.rowId)).map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal===true||t.fromGoal==="true"||t.fromGoal===1,goalName:t.goalName||"",splitId:t.splitId||""}));
       txs = [...sheetsRows,...localOnly];
       // Re-apply any locally-edited values that haven't synced yet, so a pull
