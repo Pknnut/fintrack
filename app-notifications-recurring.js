@@ -554,7 +554,7 @@ function renderEstBillsPage() {
   const expVal = document.getElementById("est-expense-val");
   const netVal = document.getElementById("est-net-val");
   if (!list) return;
-  if (!ESTIMATED_BILLS.length) {
+  if (!ESTIMATES.length) {
     list.innerHTML = '<div class="rec-empty">No estimated bills yet.<br>Add bills or income you know are coming — like electric, credit card, or irregular freelance pay — to forecast this month before they arrive.</div>';
     if (pendingLabel) pendingLabel.textContent = "";
     if (incVal) incVal.textContent = fmt(0);
@@ -563,15 +563,15 @@ function renderEstBillsPage() {
     return;
   }
   const loggedKeys = buildLoggedKeysThisMonth();
-  const pending = ESTIMATED_BILLS.filter(b => b && !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
+  const pending = ESTIMATES.filter(b => b && !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
   const pendingIncome  = pending.filter(b => b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
   const pendingExpense = pending.filter(b => (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
   const net = pendingIncome - pendingExpense;
   if (incVal) incVal.textContent = "+" + fmt(pendingIncome);
   if (expVal) expVal.textContent = "−" + fmt(pendingExpense);
   if (netVal) { netVal.textContent = (net>=0?"+":"") + fmt(net); netVal.style.color = net>=0 ? "var(--green-strong)" : "var(--red-strong)"; }
-  if (pendingLabel) pendingLabel.textContent = pending.length + " of " + ESTIMATED_BILLS.length + " still pending this month";
-  list.innerHTML = ESTIMATED_BILLS.map((b, idx) => {
+  if (pendingLabel) pendingLabel.textContent = pending.length + " of " + ESTIMATES.length + " still pending this month";
+  list.innerHTML = ESTIMATES.map((b, idx) => {
     if (!b) return "";
     const isInc = b.type === "Income";
     const isLogged = isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense");
@@ -619,7 +619,7 @@ function confirmEstAmt(idx) {
   if (!inp) return;
   const newAmt = parseFloat(inp.value);
   if (isNaN(newAmt) || newAmt <= 0) { showToast("Enter a valid amount"); return; }
-  ESTIMATED_BILLS[idx].amount = newAmt;
+  ESTIMATES[idx].amount = newAmt;
   saveEstBills();
   _estEditIdx = null;
   renderEstBillsPage();
@@ -628,10 +628,10 @@ function confirmEstAmt(idx) {
 }
 
 async function removeEstBill(idx) {
-  const b = ESTIMATED_BILLS[idx];
+  const b = ESTIMATES[idx];
   if (!b) return;
   if (!(await appConfirm({title:"Remove estimated bill?", message:'"'+(b.desc||"This item")+'" will no longer count toward Safe to Spend.', okText:"Remove", danger:true}))) return;
-  ESTIMATED_BILLS.splice(idx, 1);
+  ESTIMATES.splice(idx, 1);
   saveEstBills();
   renderEstBillsPage();
   renderHome();
@@ -680,7 +680,7 @@ function openAddEstBillModal() {
 }
 
 function openEditEstBillModal(idx) {
-  const b = ESTIMATED_BILLS[idx];
+  const b = ESTIMATES[idx];
   if (!b) return;
   _estAddEditIdx = idx;
   setEstAddType(b.type === "Income" ? "Income" : "Expense");
@@ -704,8 +704,8 @@ function confirmAddEstBill() {
   if (!amount || amount <= 0) { showToast("Enter a valid amount"); return; }
   const entry = { desc, category: cat, amount, repeats: _estAddRepeats, type: _estAddType };
   const isEdit = _estAddEditIdx >= 0;
-  if (isEdit) ESTIMATED_BILLS[_estAddEditIdx] = entry;
-  else ESTIMATED_BILLS.push(entry);
+  if (isEdit) ESTIMATES[_estAddEditIdx] = entry;
+  else ESTIMATES.push(entry);
   saveEstBills();
   closeModal("add-estbill");
   renderEstBillsPage();

@@ -115,12 +115,12 @@ function renderSafeToSpend() {
     document.getElementById("safe-est-income").textContent = "+" + fmt(estIncome);
   }
   if (estRow) {
-    estRow.style.display = ESTIMATED_BILLS.length ? "flex" : "none";
+    estRow.style.display = ESTIMATES.length ? "flex" : "none";
     document.getElementById("safe-est").textContent = "−" + fmt(estExpense);
   }
   if (estNetRow) {
     const estNet = estIncome - estExpense;
-    estNetRow.style.display = ESTIMATED_BILLS.length ? "flex" : "none";
+    estNetRow.style.display = ESTIMATES.length ? "flex" : "none";
     const netEl = document.getElementById("safe-est-net");
     netEl.textContent = (estNet>=0?"+":"") + fmt(estNet);
     netEl.style.color = estNet >= 0 ? "var(--green-strong)" : "var(--red-strong)";
@@ -263,7 +263,7 @@ function renderForecastChart(months) {
 function renderEstBillsHomeCard() {
   const el = document.getElementById("home-estbills-card");
   if (!el) return;
-  if (!ESTIMATED_BILLS.length) {
+  if (!ESTIMATES.length) {
     el.innerHTML =
       '<div class="nw-card">' +
         '<div class="nw-card-hd"><span class="nw-card-title">Estimated bills</span></div>' +
@@ -273,7 +273,7 @@ function renderEstBillsHomeCard() {
     return;
   }
   const loggedKeys = buildLoggedKeysThisMonth();
-  const sorted = [...ESTIMATED_BILLS].filter(b => b).sort((a,b) => {
+  const sorted = [...ESTIMATES].filter(b => b).sort((a,b) => {
     const aLogged = isLoggedThisMonth(loggedKeys, a.desc, a.type || "Expense");
     const bLogged = isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense");
     return aLogged === bLogged ? 0 : aLogged ? 1 : -1; // pending first
