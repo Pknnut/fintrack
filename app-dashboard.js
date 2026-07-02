@@ -273,7 +273,7 @@ function renderEstBillsHomeCard() {
     return;
   }
   const loggedKeys = buildLoggedKeysThisMonth();
-  const sorted = [...ESTIMATED_BILLS].sort((a,b) => {
+  const sorted = [...ESTIMATED_BILLS].filter(b => b).sort((a,b) => {
     const aLogged = isLoggedThisMonth(loggedKeys, a.desc, a.type || "Expense");
     const bLogged = isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense");
     return aLogged === bLogged ? 0 : aLogged ? 1 : -1; // pending first

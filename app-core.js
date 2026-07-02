@@ -223,10 +223,17 @@ function isLoggedThisMonth(loggedKeys, desc, type) {
 }
 
 let ESTIMATED_BILLS = JSON.parse(localStorage.getItem("ft_estbills") || "[]");
+if (!Array.isArray(ESTIMATED_BILLS)) ESTIMATED_BILLS = [];
+// Same self-healing filter as RECURRING: a stale-index write (e.g. edit modal saving
+// against an idx that no longer matches after the list shrank) can leave a sparse
+// array slot, which JSON.stringify serializes as null. One null entry here used to
+// throw inside renderEstBillsHomeCard() and silently take Safe-to-Spend and the
+// Recent list down with it, since they render later in the same renderHome() call.
+ESTIMATED_BILLS = ESTIMATED_BILLS.filter(b => b && typeof b === "object" && b.desc);
 function saveEstBills() { localStorage.setItem("ft_estbills", JSON.stringify(ESTIMATED_BILLS)); }
 function getPendingEstBills() {
   const loggedKeys = buildLoggedKeysThisMonth();
-  return ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
+  return ESTIMATED_BILLS.filter(b => b && !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
 }
 // Split by direction — mixing income and expense into one lump total stopped being
 // meaningful once Estimated Bills could hold Income entries too (e.g. irregular freelance pay).
@@ -242,10 +249,10 @@ function estBillsPendingNetTotal() { return estBillsPendingIncomeTotal() - estBi
 // estimates (repeats === false) are excluded since there's no signal for what future months hold.
 // Missing the flag entirely (legacy bills, added before this existed) defaults to true.
 function estBillsRepeatingExpenseTotal() {
-  return ESTIMATED_BILLS.filter(b => b.repeats !== false && (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
+  return ESTIMATED_BILLS.filter(b => b && b.repeats !== false && (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
 }
 function estBillsRepeatingIncomeTotal() {
-  return ESTIMATED_BILLS.filter(b => b.repeats !== false && b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
+  return ESTIMATED_BILLS.filter(b => b && b.repeats !== false && b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
 }
 
 if (!settings.pin || settings.pin.length !== 6) settings.pin = "123456";

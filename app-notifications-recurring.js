@@ -563,7 +563,7 @@ function renderEstBillsPage() {
     return;
   }
   const loggedKeys = buildLoggedKeysThisMonth();
-  const pending = ESTIMATED_BILLS.filter(b => !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
+  const pending = ESTIMATED_BILLS.filter(b => b && !isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense"));
   const pendingIncome  = pending.filter(b => b.type === "Income").reduce((s,b)=>s+(b.amount||0), 0);
   const pendingExpense = pending.filter(b => (b.type||"Expense") !== "Income").reduce((s,b)=>s+(b.amount||0), 0);
   const net = pendingIncome - pendingExpense;
@@ -572,6 +572,7 @@ function renderEstBillsPage() {
   if (netVal) { netVal.textContent = (net>=0?"+":"") + fmt(net); netVal.style.color = net>=0 ? "var(--green-strong)" : "var(--red-strong)"; }
   if (pendingLabel) pendingLabel.textContent = pending.length + " of " + ESTIMATED_BILLS.length + " still pending this month";
   list.innerHTML = ESTIMATED_BILLS.map((b, idx) => {
+    if (!b) return "";
     const isInc = b.type === "Income";
     const isLogged = isLoggedThisMonth(loggedKeys, b.desc, b.type || "Expense");
     const isEditing = (_estEditIdx === idx);
