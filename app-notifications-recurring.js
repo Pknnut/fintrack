@@ -331,8 +331,8 @@ async function addRecurringNow(r, overrideAmt) {
   const tx = {id:Date.now(), date, type:r.type||"Expense", category:r.category, desc:r.desc, amount:amount, notes:notes};
   txs.push(tx); saveTxs();
   showToast("Logged: " + r.desc + " ✓");
-  checkRecurringSuggestions();
-  renderHome();
+  try { checkRecurringSuggestions(); } catch(e) { console.warn("checkRecurringSuggestions:", e); }
+  try { renderHome(); } catch(e) { console.warn("renderHome:", e); }
   if (settings.sheetsUrl && settings.autosync) {
     setSyncStatus("syncing");
     const res = await Promise.race([postToSheetsRaw("add_transaction",{data:{...tx}}), new Promise(r=>setTimeout(()=>r(null),6000))]);
