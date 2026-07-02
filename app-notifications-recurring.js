@@ -387,7 +387,10 @@ async function removeRecurringByIdx(idx) {
 let _recEditIdx = null; // index of item currently being amount-edited
 // Session cache of recurring items logged this month. Keyed as "type|desc_lower".
 // Updated immediately when we log, so renderRecurringPage shows "Logged" right away
-// regardless of any txs scanning issues.
+// without waiting for a re-scan of txs. IMPORTANT: this is a short-lived UI convenience,
+// not a source of truth — it must be cleared after every fetchFromSheets() pull (see
+// app-core.js) so it can never keep showing "Logged" for a transaction whose sync
+// actually failed. Without that, this cache masks real sync failures indefinitely.
 const _loggedRecurringCache = new Set();
 
 function renderRecurringPage() {

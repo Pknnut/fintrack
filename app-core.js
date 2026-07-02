@@ -487,7 +487,21 @@ async function fetchFromSheets(silent = false) {
         return !sheetsKeys.has(key); // has a stale rowId — keep only if its content isn't in Sheets yet either
       });
       const sheetsRows = data.transactions.filter(t => !deletedRowIds.has(t.rowId)).map(t => ({id:t.rowId,rowId:t.rowId,date:normalizeDate(t.date),type:t.type,category:t.category,desc:t.description,amount:t.amount,notes:t.notes||"",fromGoal:t.fromGoal===true||t.fromGoal==="true"||t.fromGoal===1,goalName:t.goalName||"",splitId:t.splitId||""}));
+      // deletedRowIds is only meant to hide a just-deleted row for the few seconds before
+      // Sheets' read catches up with the delete — it must NOT persist past that. Row numbers
+      // get reused once everything below a deleted row shifts up, so a stale entry here
+      // silently blacklists whatever unrelated transaction later lands on that same number
+      // (this is what ate the recurring-logged transaction). Once we have a fresh authoritative
+      // pull, any deletedRowIds entry that's now empty (deletion confirmed) OR that doesn't
+      // match this fetch's actual layout is done its job — clear the whole set every pull.
+      if (deletedRowIds.size) { deletedRowIds = new Set(); saveDeletedRows(); }
       txs = [...sheetsRows,...localOnly];
+      // _loggedRecurringCache (app-notifications-recurring.js) is only a short-lived UI
+      // convenience so the "Logged" badge updates instantly after tapping Log. This fetch
+      // just pulled authoritative data from Sheets, so from this point on isLoggedThisMonth()
+      // reading straight from txs IS the truth — clear the cache so it can never keep
+      // claiming "Logged" for a transaction whose sync actually failed.
+      if (typeof _loggedRecurringCache !== "undefined") _loggedRecurringCache.clear();
       // Re-apply any locally-edited values that haven't synced yet, so a pull
       // doesn't silently overwrite changes the user made since the last sync.
       if (Object.keys(pendingEdits).length) {
